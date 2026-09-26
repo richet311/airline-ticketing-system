@@ -117,199 +117,120 @@ CREATE TABLE job_role{ --Code table for employee job roles
     --CONSTRAINT fk_job_role_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 }
 
-CREATE TABLE airport(
-  airport_id SERIAL,
-  airport_code CHAR(3) NOT NULL UNIQUE,
-  airport_name VARCHAR(100) NOT NULL,
-  city VARCHAR(50) NOT NULL,
-  country CHAR(2) NOT NULL,
-  timezone VARCHAR(50) NOT NULL,
-
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_by INT NOT NULL,
-  updated_by INT NOT NULL,
-
-  --CONSTRAINT chk_airpor_code_upper CHECK (airport_code = UPPER(airport_code)),
-  -- CONSTRAINT chk_airport_country_upper CHECK (country = UPPER(country))
-
-  --CONSTRAINT fk_airport_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-  --CONSTRAINT fk_airport_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
-);
-
 CREATE TABLE aircraft(
-  aircraft_id SERIAL,
-  aircraft_number VARCHAR(10) NOT NULL UNIQUE,
-  aircraft_type VARCHAR(50) NOT NULL,
-  capacity INT NOT NULL,
-  seat_layout_config JSONB NOT NULL,
-  maintenance_status VARCHAR(20) NOT NULL DEFAULT 'OPERATIONAL',
+    aircraft_id INT PRIMARY KEY,
+    aircraft_number VARCHAR(10) NOT NULL UNIQUE,
+    aircraft_type VARCHAR(50) NOT NULL,
+    capacity INT NOT NULL,
+    seat_layout_config JSON NOT NULL,
+    maintenance_status_id INT NOT NULL,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_by INT NOT NULL,
-  updated_by INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
 
---   CONSTRAINT chk_aircraft_capacity 
---     CHECK (capacity > 0),
---   CONSTRAINT chck_aircraft_maintenance
---     CHECK (
---       maintenance_status IN (
---         'OPERATIONAL',
---         'MAINTENANCE',
---         'GROUNDED'
---       )
---     )
+    CONSTRAINT check_aircraft_capacity CHECK (capacity > 0)
 
---CONSTRAINT fk_aircraft_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_aircraft_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    -- CONSTRAINT fk_aircraft_maintenance_status FOREIGN KEY (maintenance_status_id) REFERENCES maintenance_status(maintenance_status_id),
+    -- CONSTRAINT fk_aircraft_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    -- CONSTRAINT fk_aircraft_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
-
 
 CREATE TABLE terminal(
-  terminal_id SERIAL,
-  terminal_name VARCHAR(20) NOT NULL,
-  airport_id INT NOT NULL,
+    terminal_id INT PRIMARY KEY,
+    terminal_name VARCHAR(20) NOT NULL,
+    airport_id INT NOT NULL,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_by INT NOT NULL,
-  updated_by INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
 
---   CONSTRAINT uq_terminal_per_airport 
---     UNIQUE (airport_id, terminal_name)
+    CONSTRAINT unique_terminal_per_airport UNIQUE (airport_id, terminal_name)
 
---CONSTRAINT fk_terminal_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_terminal_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    -- CONSTRAINT fk_terminal_airport FOREIGN KEY (airport_id) REFERENCES airport(airport_id),
+    -- CONSTRAINT fk_terminal_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    -- CONSTRAINT fk_terminal_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
-
 
 CREATE TABLE gate(
-  gate_id SERIAL,
-  gate_number VARCHAR(10) NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
-  terminal_id INT NOT NULL,
+    gate_id INT PRIMARY KEY,
+    gate_number VARCHAR(10) NOT NULL,
+    gate_status_id INT NOT NULL,
+    terminal_id INT NOT NULL,
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_by INT NOT NULL,
-  updated_by INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
 
---   CONSTRAINT chk_gate_status
---     CHECK (
---       status IN (
---         'AVAILABLE',
---         'OCCUPIED',
---         'MAINTENANCE'
---       )
---     ),
+    CONSTRAINT unique_gate_per_terminal UNIQUE (terminal_id, gate_number)
 
---   CONSTRAINT uq_gate_per_terminal 
---     UNIQUE (terminal_id, gate_number)
-
---CONSTRAINT fk_gate_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_gate_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    -- CONSTRAINT fk_gate_status FOREIGN KEY (gate_status_id) REFERENCES gate_status(gate_status_id),
+    -- CONSTRAINT fk_gate_terminal FOREIGN KEY (terminal_id) REFERENCES terminal(terminal_id),
+    -- CONSTRAINT fk_gate_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    -- CONSTRAINT fk_gate_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
-
 
 CREATE TABLE flight(
-  flight_id SERIAL,
-  flight_number VARCHAR(10) NOT NULL,
-  aircraft_id INT NOT NULL,
-  origin_airport_id INT NOT NULL,
-  destination_airport_id INT NOT NULL,
-  departure_time TIMESTAMPTZ NOT NULL,
-  arrival_time TIMESTAMPTZ NOT NULL,
-  departure_gate_id INT,
-  arrival_gate_id INT,
-  status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED',
-  distance INT NOT NULL,
+    flight_id INT PRIMARY KEY,
+    flight_number VARCHAR(10) NOT NULL,
+    aircraft_id INT NOT NULL,
+    origin_airport_id INT NOT NULL,
+    destination_airport_id INT NOT NULL,
+    departure_time DATETIME NOT NULL, -- Store UTC; MySQL has no TIMESTAMPTZ type
+    arrival_time DATETIME NOT NULL, -- Store UTC
+    departure_gate_id INT NULL,
+    arrival_gate_id INT NULL,
+    flight_status_id INT NOT NULL,
+    distance INT NOT NULL, -- Distance in kilometers
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_by INT NOT NULL,
-  updated_by INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
 
---   CONSTRAINT chk_flight_status
---     CHECK (
---       status IN (
---         'SCHEDULED',
---         'BOARDING',
---         'DEPARTED',
---         'ARRIVED',
---         'DELAYED',
---         'CANCELED'
---       )
---     ),
+    CONSTRAINT check_flight_different_airports CHECK (origin_airport_id <> destination_airport_id),
+    CONSTRAINT check_flight_times CHECK (arrival_time > departure_time),
+    CONSTRAINT check_flight_distance CHECK (distance > 0),
+    CONSTRAINT unique_flight_number_departure UNIQUE (flight_number, departure_time)
 
---   CONSTRAINT chk_flight_different_airports
---     CHECK (origin_airport_id <> destination_airport_id),
-
---   CONSTRAINT chk_flight_times
---     CHECK (arrival_time > departure_time),
-
---   CONSTRAINT chk_flight_distance
---     CHECK (distance > 0),
-
---   CONSTRAINT uq_flight_number_departure
---     UNIQUE (flight_number, departure_time)
-
---CONSTRAINT fk_flight_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_flight_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    -- CONSTRAINT fk_flight_aircraft FOREIGN KEY (aircraft_id) REFERENCES aircraft(aircraft_id),
+    -- CONSTRAINT fk_flight_origin_airport FOREIGN KEY (origin_airport_id) REFERENCES airport(airport_id),
+    -- CONSTRAINT fk_flight_destination_airport FOREIGN KEY (destination_airport_id) REFERENCES airport(airport_id),
+    -- CONSTRAINT fk_flight_departure_gate FOREIGN KEY (departure_gate_id) REFERENCES gate(gate_id),
+    -- CONSTRAINT fk_flight_arrival_gate FOREIGN KEY (arrival_gate_id) REFERENCES gate(gate_id),
+    -- CONSTRAINT fk_flight_status FOREIGN KEY (flight_status_id) REFERENCES flight_status(flight_status_id),
+    -- CONSTRAINT fk_flight_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    -- CONSTRAINT fk_flight_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
--- CREATE INDEX idx_flights_search
---   ON flights (
---     origin_airport_id,
---     destination_airport_id,
---     departure_time
---   );
+-- Each flight can offer one fare for each cabin class.
+CREATE TABLE fare_class(
+    fare_class_id INT PRIMARY KEY,
+    flight_id INT NOT NULL,
+    cabin_class_id INT NOT NULL,
+    base_price DECIMAL(10,2) NOT NULL,
+    seats_total INT NOT NULL,
+    seats_available INT NOT NULL,
+    is_refundable BOOLEAN NOT NULL DEFAULT FALSE,
+    change_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
 
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
 
--- 1 flight has many fare classes, and each data entry will have one type of cabin class
-CREATE TABLE fare_class( 
-  fare_class_id SERIAL,
-  flight_id INT NOT NULL,
-  cabin_class VARCHAR(20) NOT NULL,
-  base_price DECIMAL(10, 2) NOT NULL,
-  seats_total INT NOT NULL,
-  seats_available INT NOT NULL,
-  is_refundable BOOLEAN NOT NULL DEFAULT FALSE,
-  change_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+    CONSTRAINT check_fare_price CHECK (base_price >= 0),
+    CONSTRAINT check_fare_seats_total CHECK (seats_total > 0),
+    CONSTRAINT check_fare_seats_available CHECK (seats_available >= 0 AND seats_available <= seats_total),
+    CONSTRAINT check_fare_change_fee CHECK (change_fee >= 0),
+    CONSTRAINT check_fare_refundable CHECK (is_refundable IN (0, 1)),
+    CONSTRAINT unique_fare_per_flight UNIQUE (flight_id, cabin_class_id)
 
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  created_by INT NOT NULL,
-  updated_by INT NOT NULL,
-
---   CONSTRAINT chk_fare_cabin
---     CHECK (
---       cabin_class IN (
---         'ECONOMY',
---         'PREMIUM',
---         'BUSINESS',
---         'FIRST'
---       )
---     ),
-
---   CONSTRAINT chk_fare_price
---     CHECK (base_price >= 0),
-
---   CONSTRAINT chk_fare_seats_total
---     CHECK (seats_total > 0),
-
---   CONSTRAINT chk_fare_seats_avail
---     CHECK (
---       seats_available >= 0 
---       AND seats_available <= seats_total
---     ),
-
---   CONSTRAINT chk_fare_change_fee
---     CHECK (change_fee >= 0),
-
---   CONSTRAINT uq_fare_per_flight
---     UNIQUE (flight_id, cabin_class)
-
---CONSTRAINT fk_fare_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_fare_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    -- CONSTRAINT fk_fare_class_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id),
+    -- CONSTRAINT fk_fare_class_cabin_class FOREIGN KEY (cabin_class_id) REFERENCES cabin_class(cabin_class_id),
+    -- CONSTRAINT fk_fare_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    -- CONSTRAINT fk_fare_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
