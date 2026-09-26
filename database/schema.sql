@@ -313,3 +313,47 @@ CREATE TABLE fare_class(
 --CONSTRAINT fk_fare_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
 --CONSTRAINT fk_fare_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
+
+
+create table ticket(
+ticket_id int AUTO_INCREMENT primary key,
+booking_id char(6) not null,              -- the 6-character pnr / confirmation code
+  passenger_id int not null,
+  flight_id int not null,
+  fare_class_id int not null,
+  seat_number varchar(4) null,              -- e.g. '12a', null until a seat is assigned
+  flight_fare decimal(10,2) not null,       -- price snapshot at time of booking
+  e_ticket_number varchar(20) not null unique,
+  checked_in boolean not null default false,
+
+  created_at timestamp not null default current_timestamp,
+  last_updated timestamp not null default current_timestamp on update current_timestamp,
+  created_by int not null,
+  updated_by int not null,
+
+  constraint chk_ticket_flight_fare check (flight_fare >= 0),
+  constraint uq_ticket_flight_seat unique (flight_id, seat_number)
+
+);
+
+
+create table baggage(
+baggage_id INT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id INT NOT NULL,
+  weight DECIMAL(5,2) NOT NULL,             -- in pounds
+  status VARCHAR(20) NOT NULL DEFAULT 'CHECKED',
+  fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+  tag_number VARCHAR(20) NULL UNIQUE,
+
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by INT NOT NULL,
+  updated_by INT NOT NULL,
+
+  CONSTRAINT chk_baggage_weight CHECK (weight > 0 AND weight <= 50),
+  CONSTRAINT chk_baggage_status CHECK (status IN ('CHECKED', 'LOADED', 'IN_TRANSIT', 'ARRIVED', 'LOST')),
+  CONSTRAINT chk_baggage_fee CHECK (fee >= 0),
+  CONSTRAINT fk_baggage_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id) ON DELETE RESTRICT
+
+);
+
