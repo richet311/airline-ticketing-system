@@ -357,3 +357,26 @@ baggage_id INT AUTO_INCREMENT PRIMARY KEY,
 
 );
 
+CREATE TABLE payment(
+
+    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id CHAR(6) NOT NULL,
+    payment_type VARCHAR(20) NOT NULL,
+    payment_status VARCHAR(20) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(20) NOT NULL,
+    idempotency_key CHAR(36) NOT NULL UNIQUE,
+    payment_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_payment_amount CHECK (total_amount > 0),
+
+    --CONSTRAINT fk_payment_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
+    --CONSTRAINT fk_payment_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    --CONSTRAINT fk_payment_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+
+);
