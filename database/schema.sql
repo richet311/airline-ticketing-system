@@ -10,23 +10,30 @@ CREATE TABLE user{
     phone_number VARCHAR(20) NULL UNIQUE,
     password_hash VARCHAR(50) NOT NULL,
     loyalty_points INT NULL,
-    
-    -- Copy these 4 into every table, have the created_by and updated_by reference the user table
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by INT NOT NULL,
-    updated_by INT NOT NULL,
 
-    CONSTRAINT check_loyalty_points CHECK (loyalty_points >= 0),
-    CONSTRAINT check_password_length CHECK (LENGTH(password_hash) BETWEEN 8 AND 50),
-    CONSTRAINT check_email_format CHECK (email LIKE '%@%.%'),
-    CONSTRAINT check_email_length CHECK (LENGTH(email) <= 100 AND LENGTH(email) >= 5),
-    CONSTRAINT check_phone_number_for_letters CHECK (phone_number NOT REGEXP '^[0-9]+$'),
+-- Copy these 4 into every table, have the created_by and updated_by reference the user table
+created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+created_by INT NOT NULL,
+updated_by INT NOT NULL,
+CONSTRAINT check_loyalty_points CHECK (loyalty_points >= 0),
+CONSTRAINT check_password_length CHECK (
+    LENGTH(password_hash) BETWEEN 8 AND 50
+),
+CONSTRAINT check_email_format CHECK (email LIKE '%@%.%'),
+CONSTRAINT check_email_length CHECK (
+    LENGTH(email) <= 100
+    AND LENGTH(email) >= 5
+),
+CONSTRAINT check_phone_number_for_letters CHECK (
+    phone_number NOT REGEXP '^[0-9]+$'
+),
 
-    --self-referencing foreign keys specific to the user table
-    CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+--self-referencing foreign keys specific to the user table
+CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
     CONSTRAINT fk_user_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 };
+
 
 CREATE TABLE passenger{
     passenger_id INT PRIMARY KEY,
@@ -49,15 +56,16 @@ CREATE TABLE passenger{
     CONSTRAINT check_passport_expiry_date CHECK (passport_expiry_date > date_of_birth),
     CONSTRAINT check_passport_expiry_date CHECK (passport_expiry_date > CURRENT_DATE),
 
-    --Self referencing to itself
-    CONSTRAINT fk_passenger_parent FOREIGN KEY (passenger_parent_id) REFERENCES passenger(passenger_id),
+--Self referencing to itself
+CONSTRAINT fk_passenger_parent FOREIGN KEY (passenger_parent_id) REFERENCES passenger (passenger_id),
 
-    --No longer self referencing for all other tables
-    --CONSTRAINT fk_passenger_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    --CONSTRAINT fk_passenger_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id),
+--No longer self referencing for all other tables
+--CONSTRAINT fk_passenger_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+--CONSTRAINT fk_passenger_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id),
 
-    --CONSTRAINT fk_passenger_user FOREIGN KEY (user_id) REFERENCES user(user_id)
+--CONSTRAINT fk_passenger_user FOREIGN KEY (user_id) REFERENCES user(user_id)
 };
+
 
 CREATE TABLE employee{
     employee_id INT PRIMARY KEY,
@@ -79,17 +87,18 @@ CREATE TABLE employee{
     CONSTRAINT check_date_of_birth CHECK (date_of_birth < CURRENT_DATE),
     CONSTRAINT check_salary CHECK (salary > 0),
 
-    -- self-referencing foreign key for the direct supervisor
-    CONSTRAINT fk_employee_direct_supervisor FOREIGN KEY (direct_supervisor_id) REFERENCES employee(employee_id)
+-- self-referencing foreign key for the direct supervisor
+CONSTRAINT fk_employee_direct_supervisor FOREIGN KEY (direct_supervisor_id) REFERENCES employee (employee_id)
 
-    --CONSTRAINT fk_employee_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    --CONSTRAINT fk_employee_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+--CONSTRAINT fk_employee_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+--CONSTRAINT fk_employee_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 
-    --CONSTRAINT fk_employee_assigned_gate FOREIGN KEY (assigned_gate_id) REFERENCES gate(gate_id),
-    --CONSTRAINT fk_employee_department FOREIGN KEY (department_id) REFERENCES department(department_id),
-    --CONSTRAINT fk_employee_job_role FOREIGN KEY (job_role_id) REFERENCES job_role(job_role_id)
-    --CONSTRAINT fk_employee_user FOREIGN KEY (user_id) REFERENCES user(user_id)
+--CONSTRAINT fk_employee_assigned_gate FOREIGN KEY (assigned_gate_id) REFERENCES gate(gate_id),
+--CONSTRAINT fk_employee_department FOREIGN KEY (department_id) REFERENCES department(department_id),
+--CONSTRAINT fk_employee_job_role FOREIGN KEY (job_role_id) REFERENCES job_role(job_role_id)
+--CONSTRAINT fk_employee_user FOREIGN KEY (user_id) REFERENCES user(user_id)
 };
+
 
 CREATE TABLE department{ --Code table for employee departments
     department_id INT PRIMARY KEY,
@@ -100,9 +109,10 @@ CREATE TABLE department{ --Code table for employee departments
     created_by INT NOT NULL,
     updated_by INT NOT NULL
 
-    --CONSTRAINT fk_department_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    --CONSTRAINT fk_department_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+--CONSTRAINT fk_department_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+--CONSTRAINT fk_department_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 };
+
 
 CREATE TABLE job_role{ --Code table for employee job roles
     job_role_id INT PRIMARY KEY,
@@ -113,9 +123,95 @@ CREATE TABLE job_role{ --Code table for employee job roles
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    --CONSTRAINT fk_job_role_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    --CONSTRAINT fk_job_role_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+--CONSTRAINT fk_job_role_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+--CONSTRAINT fk_job_role_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 }
+
+
+CREATE TABLE maintenance_status( -- e.g. OPERATIONAL, MAINTENANCE, GROUNDED
+    maintenance_status_id INT PRIMARY KEY,
+    maintenance_status_name VARCHAR(20) NOT NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_maintenance_status_name CHECK (REGEXP_LIKE(maintenance_status_name, '^(OPERATIONAL|MAINTENANCE|GROUNDED)$', 'c'))
+
+-- CONSTRAINT fk_maintenance_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_maintenance_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE gate_status( -- e.g. AVAILABLE, OCCUPIED, MAINTENANCE
+    gate_status_id INT PRIMARY KEY,
+    gate_status_name VARCHAR(20) NOT NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_gate_status_name CHECK (REGEXP_LIKE(gate_status_name, '^(AVAILABLE|OCCUPIED|MAINTENANCE)$', 'c'))
+
+-- CONSTRAINT fk_gate_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_gate_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE flight_status( -- e.g. SCHEDULED, DELAYED, BOARDING, DEPARTED, ARRIVED, CANCELLED
+    flight_status_id INT PRIMARY KEY,
+    flight_status_name VARCHAR(20) NOT NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_flight_status_name CHECK (REGEXP_LIKE(flight_status_name, '^(SCHEDULED|DELAYED|BOARDING|DEPARTED|ARRIVED|CANCELLED)$', 'c'))
+
+-- CONSTRAINT fk_flight_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_flight_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE cabin_class( -- e.g. ECONOMY, PREMIUM, BUSINESS, FIRST
+    cabin_class_id INT PRIMARY KEY,
+    cabin_class_name VARCHAR(20) NOT NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_cabin_class_name CHECK (REGEXP_LIKE(cabin_class_name, '^(ECONOMY|PREMIUM|BUSINESS|FIRST)$', 'c'))
+
+-- CONSTRAINT fk_cabin_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_cabin_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE airport(
+    airport_id INT PRIMARY KEY,
+    airport_code CHAR(3) NOT NULL UNIQUE,
+    airport_name VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    country CHAR(2) NOT NULL,
+    timezone VARCHAR(50) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_airport_code_upper CHECK (REGEXP_LIKE(airport_code, '^[A-Z]{3}$', 'c')),
+    CONSTRAINT check_airport_country_upper CHECK (REGEXP_LIKE(country, '^[A-Z]{2}$', 'c'))
+
+-- CONSTRAINT fk_airport_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_airport_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
 
 CREATE TABLE aircraft(
     aircraft_id INT PRIMARY KEY,
@@ -132,10 +228,11 @@ CREATE TABLE aircraft(
 
     CONSTRAINT check_aircraft_capacity CHECK (capacity > 0)
 
-    -- CONSTRAINT fk_aircraft_maintenance_status FOREIGN KEY (maintenance_status_id) REFERENCES maintenance_status(maintenance_status_id),
-    -- CONSTRAINT fk_aircraft_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    -- CONSTRAINT fk_aircraft_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- CONSTRAINT fk_aircraft_maintenance_status FOREIGN KEY (maintenance_status_id) REFERENCES maintenance_status(maintenance_status_id),
+-- CONSTRAINT fk_aircraft_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_aircraft_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
+
 
 CREATE TABLE terminal(
     terminal_id INT PRIMARY KEY,
@@ -149,10 +246,11 @@ CREATE TABLE terminal(
 
     CONSTRAINT unique_terminal_per_airport UNIQUE (airport_id, terminal_name)
 
-    -- CONSTRAINT fk_terminal_airport FOREIGN KEY (airport_id) REFERENCES airport(airport_id),
-    -- CONSTRAINT fk_terminal_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    -- CONSTRAINT fk_terminal_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- CONSTRAINT fk_terminal_airport FOREIGN KEY (airport_id) REFERENCES airport(airport_id),
+-- CONSTRAINT fk_terminal_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_terminal_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
+
 
 CREATE TABLE gate(
     gate_id INT PRIMARY KEY,
@@ -167,11 +265,12 @@ CREATE TABLE gate(
 
     CONSTRAINT unique_gate_per_terminal UNIQUE (terminal_id, gate_number)
 
-    -- CONSTRAINT fk_gate_status FOREIGN KEY (gate_status_id) REFERENCES gate_status(gate_status_id),
-    -- CONSTRAINT fk_gate_terminal FOREIGN KEY (terminal_id) REFERENCES terminal(terminal_id),
-    -- CONSTRAINT fk_gate_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    -- CONSTRAINT fk_gate_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- CONSTRAINT fk_gate_status FOREIGN KEY (gate_status_id) REFERENCES gate_status(gate_status_id),
+-- CONSTRAINT fk_gate_terminal FOREIGN KEY (terminal_id) REFERENCES terminal(terminal_id),
+-- CONSTRAINT fk_gate_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_gate_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
+
 
 CREATE TABLE flight(
     flight_id INT PRIMARY KEY,
@@ -196,17 +295,19 @@ CREATE TABLE flight(
     CONSTRAINT check_flight_distance CHECK (distance > 0),
     CONSTRAINT unique_flight_number_departure UNIQUE (flight_number, departure_time)
 
-    -- CONSTRAINT fk_flight_aircraft FOREIGN KEY (aircraft_id) REFERENCES aircraft(aircraft_id),
-    -- CONSTRAINT fk_flight_origin_airport FOREIGN KEY (origin_airport_id) REFERENCES airport(airport_id),
-    -- CONSTRAINT fk_flight_destination_airport FOREIGN KEY (destination_airport_id) REFERENCES airport(airport_id),
-    -- CONSTRAINT fk_flight_departure_gate FOREIGN KEY (departure_gate_id) REFERENCES gate(gate_id),
-    -- CONSTRAINT fk_flight_arrival_gate FOREIGN KEY (arrival_gate_id) REFERENCES gate(gate_id),
-    -- CONSTRAINT fk_flight_status FOREIGN KEY (flight_status_id) REFERENCES flight_status(flight_status_id),
-    -- CONSTRAINT fk_flight_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    -- CONSTRAINT fk_flight_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- CONSTRAINT fk_flight_aircraft FOREIGN KEY (aircraft_id) REFERENCES aircraft(aircraft_id),
+-- CONSTRAINT fk_flight_origin_airport FOREIGN KEY (origin_airport_id) REFERENCES airport(airport_id),
+-- CONSTRAINT fk_flight_destination_airport FOREIGN KEY (destination_airport_id) REFERENCES airport(airport_id),
+-- CONSTRAINT fk_flight_departure_gate FOREIGN KEY (departure_gate_id) REFERENCES gate(gate_id),
+-- CONSTRAINT fk_flight_arrival_gate FOREIGN KEY (arrival_gate_id) REFERENCES gate(gate_id),
+-- CONSTRAINT fk_flight_status FOREIGN KEY (flight_status_id) REFERENCES flight_status(flight_status_id),
+-- CONSTRAINT fk_flight_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_flight_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 -- Each flight can offer one fare for each cabin class.
+
+
 CREATE TABLE fare_class(
     fare_class_id INT PRIMARY KEY,
     flight_id INT NOT NULL,
@@ -229,8 +330,220 @@ CREATE TABLE fare_class(
     CONSTRAINT check_fare_refundable CHECK (is_refundable IN (0, 1)),
     CONSTRAINT unique_fare_per_flight UNIQUE (flight_id, cabin_class_id)
 
-    -- CONSTRAINT fk_fare_class_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id),
-    -- CONSTRAINT fk_fare_class_cabin_class FOREIGN KEY (cabin_class_id) REFERENCES cabin_class(cabin_class_id),
-    -- CONSTRAINT fk_fare_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
-    -- CONSTRAINT fk_fare_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- CONSTRAINT fk_fare_class_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id),
+-- CONSTRAINT fk_fare_class_cabin_class FOREIGN KEY (cabin_class_id) REFERENCES cabin_class(cabin_class_id),
+-- CONSTRAINT fk_fare_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_fare_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE booking_status(
+    booking_status_id INT PRIMARY KEY,
+    booking_status_name VARCHAR(20) NOT NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_booking_status_name
+        CHECK (REGEXP_LIKE(booking_status_name, '^(PENDING|CONFIRMED|CANCELLED|COMPLETED)$', 'c'))
+
+-- , CONSTRAINT fk_booking_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
+-- , CONSTRAINT fk_booking_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE seat_status(
+    seat_status_id INT PRIMARY KEY,
+    seat_status_name VARCHAR(20) NOT NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_seat_status_name
+        CHECK (REGEXP_LIKE(seat_status_name, '^(AVAILABLE|HELD|BOOKED|BLOCKED)$', 'c'))
+
+-- , CONSTRAINT fk_seat_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
+-- , CONSTRAINT fk_seat_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE comfort_upgrade_type(
+    upgrade_id INT PRIMARY KEY,
+    upgrade_name VARCHAR(50) NOT NULL UNIQUE,
+    upgrade_description VARCHAR(255) NOT NULL,
+    upgrade_price DECIMAL(10,2) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_upgrade_price CHECK (upgrade_price >= 0)
+
+-- , CONSTRAINT fk_upgrade_type_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
+-- , CONSTRAINT fk_upgrade_type_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE booking(
+    booking_id CHAR(6) PRIMARY KEY,
+    passenger_id INT NOT NULL,
+    booking_status_id INT NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    comfort_upgrade DECIMAL(10,2) NOT NULL DEFAULT 0,
+    expires_at TIMESTAMP NULL DEFAULT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_booking_id CHECK (REGEXP_LIKE(booking_id, '^[A-Z0-9]{6}$', 'c')),
+    CONSTRAINT check_booking_total CHECK (total_amount >= 0),
+    CONSTRAINT check_booking_currency CHECK (REGEXP_LIKE(currency, '^[A-Z]{3}$', 'c')),
+    CONSTRAINT check_booking_upgrade CHECK (comfort_upgrade >= 0),
+    CONSTRAINT check_booking_expiry CHECK (expires_at IS NULL OR expires_at > created_at)
+
+-- , CONSTRAINT fk_booking_passenger FOREIGN KEY (passenger_id) REFERENCES passenger(passenger_id)
+-- , CONSTRAINT fk_booking_status FOREIGN KEY (booking_status_id) REFERENCES booking_status(booking_status_id)
+-- , CONSTRAINT fk_booking_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
+-- , CONSTRAINT fk_booking_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+-- Each row records an upgrade selected for a booking and its price at purchase time.
+
+
+CREATE TABLE booking_upgrade(
+    booking_upgrade_id INT PRIMARY KEY,
+    booking_id CHAR(6) NOT NULL,
+    upgrade_id INT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    unit_price DECIMAL(10,2) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT unique_booking_upgrade UNIQUE (booking_id, upgrade_id),
+    CONSTRAINT check_booking_upgrade_quantity CHECK (quantity > 0),
+    CONSTRAINT check_booking_upgrade_price CHECK (unit_price >= 0)
+
+-- , CONSTRAINT fk_booking_upgrade_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id)
+-- , CONSTRAINT fk_booking_upgrade_type FOREIGN KEY (upgrade_id) REFERENCES comfort_upgrade_type(upgrade_id)
+-- , CONSTRAINT fk_booking_upgrade_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
+-- , CONSTRAINT fk_booking_upgrade_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+
+CREATE TABLE seat(
+    seat_id INT PRIMARY KEY,
+    flight_id INT NOT NULL,
+    seat_number VARCHAR(4) NOT NULL,
+    cabin_class_id INT NOT NULL,
+    seat_status_id INT NOT NULL,
+    held_until TIMESTAMP NULL DEFAULT NULL,
+    ticket_id INT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT unique_flight_seat UNIQUE (flight_id, seat_number),
+    CONSTRAINT unique_seat_ticket UNIQUE (ticket_id)
+
+-- , CONSTRAINT fk_seat_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id) ON DELETE CASCADE
+-- , CONSTRAINT fk_seat_cabin_class FOREIGN KEY (cabin_class_id) REFERENCES cabin_class(cabin_class_id)
+-- , CONSTRAINT fk_seat_status FOREIGN KEY (seat_status_id) REFERENCES seat_status(seat_status_id)
+-- , CONSTRAINT fk_seat_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id) ON DELETE SET NULL
+-- , CONSTRAINT fk_seat_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
+-- , CONSTRAINT fk_seat_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
+
+CREATE TABLE baggage_status (
+    baggage_status_id INT PRIMARY KEY,
+    baggage_status_name VARCHAR(20) NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+    CONSTRAINT check_baggage_status_name CHECK (
+        REGEXP_LIKE(
+            baggage_status_name,
+            '^(CHECKED|LOADED|IN_TRANSIT|ARRIVED|LOST)$',
+            'c'
+        )
+    )
+);
+
+CREATE TABLE ticket (
+    ticket_id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id CHAR(6) NOT NULL,
+    passenger_id INT NOT NULL,
+    flight_id INT NOT NULL,
+    fare_class_id INT NOT NULL,
+    seat_number VARCHAR(4) NULL,
+    flight_fare DECIMAL(10, 2) NOT NULL,
+    e_ticket_number VARCHAR(20) NOT NULL UNIQUE,
+    checked_in BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+    CONSTRAINT check_ticket_flight_fare CHECK (flight_fare >= 0),
+    CONSTRAINT check_ticket_checked_in CHECK (checked_in IN (0, 1)),
+    CONSTRAINT unique_ticket_flight_seat UNIQUE (flight_id, seat_number)
+);
+
+
+CREATE TABLE baggage(
+    baggage_id INT AUTO_INCREMENT PRIMARY KEY,
+    ticket_id INT NOT NULL,
+    weight DECIMAL(5,2) NOT NULL, -- pounds
+    baggage_status_id INT NOT NULL,
+    fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+    tag_number VARCHAR(20) NULL UNIQUE,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_baggage_weight CHECK (weight > 0 AND weight <= 50),
+    CONSTRAINT check_baggage_fee CHECK (fee >= 0)
+
+-- , CONSTRAINT fk_baggage_ticket
+--     FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id) ON DELETE RESTRICT
+-- , CONSTRAINT fk_baggage_status
+--     FOREIGN KEY (baggage_status_id) REFERENCES baggage_status(baggage_status_id) ON DELETE RESTRICT
+);
+
+
+CREATE TABLE payment(
+    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    booking_id CHAR(6) NOT NULL,
+    payment_type VARCHAR(20) NOT NULL,
+    payment_status VARCHAR(20) NOT NULL,
+    total_amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(20) NOT NULL,
+    idempotency_key CHAR(36) NOT NULL UNIQUE,
+    payment_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_payment_amount CHECK (total_amount > 0),
+
+--CONSTRAINT fk_payment_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
+--CONSTRAINT fk_payment_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+--CONSTRAINT fk_payment_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+
 );
