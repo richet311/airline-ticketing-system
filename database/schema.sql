@@ -337,6 +337,8 @@ CREATE TABLE fare_class(
 );
 
 
+-- Foreign keys for booking_status, seat_status, comfort_upgrade_type, booking and booking_upgrade
+-- are added in foreign_keys.sql (run it after this file).
 CREATE TABLE booking_status(
     booking_status_id INT PRIMARY KEY,
     booking_status_name VARCHAR(20) NOT NULL UNIQUE,
@@ -348,9 +350,6 @@ CREATE TABLE booking_status(
 
     CONSTRAINT check_booking_status_name
         CHECK (REGEXP_LIKE(booking_status_name, '^(PENDING|CONFIRMED|CANCELLED|COMPLETED)$', 'c'))
-
--- , CONSTRAINT fk_booking_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
--- , CONSTRAINT fk_booking_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
@@ -365,9 +364,6 @@ CREATE TABLE seat_status(
 
     CONSTRAINT check_seat_status_name
         CHECK (REGEXP_LIKE(seat_status_name, '^(AVAILABLE|HELD|BOOKED|BLOCKED)$', 'c'))
-
--- , CONSTRAINT fk_seat_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
--- , CONSTRAINT fk_seat_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
@@ -382,10 +378,8 @@ CREATE TABLE comfort_upgrade_type(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_upgrade_price CHECK (upgrade_price >= 0)
-
--- , CONSTRAINT fk_upgrade_type_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
--- , CONSTRAINT fk_upgrade_type_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    CONSTRAINT check_upgrade_price CHECK (upgrade_price >= 0),
+    CONSTRAINT check_upgrade_name_not_blank CHECK (TRIM(upgrade_name) <> '')
 );
 
 
@@ -395,8 +389,7 @@ CREATE TABLE booking(
     booking_status_id INT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     currency CHAR(3) NOT NULL DEFAULT 'USD',
-    comfort_upgrade DECIMAL(10,2) NOT NULL DEFAULT 0,
-    expires_at TIMESTAMP NULL DEFAULT NULL,
+    expires_at TIMESTAMP NULL,
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -406,23 +399,17 @@ CREATE TABLE booking(
     CONSTRAINT check_booking_id CHECK (REGEXP_LIKE(booking_id, '^[A-Z0-9]{6}$', 'c')),
     CONSTRAINT check_booking_total CHECK (total_amount >= 0),
     CONSTRAINT check_booking_currency CHECK (REGEXP_LIKE(currency, '^[A-Z]{3}$', 'c')),
-    CONSTRAINT check_booking_upgrade CHECK (comfort_upgrade >= 0),
-    CONSTRAINT check_booking_expiry CHECK (expires_at IS NULL OR expires_at > created_at)
-
--- , CONSTRAINT fk_booking_passenger FOREIGN KEY (passenger_id) REFERENCES passenger(passenger_id)
--- , CONSTRAINT fk_booking_status FOREIGN KEY (booking_status_id) REFERENCES booking_status(booking_status_id)
--- , CONSTRAINT fk_booking_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
--- , CONSTRAINT fk_booking_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    CONSTRAINT check_booking_expiry CHECK (expires_at > created_at) -- A NULL expires_at passes; CHECK only rejects FALSE
 );
 
 -- Each row records an upgrade selected for a booking and its price at purchase time.
 
 
 CREATE TABLE booking_upgrade(
-    booking_upgrade_id INT PRIMARY KEY,
+    booking_upgrade_id INT AUTO_INCREMENT PRIMARY KEY,
     booking_id CHAR(6) NOT NULL,
     upgrade_id INT NOT NULL,
-    quantity INT NOT NULL DEFAULT 1,
+    quantity TINYINT NOT NULL DEFAULT 1,
     unit_price DECIMAL(10,2) NOT NULL,
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -433,11 +420,6 @@ CREATE TABLE booking_upgrade(
     CONSTRAINT unique_booking_upgrade UNIQUE (booking_id, upgrade_id),
     CONSTRAINT check_booking_upgrade_quantity CHECK (quantity > 0),
     CONSTRAINT check_booking_upgrade_price CHECK (unit_price >= 0)
-
--- , CONSTRAINT fk_booking_upgrade_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id)
--- , CONSTRAINT fk_booking_upgrade_type FOREIGN KEY (upgrade_id) REFERENCES comfort_upgrade_type(upgrade_id)
--- , CONSTRAINT fk_booking_upgrade_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
--- , CONSTRAINT fk_booking_upgrade_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
