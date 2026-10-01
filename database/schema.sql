@@ -51,10 +51,8 @@ CREATE TABLE passenger{
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_date_of_birth CHECK (date_of_birth < CURRENT_DATE),
     CONSTRAINT check_passport_number_length CHECK (LENGTH(passport_number) >= 8),
     CONSTRAINT check_passport_expiry_date CHECK (passport_expiry_date > date_of_birth),
-    CONSTRAINT check_passport_expiry_date CHECK (passport_expiry_date > CURRENT_DATE),
 
 --Self referencing to itself
 CONSTRAINT fk_passenger_parent FOREIGN KEY (passenger_parent_id) REFERENCES passenger (passenger_id),
@@ -84,7 +82,6 @@ CREATE TABLE employee{
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_date_of_birth CHECK (date_of_birth < CURRENT_DATE),
     CONSTRAINT check_salary CHECK (salary > 0),
 
 -- self-referencing foreign key for the direct supervisor
@@ -424,60 +421,46 @@ CREATE TABLE booking_upgrade(
 
 
 CREATE TABLE seat(
-    seat_id INT PRIMARY KEY,
+    (flight_id, seat_number) PRIMARY KEY,
     flight_id INT NOT NULL,
     seat_number VARCHAR(4) NOT NULL,
     cabin_class_id INT NOT NULL,
     seat_status_id INT NOT NULL,
     held_until TIMESTAMP NULL DEFAULT NULL,
-    ticket_id INT NULL,
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by INT NOT NULL,
-    updated_by INT NOT NULL,
-
-    CONSTRAINT unique_flight_seat UNIQUE (flight_id, seat_number),
-    CONSTRAINT unique_seat_ticket UNIQUE (ticket_id)
-
--- , CONSTRAINT fk_seat_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id) ON DELETE CASCADE
--- , CONSTRAINT fk_seat_cabin_class FOREIGN KEY (cabin_class_id) REFERENCES cabin_class(cabin_class_id)
--- , CONSTRAINT fk_seat_status FOREIGN KEY (seat_status_id) REFERENCES seat_status(seat_status_id)
--- , CONSTRAINT fk_seat_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id) ON DELETE SET NULL
--- , CONSTRAINT fk_seat_created_by FOREIGN KEY (created_by) REFERENCES user(user_id)
--- , CONSTRAINT fk_seat_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+    updated_by INT NOT NULL
 );
 
 CREATE TABLE baggage_status (
     baggage_status_id INT PRIMARY KEY,
     baggage_status_name VARCHAR(20) NOT NULL UNIQUE,
+
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
-    CONSTRAINT check_baggage_status_name CHECK (
-        REGEXP_LIKE(
-            baggage_status_name,
-            '^(CHECKED|LOADED|IN_TRANSIT|ARRIVED|LOST)$',
-            'c'
-        )
-    )
+
+    CONSTRAINT check_baggage_status_name CHECK (REGEXP_LIKE(baggage_status_name,'^(CHECKED|LOADED|IN_TRANSIT|ARRIVED|LOST)$','c'))
 );
 
 CREATE TABLE ticket (
-    ticket_id INT AUTO_INCREMENT PRIMARY KEY,
+    e_ticket_number VARCHAR(20) PRIMARY KEY,
     booking_id CHAR(6) NOT NULL,
     passenger_id INT NOT NULL,
     flight_id INT NOT NULL,
     fare_class_id INT NOT NULL,
-    seat_number VARCHAR(4) NULL,
+    seat_number VARCHAR(4) NOT NULL,
     flight_fare DECIMAL(10, 2) NOT NULL,
-    e_ticket_number VARCHAR(20) NOT NULL UNIQUE,
     checked_in BOOLEAN NOT NULL DEFAULT FALSE,
+
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
+
     CONSTRAINT check_ticket_flight_fare CHECK (flight_fare >= 0),
     CONSTRAINT check_ticket_checked_in CHECK (checked_in IN (0, 1)),
     CONSTRAINT unique_ticket_flight_seat UNIQUE (flight_id, seat_number)
@@ -485,25 +468,19 @@ CREATE TABLE ticket (
 
 
 CREATE TABLE baggage(
-    baggage_id INT AUTO_INCREMENT PRIMARY KEY,
+    tag_number VARCHAR(20) PRIMARY KEY,
     ticket_id INT NOT NULL,
-    weight DECIMAL(5,2) NOT NULL, -- pounds
+    weightage DECIMAL(5,2) NOT NULL, -- pounds
     baggage_status_id INT NOT NULL,
     fee DECIMAL(10,2) NOT NULL DEFAULT 0,
-    tag_number VARCHAR(20) NULL UNIQUE,
 
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_baggage_weight CHECK (weight > 0 AND weight <= 50),
+    CONSTRAINT check_baggage_weightage CHECK (weightage > 0 AND weightage <= 100),
     CONSTRAINT check_baggage_fee CHECK (fee >= 0)
-
--- , CONSTRAINT fk_baggage_ticket
---     FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id) ON DELETE RESTRICT
--- , CONSTRAINT fk_baggage_status
---     FOREIGN KEY (baggage_status_id) REFERENCES baggage_status(baggage_status_id) ON DELETE RESTRICT
 );
 
 
@@ -522,10 +499,5 @@ CREATE TABLE payment(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_payment_amount CHECK (total_amount > 0),
-
---CONSTRAINT fk_payment_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
---CONSTRAINT fk_payment_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_payment_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
-
+    CONSTRAINT check_payment_amount CHECK (total_amount >= 0)
 );

@@ -28,3 +28,39 @@ ALTER TABLE booking_upgrade
     ADD CONSTRAINT fk_booking_upgrade_type FOREIGN KEY (upgrade_id) REFERENCES comfort_upgrade_type(upgrade_id),
     ADD CONSTRAINT fk_booking_upgrade_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
     ADD CONSTRAINT fk_booking_upgrade_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE seat
+    ADD CONSTRAINT fk_seat_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id) ON DELETE CASCADE,
+    ADD CONSTRAINT fk_seat_cabin_class FOREIGN KEY (cabin_class_id) REFERENCES cabin_class(cabin_class_id),
+    ADD CONSTRAINT fk_seat_status FOREIGN KEY (seat_status_id) REFERENCES seat_status(seat_status_id),
+    ADD CONSTRAINT fk_seat_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_seat_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE baggage_status
+    ADD CONSTRAINT fk_baggage_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_baggage_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE ticket
+    ADD CONSTRAINT fk_ticket_seat FOREIGN KEY (flight,id, seat_number) REFERENCES seat (flight_id, seat_number),
+    ADD CONSTRAINT fk_ticket_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
+    ADD CONSTRAINT fk_ticket_passenger FOREIGN KEY (passenger_id) REFERENCES passenger(passenger_id),
+    ADD CONSTRAINT fk_fare_class FOREIGN KEY (fare_class_id) REFERENCES fare_class(fare_class_id),
+    ADD CONSTRAINT fk_ticket_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id),
+    ADD CONSTRAINT fk_ticket_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_ticket_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE baggage
+    ADD CONSTRAINT fk_baggage_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(e_ticket_number) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_baggage_status FOREIGN KEY (baggage_status_id) REFERENCES baggage_status(baggage_status_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_baggage_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_baggage_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE payment
+    ADD CONSTRAINT fk_payment_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
+    ADD CONSTRAINT fk_payment_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_payment_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
