@@ -135,9 +135,6 @@ CREATE TABLE maintenance_status( -- e.g. OPERATIONAL, MAINTENANCE, GROUNDED
     updated_by INT NOT NULL,
 
     CONSTRAINT check_maintenance_status_name CHECK (REGEXP_LIKE(maintenance_status_name, '^(OPERATIONAL|MAINTENANCE|GROUNDED)$', 'c'))
-
--- CONSTRAINT fk_maintenance_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
--- CONSTRAINT fk_maintenance_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
@@ -151,9 +148,6 @@ CREATE TABLE gate_status( -- e.g. AVAILABLE, OCCUPIED, MAINTENANCE
     updated_by INT NOT NULL,
 
     CONSTRAINT check_gate_status_name CHECK (REGEXP_LIKE(gate_status_name, '^(AVAILABLE|OCCUPIED|MAINTENANCE)$', 'c'))
-
--- CONSTRAINT fk_gate_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
--- CONSTRAINT fk_gate_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
@@ -167,9 +161,6 @@ CREATE TABLE flight_status( -- e.g. SCHEDULED, DELAYED, BOARDING, DEPARTED, ARRI
     updated_by INT NOT NULL,
 
     CONSTRAINT check_flight_status_name CHECK (REGEXP_LIKE(flight_status_name, '^(SCHEDULED|DELAYED|BOARDING|DEPARTED|ARRIVED|CANCELLED)$', 'c'))
-
--- CONSTRAINT fk_flight_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
--- CONSTRAINT fk_flight_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
@@ -183,9 +174,6 @@ CREATE TABLE cabin_class( -- e.g. ECONOMY, PREMIUM, BUSINESS, FIRST
     updated_by INT NOT NULL,
 
     CONSTRAINT check_cabin_class_name CHECK (REGEXP_LIKE(cabin_class_name, '^(ECONOMY|PREMIUM|BUSINESS|FIRST)$', 'c'))
-
--- CONSTRAINT fk_cabin_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
--- CONSTRAINT fk_cabin_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 
@@ -204,9 +192,6 @@ CREATE TABLE airport(
 
     CONSTRAINT check_airport_code_upper CHECK (REGEXP_LIKE(airport_code, '^[A-Z]{3}$', 'c')),
     CONSTRAINT check_airport_country_upper CHECK (REGEXP_LIKE(country, '^[A-Z]{2}$', 'c'))
-
--- CONSTRAINT fk_airport_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
--- CONSTRAINT fk_airport_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
 );
 
 

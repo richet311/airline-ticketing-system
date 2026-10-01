@@ -64,3 +64,28 @@ ALTER TABLE payment
     ADD CONSTRAINT fk_payment_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
     ADD CONSTRAINT fk_payment_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
     ADD CONSTRAINT fk_payment_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE maintenace_status
+    ADD CONSTRAINT fk_maintenance_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_maintenance_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE gate_status
+    ADD CONSTRAINT fk_gate_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_gate_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE flight_status
+    ADD CONSTRAINT fk_flight_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_flight_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE cabin_class
+    ADD CONSTRAINT fk_cabin_class_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_cabin_class_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
+
+
+ALTER TABLE airport
+    ADD CONSTRAINT fk_airport_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+    ADD CONSTRAINT fk_airport_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);
