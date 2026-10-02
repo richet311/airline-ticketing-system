@@ -4,133 +4,135 @@ USE airline_db;
 
 -- Use lowercase letters for entities and attributes
 
-CREATE TABLE user{
+CREATE TABLE user(
     user_id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     phone_number VARCHAR(20) NULL UNIQUE,
-    password_hash VARCHAR(50) NOT NULL,
-    loyalty_points INT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    loyalty_points int NOT NULL DEFAULT 0, -- TODO: remove default, value must be set by the program
 
 -- Copy these 4 into every table, have the created_by and updated_by reference the user table
-created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+created_at TIMESTAMP NOT NULL,
+last_updated TIMESTAMP NOT NULL,
 created_by INT NOT NULL,
 updated_by INT NOT NULL,
 CONSTRAINT check_loyalty_points CHECK (loyalty_points >= 0),
-CONSTRAINT check_password_length CHECK (
-    LENGTH(password_hash) BETWEEN 8 AND 50
-),
+CONSTRAINT check_phone_number_format CHECK (REGEXP_LIKE(phone_number, '^[+]?[0-9]{7,15}$')),
+
 CONSTRAINT check_email_format CHECK (email LIKE '%@%.%'),
 CONSTRAINT check_email_length CHECK (
     LENGTH(email) <= 100
     AND LENGTH(email) >= 5
 ),
-CONSTRAINT check_phone_number_for_letters CHECK (
-    phone_number NOT REGEXP '^[0-9]+$'
-),
 
---self-referencing foreign keys specific to the user table
+
+-- self-referencing foreign keys specific to the user table
 CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
     CONSTRAINT fk_user_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
-};
+);
 
 
-CREATE TABLE passenger{
-    passenger_id INT PRIMARY KEY,
-    user_id INT UNIQUE NULL, --user_id must be unqiue here bc even if the pk of users has to be unique, passengers could still reference the same user_id, which shouldn't happen. Can be null when passenger is a child (dependent)
-    passenger_parent_id INT NULL, --References the parent passenger if this passenger is a child (dependent)
+CREATE TABLE passenger(
+    passenger_id INT auto_increment PRIMARY KEY,
+    user_id INT UNIQUE NULL, -- user_id must be unqiue here bc even if the pk of users has to be unique, passengers could still reference the same user_id, which shouldn't happen. Can be null when passenger is a child (dependent)
+    passenger_parent_id INT NULL, -- References the parent passenger if this passenger is a child (dependent)
     first_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
     date_of_birth DATE NULL,
-    passport_number VARCHAR(9) NULL UNIQUE, -- Unique passport number regardless of nationality, either 8 or 9 characters long
+    passport_number VARCHAR(9) NULL, -- 8 or 9 characters long; unique per country (see unique_passport_per_country)
     passport_expiry_date DATE NULL,
     nationality CHAR(2) NULL,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
     CONSTRAINT check_passport_number_length CHECK (LENGTH(passport_number) >= 8),
     CONSTRAINT check_passport_expiry_date CHECK (passport_expiry_date > date_of_birth),
 
---Self referencing to itself
-CONSTRAINT fk_passenger_parent FOREIGN KEY (passenger_parent_id) REFERENCES passenger (passenger_id),
+    CONSTRAINT unique_passport_per_country UNIQUE (nationality, passport_number),
+    CONSTRAINT check_passenger_nationality CHECK (REGEXP_LIKE(nationality, '^[A-Z]{2}$', 'c')),
 
---No longer self referencing for all other tables
---CONSTRAINT fk_passenger_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_passenger_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id),
+-- Self referencing to itself
+CONSTRAINT fk_passenger_parent FOREIGN KEY (passenger_parent_id) REFERENCES passenger (passenger_id)
 
---CONSTRAINT fk_passenger_user FOREIGN KEY (user_id) REFERENCES user(user_id)
-};
+-- No longer self referencing for all other tables
+-- CONSTRAINT fk_passenger_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_passenger_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id),
+
+-- CONSTRAINT fk_passenger_user FOREIGN KEY (user_id) REFERENCES user(user_id),
+);
 
 
-CREATE TABLE employee{
-    employee_id INT PRIMARY KEY,
-    user_id INT UNIQUE NOT NULL, --user_id must be unqiue here bc even if the pk of users has to be unique, employees could still reference the same user_id, which shouldn't happen
+CREATE TABLE employee(
+    employee_id INT auto_increment PRIMARY KEY,
+    user_id INT UNIQUE NOT NULL, -- user_id must be unqiue here bc even if the pk of users has to be unique, employees could still reference the same user_id, which shouldn't happen
     first_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
     date_of_birth DATE NULL,
     salary DECIMAL(10,2) NULL,
-    direct_supervisor_id INT NULL, --CEO does not have a supervisor
-    assigned_gate_id INT NULL, --Can be null if the employee is not assigned to a gate
-    department_id INT NOT NULL,
+    direct_supervisor_id INT NULL, -- CEO does not have a supervisor
+    assigned_gate_id INT NULL, -- Can be null if the employee is not assigned to a gate
     job_role_id INT NOT NULL,
+    hire_date date null,
+    is_active BOOLEAN not null DEFAULT true, -- TODO: remove default, value must be set by the program
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
+    CONSTRAINT check_employee_is_active CHECK (is_active IN (0, 1)),
     CONSTRAINT check_salary CHECK (salary > 0),
 
 -- self-referencing foreign key for the direct supervisor
 CONSTRAINT fk_employee_direct_supervisor FOREIGN KEY (direct_supervisor_id) REFERENCES employee (employee_id)
 
---CONSTRAINT fk_employee_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_employee_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- CONSTRAINT fk_employee_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_employee_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+-- 
+-- CONSTRAINT fk_employee_assigned_gate FOREIGN KEY (assigned_gate_id) REFERENCES gate(gate_id),
+-- CONSTRAINT fk_employee_job_role FOREIGN KEY (job_role_id) REFERENCES job_role(job_role_id)
+-- CONSTRAINT fk_employee_user FOREIGN KEY (user_id) REFERENCES user(user_id)
+);
 
---CONSTRAINT fk_employee_assigned_gate FOREIGN KEY (assigned_gate_id) REFERENCES gate(gate_id),
---CONSTRAINT fk_employee_department FOREIGN KEY (department_id) REFERENCES department(department_id),
---CONSTRAINT fk_employee_job_role FOREIGN KEY (job_role_id) REFERENCES job_role(job_role_id)
---CONSTRAINT fk_employee_user FOREIGN KEY (user_id) REFERENCES user(user_id)
-};
 
-
-CREATE TABLE department{ --Code table for employee departments
+CREATE TABLE department( -- Code table for employee departments
     department_id INT PRIMARY KEY,
-    department_name VARCHAR(100) NOT NULL,
+    department_name VARCHAR(100) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL
 
---CONSTRAINT fk_department_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_department_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
-};
+-- CONSTRAINT fk_department_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_department_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
 
 
-CREATE TABLE job_role{ --Code table for employee job roles
+CREATE TABLE job_role( -- Code table for employee job roles
     job_role_id INT PRIMARY KEY,
-    job_role_name VARCHAR(100) NOT NULL,
+    job_role_name VARCHAR(100) NOT NULL UNIQUE,
+    department_id INT NULL,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
-    updated_by INT NOT NULL,
+    updated_by INT NOT NULL
 
---CONSTRAINT fk_job_role_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
---CONSTRAINT fk_job_role_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
-}
+-- CONSTRAINT fk_job_role_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
+-- CONSTRAINT fk_job_role_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id)
+);
 
 
 CREATE TABLE maintenance_status( -- e.g. OPERATIONAL, MAINTENANCE, GROUNDED
     maintenance_status_id INT PRIMARY KEY,
     maintenance_status_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -142,8 +144,8 @@ CREATE TABLE gate_status( -- e.g. AVAILABLE, OCCUPIED, MAINTENANCE
     gate_status_id INT PRIMARY KEY,
     gate_status_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -155,8 +157,8 @@ CREATE TABLE flight_status( -- e.g. SCHEDULED, DELAYED, BOARDING, DEPARTED, ARRI
     flight_status_id INT PRIMARY KEY,
     flight_status_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -168,8 +170,8 @@ CREATE TABLE cabin_class( -- e.g. ECONOMY, PREMIUM, BUSINESS, FIRST
     cabin_class_id INT PRIMARY KEY,
     cabin_class_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -185,8 +187,8 @@ CREATE TABLE airport(
     country CHAR(2) NOT NULL,
     timezone VARCHAR(50) NOT NULL,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -302,8 +304,8 @@ CREATE TABLE booking_status(
     booking_status_id INT PRIMARY KEY,
     booking_status_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -316,8 +318,8 @@ CREATE TABLE seat_status(
     seat_status_id INT PRIMARY KEY,
     seat_status_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -332,8 +334,8 @@ CREATE TABLE comfort_upgrade_type(
     upgrade_description VARCHAR(255) NOT NULL,
     upgrade_price DECIMAL(10,2) NOT NULL,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -347,11 +349,11 @@ CREATE TABLE booking(
     passenger_id INT NOT NULL,
     booking_status_id INT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
-    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    currency CHAR(3) NOT NULL DEFAULT 'USD', -- TODO: remove default, value must be set by the program
     expires_at TIMESTAMP NULL,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -368,11 +370,11 @@ CREATE TABLE booking_upgrade(
     booking_upgrade_id INT AUTO_INCREMENT PRIMARY KEY,
     booking_id CHAR(6) NOT NULL,
     upgrade_id INT NOT NULL,
-    quantity TINYINT NOT NULL DEFAULT 1,
+    quantity TINYINT NOT NULL DEFAULT 1, -- TODO: remove default, value must be set by the program
     unit_price DECIMAL(10,2) NOT NULL,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -388,10 +390,10 @@ CREATE TABLE seat(
     seat_number VARCHAR(4) NOT NULL,
     cabin_class_id INT NOT NULL,
     seat_status_id INT NOT NULL,
-    held_until TIMESTAMP NULL DEFAULT NULL,
+    held_until TIMESTAMP NULL DEFAULT NULL, -- TODO: remove default, value must be set by the program
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL
 );
@@ -400,8 +402,8 @@ CREATE TABLE baggage_status (
     baggage_status_id INT PRIMARY KEY,
     baggage_status_name VARCHAR(20) NOT NULL UNIQUE,
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -416,10 +418,10 @@ CREATE TABLE ticket (
     fare_class_id INT NOT NULL,
     seat_number VARCHAR(4) NOT NULL,
     flight_fare DECIMAL(10, 2) NOT NULL,
-    checked_in BOOLEAN NOT NULL DEFAULT FALSE,
+    checked_in BOOLEAN NOT NULL DEFAULT FALSE, -- TODO: remove default, value must be set by the program
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -434,10 +436,10 @@ CREATE TABLE baggage(
     ticket_id INT NOT NULL,
     weightage DECIMAL(5,2) NOT NULL, -- pounds
     baggage_status_id INT NOT NULL,
-    fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+    fee DECIMAL(10,2) NOT NULL DEFAULT 0, -- TODO: remove default, value must be set by the program
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
@@ -454,10 +456,10 @@ CREATE TABLE payment(
     total_amount DECIMAL(10,2) NOT NULL,
     payment_method VARCHAR(20) NOT NULL,
     idempotency_key CHAR(36) NOT NULL UNIQUE,
-    payment_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    payment_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- TODO: remove default, value must be set by the program
 
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
