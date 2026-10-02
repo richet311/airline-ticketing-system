@@ -127,7 +127,7 @@ ALTER TABLE ticket
 
 
 ALTER TABLE baggage
-    ADD CONSTRAINT fk_baggage_ticket FOREIGN KEY (ticket_id) REFERENCES ticket(e_ticket_number) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_baggage_ticket FOREIGN KEY (e_ticket_number) REFERENCES ticket(e_ticket_number) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_baggage_status FOREIGN KEY (baggage_status_id) REFERENCES baggage_status(baggage_status_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_baggage_created_by FOREIGN KEY (created_by) REFERENCES user(user_id),
     ADD CONSTRAINT fk_baggage_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id);

@@ -304,7 +304,6 @@ CREATE TABLE booking_upgrade(
     CONSTRAINT check_booking_upgrade_price CHECK (unit_price >= 0)
 );
 CREATE TABLE seat(
-    (flight_id, seat_number) PRIMARY KEY,
     flight_id INT NOT NULL,
     seat_number VARCHAR(4) NOT NULL,
     cabin_class_id INT NOT NULL,
@@ -314,7 +313,9 @@ CREATE TABLE seat(
     created_at TIMESTAMP NOT NULL,
     last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
-    updated_by INT NOT NULL
+    updated_by INT NOT NULL,
+
+    PRIMARY KEY (flight_id, seat_number)
 );
 CREATE TABLE baggage_status (
     baggage_status_id INT PRIMARY KEY,
@@ -348,7 +349,7 @@ CREATE TABLE ticket (
 );
 CREATE TABLE baggage(
     tag_number VARCHAR(20) PRIMARY KEY,
-    ticket_id INT NOT NULL,
+    e_ticket_number VARCHAR(20) NOT NULL,
     weightage DECIMAL(5,2) NOT NULL, -- pounds
     baggage_status_id INT NOT NULL,
     fee DECIMAL(10,2) NOT NULL DEFAULT 0, -- TODO: remove default, value must be set by the program
