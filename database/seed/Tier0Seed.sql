@@ -25,20 +25,35 @@ TRUNCATE TABLE flight;
 TRUNCATE TABLE fare_class;
 TRUNCATE TABLE seat;
 TRUNCATE TABLE booking;
-TRUNCATE TABLE booking_upgrade;
 TRUNCATE TABLE ticket;
 TRUNCATE TABLE payment;
 TRUNCATE TABLE baggage;
-TRUNCATE TABLE comfort_upgrade_type;
+TRUNCATE TABLE booking_upgrade;
+TRUNCATE TABLE upgrade_type;
+
+ALTER TABLE user AUTO_INCREMENT = 1;
+ALTER TABLE passenger AUTO_INCREMENT = 1001;
+ALTER TABLE employee AUTO_INCREMENT = 2001;
+ALTER TABLE airport AUTO_INCREMENT = 10001;
+ALTER TABLE aircraft AUTO_INCREMENT = 20001;
+ALTER TABLE terminal AUTO_INCREMENT = 30001;
+ALTER TABLE gate AUTO_INCREMENT = 40001;
+ALTER TABLE flight AUTO_INCREMENT = 50001;
+ALTER TABLE fare_class AUTO_INCREMENT = 60001;
+ALTER TABLE payment AUTO_INCREMENT = 70001;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- possibly remove auto increments everywhere and make our own methodology
-
 INSERT INTO user (user_id, email, phone_number, password_hash, loyalty_points, created_by, created_at, updated_by, last_updated) VALUES
-(1, 'SysAdmin@AzureAir.net', '1234567890', 'p@ssw0rd', 1500, 1, NOW(), 1, NOW()),
-(2, 'TestPassenger@AzureAir.net', '1111111111', 'Testpw123', 0, 1, NOW(), 1, NOW()),
-(3, 'TestEmployee@AzureAir.net', '9999999999', 'TEST123PW', 350, 1, NOW(), 1, NOW());
+(1, 'SysAdmin@AzureAir.net', '1234567890', 'TestAdminLogin123', 1500, 1, NOW(), 1, NOW()),
+(2, 'TestPassenger@AzureAir.net', '1111111111', 'TestPassengerPW123', 0, 1, NOW(), 1, NOW()),
+(3, 'TestEmployee@AzureAir.net', '9999999999', 'TestEmployeePW123', 350, 1, NOW(), 1, NOW()),
+(4, 'TestSecondPassenger@AzureAir.net', '2222222222', 'TESTPASNPW', 5000, 1, NOW(), 1, NOW()),
+(5, 'TestThirdPassenger@AzureAir.net', '3333333333', 'TESTPASNPW', 30000, 1, NOW(), 1, NOW()),
+(6, 'TestSecondEmployee@AzureAir.net', '4444444444', 'TESTEMPPW', 50000, 1, NOW(), 1, NOW());
 
 INSERT INTO passenger (passenger_id, user_id, passenger_parent_id, first_name, last_name, date_of_birth, passport_number, passport_expiry_date, nationality, created_by, created_at, updated_by, last_updated) VALUES
-(1001, 2, NULL, 'TESTPASSENGER', 'SINGLEADULT', '2002-01-01', '222333444', '2028-06-01', 'US', 1, NOW(), 1, NOW());
+(1001, 2, NULL, 'TESTPASSENGER', 'SINGLEADULT', '2002-01-01', '222333444', '2028-06-01', 'US', 1, NOW(), 1, NOW()),
+(1002, NULL, 1001, 'TESTCHILD', 'DEPENDENT', '2018-04-12', '123456789', '2030-04-12', 'US', 1, NOW(), 1, NOW()),
+(1003, 4, NULL, 'Jane', 'Doe', '1995-07-19', '999887777', '2031-07-19', 'JP', 1, NOW(), 1, NOW()),
+(1004, 5, NULL, 'John', 'Smith', '1988-11-03', '233210028', '2032-11-03', 'GB', 1, NOW(), 1, NOW());

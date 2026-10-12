@@ -36,8 +36,7 @@ INSERT INTO cabin_class (cabin_class_id, cabin_class_name, created_by, created_a
 INSERT INTO booking_status (booking_status_id, booking_status_name, created_by, created_at, updated_by, last_updated) VALUES
 (1, 'PENDING', 1, NOW(), 1, NOW()),
 (2, 'CONFIRMED', 1, NOW(), 1, NOW()),
-(3, 'CANCELLED', 1, NOW(), 1, NOW()),
-(4, 'COMPLETED', 1, NOW(), 1, NOW()); -- change constraint to substitute COMPLETED for REFUNDED
+(3, 'CANCELLED', 1, NOW(), 1, NOW());
 
 INSERT INTO seat_status (seat_status_id, seat_status_name, created_by, created_at, updated_by, last_updated) VALUES
 (1, 'AVAILABLE', 1, NOW(), 1, NOW()),
@@ -48,15 +47,19 @@ INSERT INTO seat_status (seat_status_id, seat_status_name, created_by, created_a
 INSERT INTO baggage_status (baggage_status_id, baggage_status_name, created_by, created_at, updated_by, last_updated) VALUES
 (1, 'CHECKED', 1, NOW(), 1, NOW()),
 (2, 'LOADED', 1, NOW(), 1, NOW()),
-(3, 'IN_TRANSIT', 1, NOW(), 1, NOW()), -- change the constraint to remove _
+(3, 'IN TRANSIT', 1, NOW(), 1, NOW()),
 (4, 'ARRIVED', 1, NOW(), 1, NOW()),
 (5, 'LOST', 1, NOW(), 1, NOW());
 
-INSERT INTO airport (airport_id, airport_code, airport_name, city, country, timezone, created_by, created_at, updated_by, last_updated) VALUES
-(1, 'IAH', 'George Bush Intercontinental Airport', 'Houston', 'US', 'GMT-5', 1, NOW(), 1, NOW()),
-(2, 'NRT', 'Narita International Airport', 'Narita', 'JP', 'GMT+9', 1, NOW(), 1, NOW()),
-(3, 'LHR', 'London Heathrow Airport', 'London', 'UK', 'GMT+1', 1, NOW(), 1, NOW());
+INSERT INTO upgrade_type (upgrade_id, upgrade_name, upgrade_description, upgrade_price, created_by, created_at, updated_by, last_updated) VALUES
+(1, 'Pillow and blanket', 'Provides ammenities for comfortable sleeping', 5.00, 1, NOW(), 1, NOW()),
+(2, 'Extra legroom', 'Seat with additional legroom', 15.00, 1, NOW(), 1, NOW()),
+(3, 'Priority boarding', 'Board before standard boarding groups', 10.00, 1, NOW(), 1, NOW()),
+(4, 'In-flight Wi-Fi', 'Wi-Fi access for one flight', 20.00, 1, NOW(), 1, NOW());
 
--- may get rid of this
-INSERT INTO comfort_upgrade_type (upgrade_id, upgrade_name, upgrade_description, upgrade_price, created_by, created_at, updated_by, last_updated) VALUES
-(1, 'Pillow and blanket', 'Provides ammenities for comfortable sleeping', '35.00', 1, NOW(), 1, NOW());
+INSERT INTO airport (airport_id, airport_code, airport_name, city, country, timezone, created_by, created_at, updated_by, last_updated) VALUES
+(10001, 'IAH', 'George Bush Intercontinental Airport', 'Houston', 'US', 'America/Chicago', 1, NOW(), 1, NOW()),
+(10002, 'NRT', 'Narita International Airport', 'Narita', 'JP', 'Asia/Tokyo', 1, NOW(), 1, NOW()),
+(10003, 'LHR', 'London Heathrow Airport', 'London', 'UK', 'Europe/London', 1, NOW(), 1, NOW()),
+(10004, 'JFK', 'John F. Kennedy International Airport', 'New York', 'US', 'America/New_York', 1, NOW(), 1, NOW()),
+(10005, 'CDG', 'Charles de Gaulle Airport', 'Paris', 'FR', 'Europe/Paris', 1, NOW(), 1, NOW());

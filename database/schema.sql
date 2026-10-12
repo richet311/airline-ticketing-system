@@ -29,9 +29,9 @@ DROP TABLE IF EXISTS flight;
 DROP TABLE IF EXISTS fare_class;
 DROP TABLE IF EXISTS booking_status;
 DROP TABLE IF EXISTS seat_status;
-DROP TABLE IF EXISTS comfort_upgrade_type;
-DROP TABLE IF EXISTS booking;
 DROP TABLE IF EXISTS booking_upgrade;
+DROP TABLE IF EXISTS upgrade_type;
+DROP TABLE IF EXISTS booking;
 DROP TABLE IF EXISTS seat;
 DROP TABLE IF EXISTS baggage_status;
 DROP TABLE IF EXISTS ticket;
@@ -48,24 +48,20 @@ CREATE TABLE user(
     password_hash VARCHAR(255) NOT NULL,
     loyalty_points INT NOT NULL,
 
--- Copy these 4 into every table, have the created_by and updated_by reference the user table
-created_at TIMESTAMP NOT NULL,
-last_updated TIMESTAMP NOT NULL,
-created_by INT NOT NULL,
-updated_by INT NOT NULL,
-CONSTRAINT check_loyalty_points CHECK (loyalty_points >= 0),
-CONSTRAINT check_phone_number_format CHECK (REGEXP_LIKE(phone_number, '^[+]?[0-9]{7,15}$')),
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
 
-CONSTRAINT check_email_format CHECK (email LIKE '%@%.%'),
-CONSTRAINT check_email_length CHECK (
-    LENGTH(email) <= 100
-    AND LENGTH(email) >= 5
-)
+    CONSTRAINT check_loyalty_points CHECK (loyalty_points >= 0),
+    CONSTRAINT check_phone_number_format CHECK (REGEXP_LIKE(phone_number, '^[+]?[0-9]{7,15}$')),
+    CONSTRAINT check_email_format CHECK (email LIKE '%@%.%'),
+    CONSTRAINT check_email_length CHECK (LENGTH(email) <= 100 AND LENGTH(email) >= 5)
 );
 
 
 CREATE TABLE passenger(
-    passenger_id INT auto_increment PRIMARY KEY,
+    passenger_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT UNIQUE NULL, -- user_id must be unqiue here bc even if the pk of users has to be unique, passengers could still reference the same user_id, which shouldn't happen. Can be null when passenger is a child (dependent)
     passenger_parent_id INT NULL, -- References the parent passenger if this passenger is a child (dependent)
     first_name VARCHAR(50) NULL,
@@ -85,11 +81,11 @@ CREATE TABLE passenger(
 
     CONSTRAINT unique_passport_per_country UNIQUE (nationality, passport_number),
     CONSTRAINT check_passenger_nationality CHECK (REGEXP_LIKE(nationality, '^[A-Z]{2}$', 'c'))
-);
+)   AUTO_INCREMENT = 1001;
 
 
 CREATE TABLE employee(
-    employee_id INT auto_increment PRIMARY KEY,
+    employee_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT UNIQUE NOT NULL,
     first_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
@@ -106,9 +102,11 @@ CREATE TABLE employee(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
+    
+
     CONSTRAINT check_employee_is_active CHECK (is_active IN (0, 1)),
     CONSTRAINT check_salary CHECK (salary > 0)
-);
+)   AUTO_INCREMENT = 2001;
 
 
 CREATE TABLE department( -- Code table for employee departments
@@ -187,7 +185,7 @@ CREATE TABLE cabin_class( -- e.g. ECONOMY, PREMIUM, BUSINESS, FIRST
 
 
 CREATE TABLE airport(
-    airport_id INT PRIMARY KEY,
+    airport_id INT PRIMARY KEY AUTO_INCREMENT,
     airport_code CHAR(3) NOT NULL UNIQUE,
     airport_name VARCHAR(100) NOT NULL,
     city VARCHAR(50) NOT NULL,
@@ -201,15 +199,14 @@ CREATE TABLE airport(
 
     CONSTRAINT check_airport_code_upper CHECK (REGEXP_LIKE(airport_code, '^[A-Z]{3}$', 'c')),
     CONSTRAINT check_airport_country_upper CHECK (REGEXP_LIKE(country, '^[A-Z]{2}$', 'c'))
-);
+)   AUTO_INCREMENT = 10001;
 
 
 CREATE TABLE aircraft(
-    aircraft_id INT PRIMARY KEY,
+    aircraft_id INT PRIMARY KEY AUTO_INCREMENT,
     aircraft_number VARCHAR(10) NOT NULL UNIQUE,
     aircraft_type VARCHAR(50) NOT NULL,
     capacity INT NOT NULL,
-    seat_layout_config JSON NOT NULL,
     maintenance_status_id INT NOT NULL,
 
     created_at TIMESTAMP NOT NULL,
@@ -218,11 +215,11 @@ CREATE TABLE aircraft(
     updated_by INT NOT NULL,
 
     CONSTRAINT check_aircraft_capacity CHECK (capacity > 0)
-);
+)   AUTO_INCREMENT = 20001;
 
 
 CREATE TABLE terminal(
-    terminal_id INT PRIMARY KEY,
+    terminal_id INT PRIMARY KEY AUTO_INCREMENT,
     terminal_name VARCHAR(20) NOT NULL,
     airport_id INT NOT NULL,
 
@@ -232,11 +229,11 @@ CREATE TABLE terminal(
     updated_by INT NOT NULL,
 
     CONSTRAINT unique_terminal_per_airport UNIQUE (airport_id, terminal_name)
-);
+)   AUTO_INCREMENT = 30001;
 
 
 CREATE TABLE gate(
-    gate_id INT PRIMARY KEY,
+    gate_id INT  PRIMARY KEY AUTO_INCREMENT,
     gate_number VARCHAR(10) NOT NULL,
     gate_status_id INT NOT NULL,
     terminal_id INT NOT NULL,
@@ -247,11 +244,11 @@ CREATE TABLE gate(
     updated_by INT NOT NULL,
 
     CONSTRAINT unique_gate_per_terminal UNIQUE (terminal_id, gate_number)
-);
+)   AUTO_INCREMENT = 40001;
 
 
 CREATE TABLE flight(
-    flight_id INT PRIMARY KEY,
+    flight_id INT PRIMARY KEY AUTO_INCREMENT,
     flight_number VARCHAR(10) NOT NULL,
     aircraft_id INT NOT NULL,
     origin_airport_id INT NOT NULL,
@@ -270,11 +267,11 @@ CREATE TABLE flight(
 
     CONSTRAINT check_flight_times CHECK (arrival_time > departure_time),
     CONSTRAINT unique_flight_number_departure UNIQUE (flight_number, departure_time)
-);
+)   AUTO_INCREMENT = 50001;
 
 
 CREATE TABLE fare_class(
-    fare_class_id INT PRIMARY KEY,
+    fare_class_id INT PRIMARY KEY AUTO_INCREMENT,
     flight_id INT NOT NULL,
     cabin_class_id INT NOT NULL,
     base_price DECIMAL(10,2) NOT NULL,
@@ -291,7 +288,7 @@ CREATE TABLE fare_class(
     CONSTRAINT check_fare_price CHECK (base_price >= 0),
     CONSTRAINT check_fare_seats CHECK (seats_available <= seats_total),
     CONSTRAINT unique_fare_per_flight UNIQUE (flight_id, cabin_class_id)
-);
+)   AUTO_INCREMENT = 60001;
 
 CREATE TABLE booking_status(
     booking_status_id INT PRIMARY KEY,
@@ -302,8 +299,7 @@ CREATE TABLE booking_status(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_booking_status_name
-        CHECK (booking_status_name IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'))
+    CONSTRAINT check_booking_status_name CHECK (booking_status_name IN ('PENDING', 'CONFIRMED', 'CANCELLED'))
 );
 
 
@@ -316,12 +312,23 @@ CREATE TABLE seat_status(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_seat_status_name
-        CHECK (seat_status_name IN ('AVAILABLE', 'HELD', 'BOOKED', 'BLOCKED'))
+    CONSTRAINT check_seat_status_name CHECK (seat_status_name IN ('AVAILABLE', 'HELD', 'BOOKED', 'BLOCKED'))
 );
 
 
-CREATE TABLE comfort_upgrade_type(
+CREATE TABLE booking_upgrade(
+    upgrade_id INT NOT NULL,
+    booking_id CHAR(6) NOT NULL,
+
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    PRIMARY KEY (upgrade_id, booking_id)
+);
+
+CREATE TABLE upgrade_type(
     upgrade_id INT PRIMARY KEY,
     upgrade_name VARCHAR(50) NOT NULL UNIQUE,
     upgrade_description VARCHAR(255) NOT NULL,
@@ -332,8 +339,7 @@ CREATE TABLE comfort_upgrade_type(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_upgrade_price CHECK (upgrade_price >= 0),
-    CONSTRAINT check_upgrade_name_not_blank CHECK (TRIM(upgrade_name) <> '')
+    CONSTRAINT check_upgrade_type_price CHECK (upgrade_price >= 0)
 );
 
 
@@ -357,25 +363,6 @@ CREATE TABLE booking(
 );
 
 -- Each row records an upgrade selected for a booking and its price at purchase time.
-
-
-CREATE TABLE booking_upgrade(
-    booking_upgrade_id INT AUTO_INCREMENT PRIMARY KEY,
-    booking_id CHAR(6) NOT NULL,
-    upgrade_id INT NOT NULL,
-    quantity TINYINT NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
-
-    created_at TIMESTAMP NOT NULL,
-    last_updated TIMESTAMP NOT NULL,
-    created_by INT NOT NULL,
-    updated_by INT NOT NULL,
-
-    CONSTRAINT unique_booking_upgrade UNIQUE (booking_id, upgrade_id),
-    CONSTRAINT check_booking_upgrade_quantity CHECK (quantity > 0),
-    CONSTRAINT check_booking_upgrade_price CHECK (unit_price >= 0)
-);
-
 
 CREATE TABLE seat(
     flight_id INT NOT NULL,
@@ -401,7 +388,7 @@ CREATE TABLE baggage_status (
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_baggage_status_name CHECK (baggage_status_name IN ('CHECKED', 'LOADED', 'IN_TRANSIT', 'ARRIVED', 'LOST'))
+    CONSTRAINT check_baggage_status_name CHECK (baggage_status_name IN ('CHECKED', 'LOADED', 'IN TRANSIT', 'ARRIVED', 'LOST'))
 );
 
 CREATE TABLE ticket (
@@ -443,9 +430,8 @@ CREATE TABLE baggage(
 
 
 CREATE TABLE payment(
-    payment_id INT AUTO_INCREMENT PRIMARY KEY,
+    payment_id INT PRIMARY KEY AUTO_INCREMENT,
     booking_id CHAR(6) NOT NULL,
-    payment_type VARCHAR(20) NOT NULL,
     payment_status VARCHAR(20) NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     payment_method VARCHAR(20) NOT NULL,
@@ -457,8 +443,10 @@ CREATE TABLE payment(
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    CONSTRAINT check_payment_amount CHECK (total_amount >= 0)
-);
+    CONSTRAINT check_payment_amount CHECK (total_amount >= 0),
+    CONSTRAINT check_payment_method CHECK (payment_method IN ('CREDIT', 'DEBIT', 'PAYPAL')),
+    constraint check_payment_status CHECK (payment_status IN ('PENDING', 'RECEIVED', 'REFUNDED'))
+)   AUTO_INCREMENT = 70001;
 
 
 ALTER TABLE user
@@ -540,10 +528,15 @@ ALTER TABLE seat_status
     ADD CONSTRAINT fk_seat_status_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_seat_status_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
 
+ALTER TABLE booking_upgrade
+    ADD CONSTRAINT fk_booking_upgrade_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_booking_upgrade_upgrade_type FOREIGN KEY (upgrade_id) REFERENCES upgrade_type(upgrade_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_booking_upgrade_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_booking_upgrade_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
 
-ALTER TABLE comfort_upgrade_type
-    ADD CONSTRAINT fk_comfort_upgrade_type_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
-    ADD CONSTRAINT fk_comfort_upgrade_type_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
+ALTER TABLE upgrade_type
+    ADD CONSTRAINT fk_upgrade_type_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_upgrade_type_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
 
 
 ALTER TABLE booking
@@ -551,14 +544,6 @@ ALTER TABLE booking
     ADD CONSTRAINT fk_booking_status FOREIGN KEY (booking_status_id) REFERENCES booking_status(booking_status_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_booking_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_booking_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
-
-
-ALTER TABLE booking_upgrade
-    ADD CONSTRAINT fk_booking_upgrade_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE CASCADE,
-    ADD CONSTRAINT fk_booking_upgrade_type FOREIGN KEY (upgrade_id) REFERENCES comfort_upgrade_type(upgrade_id) ON DELETE RESTRICT,
-    ADD CONSTRAINT fk_booking_upgrade_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
-    ADD CONSTRAINT fk_booking_upgrade_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
-
 
 ALTER TABLE seat
     ADD CONSTRAINT fk_seat_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id) ON DELETE CASCADE,
