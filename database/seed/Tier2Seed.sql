@@ -21,13 +21,21 @@ INSERT INTO terminal (terminal_id, terminal_name, airport_id, created_by, create
 (30005, 'Terminal D', 10003, 1, NOW(), 1, NOW()),
 (30006, 'Terminal E', 10003, 1, NOW(), 1, NOW()),
 (30007, 'Terminal 4', 10004, 1, NOW(), 1, NOW()),
-(30008, 'Terminal 2E', 10005, 1, NOW(), 1, NOW());
+(30008, 'Terminal 2E', 10005, 1, NOW(), 1, NOW()),
+(30009, 'Terminal 6', 10006, 1, NOW(), 1, NOW()),
+(30010, 'Terminal 3', 10007, 1, NOW(), 1, NOW()),
+(30011, 'Terminal 1', 10008, 1, NOW(), 1, NOW()),
+(30012, 'Terminal 3', 10009, 1, NOW(), 1, NOW());
 
--- Need a workaround for having flights at full capacity without needing 370 individual seat tuples
 INSERT INTO aircraft (aircraft_id, aircraft_number, aircraft_type, capacity, maintenance_status_id, created_by, created_at, updated_by, last_updated) VALUES
 (20001, 'N123DL', 'Boeing medium', 8, 1, 1, NOW(), 1, NOW()),
 (20002, 'N456DL', 'Boeing private jet', 4, 1, 1, NOW(), 1, NOW()),
-(20003, 'N789DL', 'Boeing small', 6, 1, 1, NOW(), 1, NOW());
+(20003, 'N789DL', 'Boeing small', 6, 1, 1, NOW(), 1, NOW()),
+(20004, 'N234DL', 'Boeing private jet', 4, 1, 1, NOW(), 1, NOW()),
+(20005, 'N567DL', 'Boeing small', 6, 1, 1, NOW(), 1, NOW()),
+(20006, 'N890DL', 'Boeing private jet', 4, 1, 1, NOW(), 1, NOW()),
+(20007, 'N345DL', 'Boeing private jet', 4, 1, 1, NOW(), 1, NOW()),
+(20008, 'N678DL', 'Boeing small', 6, 3, 1, NOW(), 1, NOW()); -- GROUNDED: not assigned to any flight
 
 INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by, created_at, updated_by, last_updated) VALUES
 (40001, '23A', 1, 30001, 1 , NOW(), 1, NOW()),
@@ -37,9 +45,13 @@ INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by,
 (40005, '16D', 2, 30005, 1 , NOW(), 1, NOW()),
 (40006, '9E', 3, 30006, 1 , NOW(), 1, NOW()),
 (40007, '41', 1, 30007, 1, NOW(), 1, NOW()),
-(40008, 'B12', 1, 30008, 1, NOW(), 1, NOW());
+(40008, 'B12', 1, 30008, 1, NOW(), 1, NOW()),
+(40009, '63', 1, 30009, 1, NOW(), 1, NOW()),
+(40010, 'K12', 1, 30010, 1, NOW(), 1, NOW()),
+(40011, 'A26', 2, 30011, 1, NOW(), 1, NOW()), -- OCCUPIED: AZ640 is boarding here
+(40012, 'B14', 1, 30012, 1, NOW(), 1, NOW());
 
 INSERT INTO employee (employee_id, user_id, first_name, last_name, date_of_birth, salary, direct_supervisor_id, assigned_gate_id, job_role_id, hire_date, is_active, created_by, created_at, updated_by, last_updated) VALUES
 (2001, 1, 'TESTEMPLOYEE', 'SYSADMIN', '2002-02-02', 75000, NULL, NULL, 91, '2026-08-28', TRUE, 1, NOW(), 1, NOW()),
-(2002, 3, 'TAYLOR', 'EXAMPLE', '1985-05-14', 68000.00, 2001, NULL, 92, '2022-03-10', TRUE, 1, NOW(), 1, NOW()),
-(2003, 6, 'MORGAN', 'SAMPLE', '1990-09-22', 52000.00, 2002, 40007, 96, '2024-01-15', TRUE, 1, NOW(), 1, NOW());
+(2002, 3, 'Taylor', 'Johnson', '1985-05-14', 68000.00, 2001, NULL, 92, '2022-03-10', TRUE, 1, NOW(), 1, NOW()),
+(2003, 6, 'Morgan', 'Williams', '1990-09-22', 52000.00, 2002, 40007, 96, '2024-01-15', TRUE, 1, NOW(), 1, NOW());

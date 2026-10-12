@@ -54,7 +54,7 @@ INSERT INTO baggage_status (baggage_status_id, baggage_status_name, created_by, 
 (5, 'LOST', 1, NOW(), 1, NOW());
 
 INSERT INTO upgrade_type (upgrade_id, upgrade_name, upgrade_description, upgrade_price, created_by, created_at, updated_by, last_updated) VALUES
-(1, 'Pillow and blanket', 'Provides ammenities for comfortable sleeping', 5.00, 1, NOW(), 1, NOW()),
+(1, 'Pillow and blanket', 'Provides amenities for comfortable sleeping', 5.00, 1, NOW(), 1, NOW()),
 (2, 'Extra legroom', 'Seat with additional legroom', 15.00, 1, NOW(), 1, NOW()),
 (3, 'Priority boarding', 'Board before standard boarding groups', 10.00, 1, NOW(), 1, NOW()),
 (4, 'In-flight Wi-Fi', 'Wi-Fi access for one flight', 20.00, 1, NOW(), 1, NOW());
@@ -62,6 +62,10 @@ INSERT INTO upgrade_type (upgrade_id, upgrade_name, upgrade_description, upgrade
 INSERT INTO airport (airport_id, airport_code, airport_name, city, country, timezone, created_by, created_at, updated_by, last_updated) VALUES
 (10001, 'IAH', 'George Bush Intercontinental Airport', 'Houston', 'US', 'America/Chicago', 1, NOW(), 1, NOW()),
 (10002, 'NRT', 'Narita International Airport', 'Narita', 'JP', 'Asia/Tokyo', 1, NOW(), 1, NOW()),
-(10003, 'LHR', 'London Heathrow Airport', 'London', 'UK', 'Europe/London', 1, NOW(), 1, NOW()),
+(10003, 'LHR', 'London Heathrow Airport', 'London', 'GB', 'Europe/London', 1, NOW(), 1, NOW()),
 (10004, 'JFK', 'John F. Kennedy International Airport', 'New York', 'US', 'America/New_York', 1, NOW(), 1, NOW()),
-(10005, 'CDG', 'Charles de Gaulle Airport', 'Paris', 'FR', 'Europe/Paris', 1, NOW(), 1, NOW());
+(10005, 'CDG', 'Charles de Gaulle Airport', 'Paris', 'FR', 'Europe/Paris', 1, NOW(), 1, NOW()),
+(10006, 'LAX', 'Los Angeles International Airport', 'Los Angeles', 'US', 'America/Los_Angeles', 1, NOW(), 1, NOW()),
+(10007, 'ORD', 'O''Hare International Airport', 'Chicago', 'US', 'America/Chicago', 1, NOW(), 1, NOW()),
+(10008, 'FRA', 'Frankfurt Airport', 'Frankfurt', 'DE', 'Europe/Berlin', 1, NOW(), 1, NOW()),
+(10009, 'DXB', 'Dubai International Airport', 'Dubai', 'AE', 'Asia/Dubai', 1, NOW(), 1, NOW());
