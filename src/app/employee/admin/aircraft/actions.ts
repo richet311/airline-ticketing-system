@@ -6,4 +6,4 @@
 // Each function must check that the person is allowed to make this change before it saves.
 //
 // To write here:
-// - add and edit aircraft, their seat_layout_config and maintenance status
+// - add and edit aircraft (number, type, capacity) and their maintenance status

@@ -7,4 +7,7 @@
 //
 // To write here:
 // - schedule (publish) a flight: in one transaction, the flight row, its fare_class rows,
-//   and one seat row per seat built from the aircraft's seat_layout_config
+//   and one seat row per seat. The aircraft only stores its capacity (there is no seat layout),
+//   so decide how seats are laid out, for example rows, seats per row and premium rows chosen
+//   in the form. The number of seats can't be more than aircraft.capacity, and each fare_class
+//   seats_total must match its cabin's seats. Times are UTC (team rule 6 in schema.sql).

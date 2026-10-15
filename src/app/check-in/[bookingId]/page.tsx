@@ -17,6 +17,9 @@ import { checkIn } from "./actions";
 // The page. Next.js runs it when someone opens /check-in/<confirmation code>.
 // `params` holds the part of the URL that matched the [bookingId] folder:
 // /check-in/AZ42KQ gives { bookingId: "AZ42KQ" }.
+// PageProps<"/check-in/[bookingId]"> is a type Next.js makes from the folder names. It tells
+// TypeScript that params holds { bookingId: string }.
+// Database: bookingId is booking.booking_id (the confirmation code).
 export default function CheckInBookingPage({ params }: PageProps<"/check-in/[bookingId]">) {
   return (
     <>
@@ -31,11 +34,17 @@ export default function CheckInBookingPage({ params }: PageProps<"/check-in/[boo
 }
 
 // READS: loads every ticket on the booking and shows one line per traveler.
+// Props: params, passed down from the page. Promise<{ bookingId: string }> means the value
+// arrives a moment later (await it), and then holds bookingId.
 async function TravelerList({ params }: { params: Promise<{ bookingId: string }> }) {
   const { bookingId } = await params;
 
   // One row per ticket, with the traveler's name and flight joined in.
   // The ? is filled in with bookingId. Never paste user input into the SQL text itself.
+  // RowDataPacket[] (from mysql2) means "a list of rows". Each row has the columns this SELECT
+  // names: ticket.e_ticket_number, seat_number and checked_in, passenger.first_name and
+  // last_name, flight.flight_number and departure_time. For autocomplete on row fields,
+  // use a row type from src/lib/types.ts instead.
   const [tickets] = await db.query<RowDataPacket[]>(
     `SELECT t.e_ticket_number, t.seat_number, t.checked_in,
             p.first_name, p.last_name,

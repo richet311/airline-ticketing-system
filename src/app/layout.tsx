@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "Airline ticketing system",
 };
 
+// The frame around every page on the site. LayoutProps<"/"> is a type Next.js makes from the
+// folder names: its children prop is the page being shown. No database data.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html

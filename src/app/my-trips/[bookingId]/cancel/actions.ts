@@ -7,4 +7,5 @@
 //
 // To write here:
 // - cancel: before the cutoff, in one transaction: booking CANCELLED, its seats AVAILABLE
-//   again, seats_available back up, and a refund payment row. Never delete rows.
+//   again, each of its tickets' seat_number set to NULL (so the seats can be sold again),
+//   seats_available back up, and a refund payment row. Never delete rows.

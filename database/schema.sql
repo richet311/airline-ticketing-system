@@ -21,6 +21,11 @@
 --      ones below, so an error message names the rule that failed.
 --   5. If you change a table, update the seed files in the same commit and run
 --      all five files before you push, so the seeds still work for everyone.
+--   6. Every time is UTC. The website (src/lib/db.ts) and Tier3Seed.sql set
+--      their MySQL session to UTC, so NOW() is UTC there. In your own Workbench
+--      queries, NOW() is your computer's time: use UTC_TIMESTAMP() instead, or
+--      run SET time_zone = '+00:00' first. Pages show local time with
+--      airport.timezone.
 -- =============================================================================
 
 CREATE DATABASE IF NOT EXISTS airline_db;
@@ -59,6 +64,9 @@ DROP TABLE IF EXISTS baggage_status;
 DROP TABLE IF EXISTS ticket;
 DROP TABLE IF EXISTS baggage;
 DROP TABLE IF EXISTS payment;
+-- Old name of upgrade_type. Keep this line so databases made from an older
+-- schema.sql lose the leftover table too.
+DROP TABLE IF EXISTS comfort_upgrade_type;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -419,7 +427,11 @@ CREATE TABLE ticket (
     passenger_id INT NOT NULL,
     flight_id INT NOT NULL,
     fare_class_id INT NOT NULL,
-    seat_number VARCHAR(4) NOT NULL,
+    -- NULL once the ticket no longer holds a seat: its booking was cancelled or its
+    -- seat hold expired. Set it to NULL and the seat back to AVAILABLE in the same
+    -- transaction, so unique_ticket_flight_seat frees the seat for someone else.
+    -- The ticket row itself stays, for the booking's history.
+    seat_number VARCHAR(4) NULL,
     flight_fare DECIMAL(10, 2) NOT NULL,
     checked_in BOOLEAN NULL,
 

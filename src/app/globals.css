@@ -12,6 +12,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Azure Air colors from the frontend mockups. Each one becomes a Tailwind class:
+   bg-azure-navy, text-azure-blue, border-azure-blue, bg-azure-page, and so on. */
+@theme {
+  --color-azure-navy: #0b1d3a; /* top bar, headings, rewards banner */
+  --color-azure-hero: #14315f; /* top of the Home hero */
+  --color-azure-blue: #1a66da; /* buttons, links, the active tab */
+  --color-azure-blue-dark: #1553b5; /* buttons on hover */
+  --color-azure-sky: #e8f0fc; /* light blue: selected fares, icon circles */
+  --color-azure-page: #f1f4f8; /* light gray page background */
+}
+
 
 body {
   background: var(--background);

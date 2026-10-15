@@ -13,11 +13,14 @@ import type { RowDataPacket } from "mysql2";
 import { db } from "@/lib/db";
 
 // Guests check in without an account, so the change is recorded under user 1,
-// the system account in the seeds.
+// the system account in the seeds (user.user_id 1, written to ticket.updated_by).
 const SYSTEM_USER_ID = 1;
 
 // checkIn: marks one traveler as checked in for their flight (ticket.checked_in 0 -> 1).
 // Called by the "Check in" button on page.tsx, which sends booking_id and e_ticket_number.
+// FormData is the browser's type for a submitted form: formData.get("name") returns the value
+// of the input with that name. Database: booking_id is booking.booking_id, e_ticket_number
+// is ticket.e_ticket_number.
 export async function checkIn(formData: FormData) {
   // 1. Read what the form sent. Form values always arrive as text.
   const bookingId = String(formData.get("booking_id"));
@@ -25,6 +28,7 @@ export async function checkIn(formData: FormData) {
 
   // 2. Check that the change is allowed. Anyone can send these values, not only our form,
   //    so make sure the ticket belongs to this booking and the booking is CONFIRMED.
+  //    RowDataPacket[] = a list of rows. An empty list means no ticket matched.
   const [allowed] = await db.query<RowDataPacket[]>(
     `SELECT t.e_ticket_number
        FROM ticket t
