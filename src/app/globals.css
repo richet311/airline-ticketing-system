@@ -12,6 +12,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* Azure Air colors */
+@theme {
+  --color-azure-navy: #0b1d3a;
+  --color-azure-hero: #14315f;
+  --color-azure-blue: #1a66da;
+  --color-azure-blue-dark: #1553b5;
+  --color-azure-sky: #e8f0fc;
+  --color-azure-page: #f1f4f8;
+}
+
 
 body {
   background: var(--background);

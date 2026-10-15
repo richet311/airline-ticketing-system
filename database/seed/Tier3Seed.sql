@@ -1,22 +1,40 @@
 -- Tier 3: flights, fares, seats, bookings, upgrades, tickets, payments and baggage.
 
--- All times are UTC.
+-- All times are UTC. Flight times are relative to when this file runs,
+-- so re-run Tier0 to Tier3 before testing anything time based.
 
 USE airline_db;
 
--- time is captured in UTC, Coordinated Universal Time, otherwise flights traveling westbound would arrive before they depart and fail check_flight_times
+-- use UTC for NOW()
+SET time_zone = '+00:00';
+
+-- now, rounded up to the next 15 minutes. Flight times below are offsets from it.
+SET @now = TIMESTAMP(DATE(UTC_TIMESTAMP()), SEC_TO_TIME(CEIL(TIME_TO_SEC(TIME(UTC_TIMESTAMP())) / 900) * 900));
+
+SET @az410 = @now - INTERVAL '6 4:30' DAY_MINUTE;    -- ARRIVED
+SET @az320 = @now - INTERVAL '1:30' HOUR_MINUTE;     -- DEPARTED
+SET @az640 = @now + INTERVAL '0:35' HOUR_MINUTE;     -- BOARDING
+SET @az301 = @now + INTERVAL '17:30' HOUR_MINUTE;    -- DELAYED
+SET @az350 = @now + INTERVAL '20:20' HOUR_MINUTE;    -- SCHEDULED, check-in open
+SET @az411 = @now + INTERVAL '15 6:00' DAY_MINUTE;   -- SCHEDULED
+SET @az310 = @now + INTERVAL '23 20:10' DAY_MINUTE;  -- SCHEDULED
+SET @az311 = @now + INTERVAL '38 5:45' DAY_MINUTE;   -- SCHEDULED
+SET @az101 = @now + INTERVAL '63 20:00' DAY_MINUTE;  -- SCHEDULED
+SET @az303 = @now + INTERVAL '68 19:00' DAY_MINUTE;  -- CANCELLED
+SET @az102 = @now + INTERVAL '84 10:30' DAY_MINUTE;  -- SCHEDULED
+
 INSERT INTO flight (flight_id, flight_number, aircraft_id, origin_airport_id, destination_airport_id, departure_time, arrival_time, departure_gate_id, arrival_gate_id, flight_status_id, distance, created_by, created_at, updated_by, last_updated) VALUES
-(50001, 'AZ410', 20004, 10001, 10007, '2026-10-06 12:30:00', '2026-10-06 14:55:00', 40001, 40010, 5, 925, 1, NOW(), 1, NOW()), -- arrived
-(50002, 'AZ320', 20005, 10001, 10006, '2026-10-12 15:30:00', '2026-10-12 18:50:00', 40002, 40009, 4, 1379, 1, NOW(), 1, NOW()), -- in the air
-(50003, 'AZ640', 20002, 10008, 10004, '2026-10-12 17:35:00', '2026-10-13 02:05:00', 40011, 40007, 3, 3851, 1, NOW(), 1, NOW()), -- boarding, sold out
-(50004, 'AZ350', 20007, 10007, 10006, '2026-10-13 13:20:00', '2026-10-13 17:50:00', 40010, 40009, 1, 1745, 1, NOW(), 1, NOW()), -- check-in open
-(50005, 'AZ301', 20003, 10005, 10003, '2026-10-13 10:30:00', '2026-10-13 11:45:00', 40008, NULL, 2, 215, 1, NOW(), 1, NOW()), -- delayed
-(50006, 'AZ411', 20004, 10007, 10001, '2026-10-27 23:00:00', '2026-10-28 01:40:00', NULL, NULL, 1, 925, 1, NOW(), 1, NOW()), -- round trip B return
-(50007, 'AZ310', 20001, 10001, 10004, '2026-11-05 13:10:00', '2026-11-05 16:25:00', NULL, NULL, 1, 1416, 1, NOW(), 1, NOW()), -- round trip E outbound
-(50008, 'AZ311', 20001, 10004, 10001, '2026-11-19 22:45:00', '2026-11-20 02:25:00', NULL, NULL, 1, 1416, 1, NOW(), 1, NOW()), -- round trip E return
-(50009, 'AZ303', 20003, 10003, 10005, '2026-12-20 12:00:00', '2026-12-20 13:20:00', NULL, NULL, 6, 215, 1, NOW(), 1, NOW()), -- cancelled
-(50010, 'AZ101', 20001, 10001, 10002, '2026-12-15 13:00:00', '2026-12-16 02:30:00', 40002, 40003, 1, 6629, 1, NOW(), 1, NOW()), -- round trip A outbound
-(50011, 'AZ102', 20001, 10002, 10001, '2027-01-05 03:30:00', '2027-01-05 15:00:00', NULL, NULL, 1, 6629, 1, NOW(), 1, NOW()); -- round trip A return
+(50001, 'AZ410', 20004, 10001, 10007, @az410, @az410 + INTERVAL '2:25' HOUR_MINUTE, 40001, 40010, 5, 925, 1, NOW(), 1, NOW()), -- arrived
+(50002, 'AZ320', 20005, 10001, 10006, @az320, @az320 + INTERVAL '3:20' HOUR_MINUTE, 40002, 40009, 4, 1379, 1, NOW(), 1, NOW()), -- in the air
+(50003, 'AZ640', 20002, 10008, 10004, @az640, @az640 + INTERVAL '8:30' HOUR_MINUTE, 40011, 40007, 3, 3851, 1, NOW(), 1, NOW()), -- boarding, sold out
+(50004, 'AZ350', 20007, 10007, 10006, @az350, @az350 + INTERVAL '4:30' HOUR_MINUTE, 40010, 40009, 1, 1745, 1, NOW(), 1, NOW()), -- check-in open
+(50005, 'AZ301', 20003, 10005, 10003, @az301, @az301 + INTERVAL '1:15' HOUR_MINUTE, 40008, NULL, 2, 215, 1, NOW(), 1, NOW()), -- delayed
+(50006, 'AZ411', 20004, 10007, 10001, @az411, @az411 + INTERVAL '2:40' HOUR_MINUTE, NULL, NULL, 1, 925, 1, NOW(), 1, NOW()), -- round trip B return
+(50007, 'AZ310', 20001, 10001, 10004, @az310, @az310 + INTERVAL '3:15' HOUR_MINUTE, NULL, NULL, 1, 1416, 1, NOW(), 1, NOW()), -- round trip E outbound
+(50008, 'AZ311', 20001, 10004, 10001, @az311, @az311 + INTERVAL '3:40' HOUR_MINUTE, NULL, NULL, 1, 1416, 1, NOW(), 1, NOW()), -- round trip E return
+(50009, 'AZ303', 20003, 10003, 10005, @az303, @az303 + INTERVAL '1:20' HOUR_MINUTE, NULL, NULL, 6, 215, 1, NOW(), 1, NOW()), -- cancelled
+(50010, 'AZ101', 20001, 10001, 10002, @az101, @az101 + INTERVAL '13:30' HOUR_MINUTE, 40002, 40003, 1, 6629, 1, NOW(), 1, NOW()), -- round trip A outbound
+(50011, 'AZ102', 20001, 10002, 10001, @az102, @az102 + INTERVAL '11:30' HOUR_MINUTE, NULL, NULL, 1, 6629, 1, NOW(), 1, NOW()); -- round trip A return
 
 INSERT INTO fare_class (fare_class_id, flight_id, cabin_class_id, base_price, seats_total, seats_available, is_refundable, change_fee, created_by, created_at, updated_by, last_updated) VALUES
 (60001, 50001, 1, 189.00, 4, 2, FALSE, 50.00, 1, NOW(), 1, NOW()),
@@ -30,7 +48,7 @@ INSERT INTO fare_class (fare_class_id, flight_id, cabin_class_id, base_price, se
 (60009, 50007, 1, 248.00, 6, 3, FALSE, 50.00, 1, NOW(), 1, NOW()),
 (60010, 50008, 2, 395.00, 2, 1, TRUE, 60.00, 1, NOW(), 1, NOW()),
 (60011, 50008, 1, 259.00, 6, 5, FALSE, 50.00, 1, NOW(), 1, NOW()),
-(60012, 50009, 1, 300.00, 6, 4, FALSE, 25.00, 1, NOW(), 1, NOW()),
+(60012, 50009, 1, 300.00, 6, 5, FALSE, 25.00, 1, NOW(), 1, NOW()),
 (60013, 50010, 2, 653.00, 8, 6, TRUE, 75.00, 1, NOW(), 1, NOW()),
 (60014, 50011, 2, 641.00, 8, 6, TRUE, 75.00, 1, NOW(), 1, NOW());
 
@@ -80,7 +98,7 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 (50008, '2C', 1, 1, NULL, 1, NOW(), 1, NOW()),
 (50008, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
 (50008, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50009, '1A', 1, 3, NULL, 1, NOW(), 1, NOW()),
+(50009, '1A', 1, 1, NULL, 1, NOW(), 1, NOW()), -- freed when AZ42KV was cancelled
 (50009, '1B', 1, 3, NULL, 1, NOW(), 1, NOW()),
 (50009, '1C', 1, 1, NULL, 1, NOW(), 1, NOW()),
 (50009, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
@@ -136,7 +154,7 @@ INSERT INTO booking_upgrade (upgrade_id, booking_id, created_by, created_at, upd
 -- flight fare is an attribute of ticket but we want to show the derived value on the ticket that is the total amount (the base price plus any booking upgrade)
 INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id, seat_number, flight_fare, checked_in, created_by, created_at, updated_by, last_updated) VALUES
 ('A2345678B', 'AZ42KU', 1003, 50009, 60012, '1B', 300.00, FALSE, 1, NOW(), 1, NOW()),
-('B2345678C', 'AZ42KV', 1004, 50009, 60012, '1A', 300.00, FALSE, 1, NOW(), 1, NOW()),
+('B2345678C', 'AZ42KV', 1004, 50009, 60012, NULL, 300.00, FALSE, 1, NOW(), 1, NOW()), -- cancelled, seat released
 ('C2345678D', 'AZ43AA', 1005, 50001, 60001, '1A', 189.00, TRUE, 1, NOW(), 1, NOW()),
 ('D2345678E', 'AZ43AA', 1006, 50001, 60001, '1B', 189.00, TRUE, 1, NOW(), 1, NOW()),
 ('E2345678F', 'AZ43AA', 1005, 50006, 60007, '1A', 195.00, FALSE, 1, NOW(), 1, NOW()),

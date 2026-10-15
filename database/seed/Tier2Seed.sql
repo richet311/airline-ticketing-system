@@ -52,4 +52,4 @@ INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by,
 INSERT INTO employee (employee_id, user_id, first_name, last_name, date_of_birth, salary, direct_supervisor_id, assigned_gate_id, job_role_id, hire_date, is_active, created_by, created_at, updated_by, last_updated) VALUES
 (2001, 1, 'TESTEMPLOYEE', 'SYSADMIN', '2002-02-02', 75000, NULL, NULL, 91, '2026-08-28', TRUE, 1, NOW(), 1, NOW()),
 (2002, 3, 'Taylor', 'Johnson', '1985-05-14', 68000.00, 2001, NULL, 92, '2022-03-10', TRUE, 1, NOW(), 1, NOW()),
-(2003, 6, 'Morgan', 'Williams', '1990-09-22', 52000.00, 2002, 40007, 96, '2024-01-15', TRUE, 1, NOW(), 1, NOW());
+(2003, 6, 'Morgan', 'Williams', '1990-09-22', 52000.00, 2002, 40011, 96, '2024-01-15', TRUE, 1, NOW(), 1, NOW()); -- gate agent at A26

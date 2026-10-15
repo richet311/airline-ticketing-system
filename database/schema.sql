@@ -1,6 +1,7 @@
 -- airline_db schema. Run this first, then the seed files (Tier0 to Tier3) in order.
 -- WARNING: drops and recreates all 25 tables.
 -- If you change a table, update the seed files in the same commit.
+-- All times are stored in UTC.
 
 CREATE DATABASE IF NOT EXISTS airline_db;
 
@@ -37,6 +38,8 @@ DROP TABLE IF EXISTS baggage_status;
 DROP TABLE IF EXISTS ticket;
 DROP TABLE IF EXISTS baggage;
 DROP TABLE IF EXISTS payment;
+-- old name of upgrade_type
+DROP TABLE IF EXISTS comfort_upgrade_type;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -397,7 +400,8 @@ CREATE TABLE ticket (
     passenger_id INT NOT NULL,
     flight_id INT NOT NULL,
     fare_class_id INT NOT NULL,
-    seat_number VARCHAR(4) NOT NULL,
+    -- NULL once the ticket gives up its seat (cancelled or hold expired)
+    seat_number VARCHAR(4) NULL,
     flight_fare DECIMAL(10, 2) NOT NULL,
     checked_in BOOLEAN NULL,
 
