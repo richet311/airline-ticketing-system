@@ -331,3 +331,22 @@ export interface FareOption extends RowDataPacket {
     seats_available: number;
     is_refundable: 0 | 1;
 }
+
+// /flight-status
+export interface FlightStatusRow extends RowDataPacket {
+    flight_id: number;
+    flight_number: string;
+    origin: string;
+    destination: string;
+    departure_time: string;
+    arrival_time: string;
+    duration_min: number; // TIMESTAMPDIFF(MINUTE, departure_time, arrival_time)
+    flight_status_name: string;
+}
+
+// /book/seats: one seat on the map
+export interface SeatMapRow extends RowDataPacket {
+    seat_number: string;
+    cabin_class_name: string;
+    seat_status_name: string;
+}

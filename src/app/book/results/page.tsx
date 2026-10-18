@@ -1,7 +1,10 @@
+// TODO: only signed-in customers should be able to pick a fare
+
 import { Suspense } from "react";
 import Link from "next/link";
 
 import { db } from "@/lib/db";
+import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportCity, FareOption, FlightSearchResult } from "@/lib/types";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -11,15 +14,6 @@ const CABINS = ["ECONOMY", "PREMIUM", "BUSINESS", "FIRST"];
 
 const FLIGHT_ROW_GRID = "grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3";
 
-const FLIGHT_STATUS_DISPLAY: Record<string, { label: string; className: string }> = {
-  SCHEDULED: { label: "On time", className: "text-green-700" },
-  DELAYED: { label: "Delayed", className: "text-amber-600" },
-  BOARDING: { label: "Boarding", className: "text-azure-blue" },
-  DEPARTED: { label: "Departed", className: "text-gray-500" },
-  ARRIVED: { label: "Arrived", className: "text-gray-500" },
-  CANCELLED: { label: "Cancelled", className: "text-red-600" },
-};
-
 // show "N seats left" at or below this
 const FEW_SEATS = 3;
 
@@ -27,7 +21,7 @@ const ModSearchBtn =
   "rounded border-2 border-azure-blue text-azure-blue px-6 py-2.5 text-sm font-semibold hover:bg-azure-blue-dark hover:text-white";
 type SearchParams = { [key: string]: string | string[] | undefined };
 
-// returnDate is null for one-way trips
+// returnDate is null for one-way trips, outbound is the picked departing fare (or "")
 type Search = {
   from: string;
   to: string;
@@ -35,6 +29,7 @@ type Search = {
   returnDate: string | null;
   passengers: number;
   cabin: string;
+  outbound: string;
 };
 
 export default function FlightResultsPage({ searchParams }: PageProps<"/book/results">) {
@@ -73,16 +68,7 @@ async function Results({ searchParams }: { searchParams: Promise<SearchParams> }
       <div className="mx-auto max-w-6xl space-y-8 px-4 py-6">
         <StepPills current={1} />
 
-        <FlightList
-          label={`Departing flight · ${search.depart}`}
-          title={`${fromAirport.city} (${fromAirport.airport_code}) to ${toAirport.city} (${toAirport.airport_code})`}
-          from={search.from}
-          to={search.to}
-          day={search.depart}
-          passengers={search.passengers}
-        />
-
-        {search.returnDate && (
+        {search.returnDate !== null && search.outbound !== "" ? (
           <FlightList
             label={`Return flight · ${search.returnDate}`}
             title={`${toAirport.city} (${toAirport.airport_code}) to ${fromAirport.city} (${fromAirport.airport_code})`}
@@ -90,12 +76,31 @@ async function Results({ searchParams }: { searchParams: Promise<SearchParams> }
             to={search.from}
             day={search.returnDate}
             passengers={search.passengers}
+            chosenCabin={search.cabin}
+            hrefFor={(fareClassId) => seatsUrl(search, Number(search.outbound), fareClassId)}
+          />
+        ) : (
+          <FlightList
+            label={`Departing flight · ${search.depart}`}
+            title={`${fromAirport.city} (${fromAirport.airport_code}) to ${toAirport.city} (${toAirport.airport_code})`}
+            from={search.from}
+            to={search.to}
+            day={search.depart}
+            passengers={search.passengers}
+            chosenCabin={search.cabin}
+            hrefFor={(fareClassId) =>
+              search.returnDate !== null ? returnListUrl(search, fareClassId) : seatsUrl(search, fareClassId, null)
+            }
           />
         )}
 
-        <p className="text-xs text-gray-500">
-          Fares are per person and include taxes. Selecting a fare holds nothing yet: seats are held on the next step.
-        </p>
+        <div className="space-y-1 text-xs text-gray-500">
+          <p>Fares are per person and include taxes. Selecting a fare holds nothing yet: seats are held on the next step.</p>
+          <p>
+            All flights are refundable, however, Economy bookings will incur a $50 fee, Premium $100, Business $150, and
+            First $300 per passenger.
+          </p>
+        </div>
       </div>
     </>
   );
@@ -149,7 +154,30 @@ function readSearch(params: SearchParams): Search {
     returnDate: text("trip") === "one-way" ? null : text("return"),
     passengers: Number(text("passengers")),
     cabin: text("cabin"),
+    outbound: text("outbound"),
   };
+}
+
+function returnListUrl(search: Search, outboundFareId: number): string {
+  const params = new URLSearchParams({
+    trip: "round",
+    from: search.from,
+    to: search.to,
+    depart: search.depart,
+    return: search.returnDate ?? "",
+    passengers: String(search.passengers),
+    cabin: search.cabin,
+    outbound: String(outboundFareId),
+  });
+  return `/book/results?${params}`;
+}
+
+function seatsUrl(search: Search, outboundFareId: number, returnFareId: number | null): string {
+  const params = new URLSearchParams({ outbound: String(outboundFareId), passengers: String(search.passengers) });
+  if (returnFareId !== null) {
+    params.set("return", String(returnFareId));
+  }
+  return `/book/seats?${params}`;
 }
 
 async function FlightList({
@@ -159,6 +187,8 @@ async function FlightList({
   to,
   day,
   passengers,
+  chosenCabin,
+  hrefFor,
 }: {
   label: string;
   title: string;
@@ -166,6 +196,8 @@ async function FlightList({
   to: string;
   day: string;
   passengers: number;
+  chosenCabin: string;
+  hrefFor: (fareClassId: number) => string;
 }) {
   // Known issue: DATE() is the UTC day, so late-evening flights show under the next day.
   const [flights] = await db.query<FlightSearchResult[]>(
@@ -211,7 +243,7 @@ async function FlightList({
       <div className={`${FLIGHT_ROW_GRID} px-4 pb-2 text-[11px] font-semibold tracking-wider text-gray-500 uppercase`}>
         <span>Flight</span>
         {CABINS.map((cabin) => (
-          <span key={cabin} className="text-center">
+          <span key={cabin} className={`text-center ${cabin === chosenCabin ? "text-azure-blue" : ""}`}>
             {cabin}
           </span>
         ))}
@@ -226,6 +258,7 @@ async function FlightList({
                 key={cabin}
                 fare={fares.find((fare) => fare.flight_id === flight.flight_id && fare.cabin_class_name === cabin)}
                 passengers={passengers}
+                hrefFor={hrefFor}
               />
             ))}
           </li>
@@ -245,10 +278,7 @@ function SectionHeading({ label, title }: { label: string; title: string }) {
 }
 
 function FlightInfo({ flight }: { flight: FlightSearchResult }) {
-  const status = FLIGHT_STATUS_DISPLAY[flight.flight_status_name] ?? {
-    label: flight.flight_status_name,
-    className: "text-gray-500",
-  };
+  const status = flightStatusDisplay(flight.flight_status_name);
 
   return (
     <div>
@@ -260,31 +290,43 @@ function FlightInfo({ flight }: { flight: FlightSearchResult }) {
         {Math.floor(flight.duration_min / 60)}h {flight.duration_min % 60}m · Nonstop · {flight.flight_number} ·{" "}
         {flight.aircraft_type}
       </p>
-      <p className={`text-xs font-semibold ${status.className}`}>{status.label}</p>
+      <p className={`text-xs font-semibold ${status.textClass}`}>{status.label}</p>
     </div>
   );
 }
 
-function FareLine({ fare, passengers }: { fare: FareOption | undefined; passengers: number }) {
+function FareLine({
+  fare,
+  passengers,
+  hrefFor,
+}: {
+  fare: FareOption | undefined;
+  passengers: number;
+  hrefFor: (fareClassId: number) => string;
+}) {
   if (!fare || fare.seats_available < passengers) {
+    const reason =
+      !fare || fare.seats_available === 0 ? "No seats available" : "Not enough seats for all passengers";
     return (
       <div className="flex items-center justify-center rounded-lg bg-gray-100 p-3 text-center text-sm font-semibold text-gray-400">
-        No seats available
+        {reason}
       </div>
     );
   }
 
-  let note;
-  if (fare.seats_available <= FEW_SEATS) {
-    note = `${fare.seats_available} ${fare.seats_available === 1 ? "seat" : "seats"} left`;
-  } else {
-    note = fare.is_refundable === 1 ? "Refundable" : "Non-refundable";
-  }
+  const fewSeatsLeft = fare.seats_available <= FEW_SEATS;
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-gray-200 p-3 text-center">
-      <p className="text-lg font-bold text-azure-navy">${fare.base_price}</p>
-      <p className="text-[11px] text-gray-500">{note}</p>
-    </div>
+    <Link
+      href={hrefFor(fare.fare_class_id)}
+      className="group flex flex-col items-center justify-center rounded-lg border border-gray-200 p-3 text-center hover:border-azure-blue hover:bg-azure-blue"
+    >
+      <p className="text-lg font-bold text-azure-navy group-hover:text-white">${fare.base_price}</p>
+      {fewSeatsLeft && (
+        <p className="text-[11px] text-gray-500 group-hover:text-white">
+          {fare.seats_available} {fare.seats_available === 1 ? "seat" : "seats"} left
+        </p>
+      )}
+    </Link>
   );
 }
