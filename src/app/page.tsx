@@ -1,9 +1,13 @@
+import { Suspense } from "react";
+
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { BookingCard } from "@/components/home/BookingCard";
 import { PopularDestinations, type Destination } from "@/components/home/PopularDestinations";
 import { QuickLinks } from "@/components/home/QuickLinks";
 import { RewardsBanner } from "@/components/home/RewardsBanner";
+import { db } from "@/lib/db";
+import type { AirportCity } from "@/lib/types";
 
 // sample data until there's a real query
 const sampleDestinations: Destination[] = [
@@ -22,7 +26,9 @@ export default function HomePage() {
         <section className="bg-linear-to-b from-azure-hero to-azure-navy pt-10 pb-14 text-white">
           <div className="mx-auto max-w-6xl px-4">
             <h1 className="mb-6 text-3xl font-bold sm:text-4xl">Where can we take you?</h1>
-            <BookingCard />
+            <Suspense fallback={<BookingCard airports={[]} />}>
+              <BookingCardWithAirports />
+            </Suspense>
           </div>
         </section>
 
@@ -36,4 +42,10 @@ export default function HomePage() {
       <SiteFooter />
     </>
   );
+}
+
+async function BookingCardWithAirports() {
+  const [airports] = await db.query<AirportCity[]>("SELECT airport_code, city, country FROM airport ORDER BY city");
+
+  return <BookingCard airports={airports} />;
 }
