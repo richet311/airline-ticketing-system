@@ -5,6 +5,8 @@ import { useActionState, useState, type ReactNode } from "react";
 
 import { findTrip } from "@/app/actions";
 
+import type { AirportOption } from "@/lib/types";
+
 const tabs = [
   { id: "book", label: "Book" },
   { id: "check-in", label: "Check In" },
@@ -20,7 +22,8 @@ const inputClass =
 const buttonClass =
   "rounded bg-azure-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-azure-blue-dark";
 
-export function BookingCard() {
+
+export function BookingCard({ airports }: { airports: AirportOption[] }) {
   const [activeTab, setActiveTab] = useState<TabId>("book");
 
   return (
@@ -44,7 +47,7 @@ export function BookingCard() {
       </div>
 
       <div role="tabpanel" aria-labelledby={`tab-${activeTab}`} className="p-5">
-        {activeTab === "book" && <BookForm />}
+        {activeTab === "book" && <BookForm airports={airports} />}
         {activeTab === "check-in" && (
           <TripLookupForm goTo="check-in" submitLabel="Check in" note="Check-in opens 24 hours before departure." />
         )}
@@ -57,8 +60,30 @@ export function BookingCard() {
   );
 }
 
-function BookForm() {
+function BookForm({ airports }: { airports: AirportOption[] }) {
   const [trip, setTrip] = useState<"round" | "one-way">("round");
+  const [fromAirport, setFromAirport] = useState("IAH");
+  const [toAirport, setToAirport] = useState("");
+  const [departDate, setDepartDate] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+
+  // To can't be the same airport as From
+  const toChoices = airports.filter((airport) => airport.airport_code !== fromAirport);
+
+  function changeFrom(code: string) {
+    setFromAirport(code);
+    if (code === toAirport) {
+      setToAirport("");
+    }
+  }
+
+  // YYYY-MM-DD strings sort in date order
+  function changeDepart(day: string) {
+    setDepartDate(day);
+    if (returnDate !== "" && returnDate < day) {
+      setReturnDate("");
+    }
+  }
 
   return (
     <Form action="/book/results">
@@ -90,18 +115,54 @@ function BookForm() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <Field label="From">
-          <input name="from" defaultValue="IAH" placeholder="City or airport" required className={inputClass} />
+          <select
+            name="from"
+            value={fromAirport}
+            onChange={(event) => changeFrom(event.target.value)}
+            required
+            className={inputClass}
+          >
+            <option value="">Choose an airport</option>
+            {airports.map((airport) => (
+              <option key={airport.airport_code} value={airport.airport_code}>
+                {airport.city}, {airport.country} ({airport.airport_code})
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="To">
-          <input name="to" placeholder="City or airport" required className={inputClass} />
+          <select
+            name="to"
+            value={toAirport}
+            onChange={(event) => setToAirport(event.target.value)}
+            required
+            className={inputClass}
+          >
+            <option value="">Choose an airport</option>
+            {toChoices.map((airport) => (
+              <option key={airport.airport_code} value={airport.airport_code}>
+                {airport.city}, {airport.country} ({airport.airport_code})
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Depart">
-          <input type="date" name="depart" required className={inputClass} />
+          <input
+            type="date"
+            name="depart"
+            value={departDate}
+            onChange={(event) => changeDepart(event.target.value)}
+            required
+            className={inputClass}
+          />
         </Field>
         <Field label="Return">
           <input
             type="date"
             name="return"
+            value={returnDate}
+            onChange={(event) => setReturnDate(event.target.value)}
+            min={departDate === "" ? undefined : dayAfter(departDate)}
             required={trip === "round"}
             disabled={trip === "one-way"}
             className={inputClass}
@@ -209,6 +270,13 @@ function FlightStatusForm() {
       <p className="mt-3 text-xs text-gray-500">Gate and times can change. Check again before you leave.</p>
     </Form>
   );
+}
+
+// "2026-11-30" -> "2026-12-01", in UTC so the local time zone can't shift it
+function dayAfter(day: string): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate());
+  return date.toISOString().slice(0, 10);
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
