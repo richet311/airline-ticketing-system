@@ -350,3 +350,31 @@ export interface SeatMapRow extends RowDataPacket {
     cabin_class_name: string;
     seat_status_name: string;
 }
+
+// /book/confirmation
+export interface BookingSummary extends RowDataPacket {
+    booking_id: string;
+    booking_status_name: string;
+    total_amount: number;
+    currency: string;
+    created_at: string;
+}
+
+// /book/confirmation: one ticket with its traveler, flight and bags
+export interface ConfirmationTicket extends RowDataPacket {
+    e_ticket_number: string;
+    passenger_id: number;
+    first_name: string | null;
+    last_name: string | null;
+    seat_number: string | null;
+    flight_fare: number;
+    flight_id: number;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    origin: string;
+    destination: string;
+    cabin_class_name: string;
+    bag_count: number;
+    bag_fees: number;
+}
