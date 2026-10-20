@@ -59,7 +59,7 @@ async function SeatSelection({ searchParams }: { searchParams: Promise<SearchPar
 
   if (!outboundFare || !currentFare || (returnFare !== null && !returnFareRow)) {
     return (
-      <p className="rounded-lg border border-gray-200 bg-white p-6 text-gray-600">
+      <p className="rounded-card border border-gray-200 bg-white shadow-card p-6 text-gray-600">
         We couldn&apos;t find that fare. Please start a new search from the home page.
       </p>
     );

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportCity, FareOption, FlightSearchResult } from "@/lib/types";
+import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { StepPills } from "@/components/steps/StepPills";
@@ -18,7 +19,7 @@ const FLIGHT_ROW_GRID = "grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3";
 const FEW_SEATS = 3;
 
 const ModSearchBtn =
-  "rounded border-2 border-azure-blue text-azure-blue px-6 py-2.5 text-sm font-semibold hover:bg-azure-blue-dark hover:text-white";
+  "rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white";
 type SearchParams = { [key: string]: string | string[] | undefined };
 
 // returnDate is null for one-way trips, outbound is the picked departing fare (or "")
@@ -120,22 +121,42 @@ function SummaryBar({
 
   return (
     <div className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-        <div>
-          <p className="text-lg font-bold text-azure-navy">
-            {fromAirport.airport_code} {search.returnDate ? "⇄" : "→"} {toAirport.airport_code}
-          </p>
-          <p className="text-sm text-gray-500">
-            {search.depart}
-            {search.returnDate && ` – ${search.returnDate}`} · {search.passengers}{" "}
-            {search.passengers === 1 ? "passenger" : "passengers"} · {cabinLabel}
-          </p>
+      <div className="mx-auto flex max-w-6xl items-center gap-8 px-4 py-4">
+        <div className="flex items-center gap-4">
+          <AirportCode airport={fromAirport} />
+          <span className="text-xl text-azure-blue">{search.returnDate ? "⇄" : "→"}</span>
+          <AirportCode airport={toAirport} />
         </div>
 
-        <Link href="/" className={ModSearchBtn}>
+        <SummaryItem
+          label={search.returnDate ? "Depart – Return" : "Depart"}
+          value={search.returnDate ? `${search.depart} – ${search.returnDate}` : search.depart}
+        />
+        <SummaryItem label="Passengers" value={String(search.passengers)} />
+        <SummaryItem label="Cabin" value={cabinLabel} />
+
+        <Link href="/" className={`ml-auto ${ModSearchBtn}`}>
           Modify search
         </Link>
       </div>
+    </div>
+  );
+}
+
+function AirportCode({ airport }: { airport: AirportCity }) {
+  return (
+    <div>
+      <p className="text-2xl leading-tight font-semibold text-azure-navy">{airport.airport_code}</p>
+      <p className="text-xs text-gray-500">{airport.city}</p>
+    </div>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-l border-gray-200 pl-8">
+      <p className="text-[11px] font-semibold tracking-widest text-gray-500 uppercase">{label}</p>
+      <p className="text-[15px] font-semibold text-gray-900">{value}</p>
     </div>
   );
 }
@@ -222,7 +243,7 @@ async function FlightList({
     return (
       <section>
         <SectionHeading label={label} title={title} />
-        <p className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500">No flights on this day.</p>
+        <p className="rounded-card border border-gray-200 bg-white shadow-card p-4 text-sm text-gray-500">No flights on this day.</p>
       </section>
     );
   }
@@ -240,7 +261,7 @@ async function FlightList({
     <section>
       <SectionHeading label={label} title={title} />
 
-      <div className={`${FLIGHT_ROW_GRID} px-4 pb-2 text-[11px] font-semibold tracking-wider text-gray-500 uppercase`}>
+      <div className={`${FLIGHT_ROW_GRID} px-4 pb-2 text-[11px] font-semibold tracking-widest text-gray-600 uppercase`}>
         <span>Flight</span>
         {CABINS.map((cabin) => (
           <span key={cabin} className={`text-center ${cabin === chosenCabin ? "text-azure-blue" : ""}`}>
@@ -251,7 +272,7 @@ async function FlightList({
 
       <ul className="space-y-3">
         {flights.map((flight) => (
-          <li key={flight.flight_id} className={`${FLIGHT_ROW_GRID} rounded-lg border border-gray-200 bg-white p-4`}>
+          <li key={flight.flight_id} className={`${FLIGHT_ROW_GRID} rounded-card border border-gray-200 bg-white shadow-card p-4`}>
             <FlightInfo flight={flight} />
             {CABINS.map((cabin) => (
               <FareLine
@@ -270,9 +291,8 @@ async function FlightList({
 
 function SectionHeading({ label, title }: { label: string; title: string }) {
   return (
-    <div className="mb-4">
-      <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase">{label}</p>
-      <h2 className="text-2xl font-bold text-azure-navy">{title}</h2>
+    <div className="mb-8">
+      <PageHeading overline={label} title={title} />
     </div>
   );
 }
@@ -282,7 +302,7 @@ function FlightInfo({ flight }: { flight: FlightSearchResult }) {
 
   return (
     <div>
-      <p className="text-lg font-bold text-azure-navy">
+      <p className="text-lg font-semibold text-azure-navy">
         {flight.departure_time.slice(11, 16)} → {flight.arrival_time.slice(11, 16)}{" "}
         <span className="text-xs font-normal text-gray-500">UTC</span>
       </p>
@@ -308,7 +328,7 @@ function FareLine({
     const reason =
       !fare || fare.seats_available === 0 ? "No seats available" : "Not enough seats for all passengers";
     return (
-      <div className="flex items-center justify-center rounded-lg bg-gray-100 p-3 text-center text-sm font-semibold text-gray-400">
+      <div className="flex items-center justify-center rounded-card bg-gray-100 p-3 text-center text-sm font-semibold text-gray-400">
         {reason}
       </div>
     );
@@ -319,9 +339,9 @@ function FareLine({
   return (
     <Link
       href={hrefFor(fare.fare_class_id)}
-      className="group flex flex-col items-center justify-center rounded-lg border border-gray-200 p-3 text-center hover:border-azure-blue hover:bg-azure-blue"
+      className="group flex flex-col items-center justify-center rounded-card border border-gray-200 p-3 text-center hover:border-azure-blue hover:bg-azure-blue"
     >
-      <p className="text-lg font-bold text-azure-navy group-hover:text-white">${fare.base_price}</p>
+      <p className="text-lg font-semibold text-azure-navy group-hover:text-white">${fare.base_price}</p>
       {fewSeatsLeft && (
         <p className="text-[11px] text-gray-500 group-hover:text-white">
           {fare.seats_available} {fare.seats_available === 1 ? "seat" : "seats"} left

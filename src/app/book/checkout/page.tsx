@@ -137,5 +137,5 @@ async function Checkout({ searchParams }: { searchParams: Promise<SearchParams> 
 }
 
 function Notice({ children }: { children: ReactNode }) {
-  return <p className="rounded-lg border border-gray-200 bg-white p-6 text-gray-600">{children}</p>;
+  return <p className="rounded-card border border-gray-200 bg-white shadow-card p-6 text-gray-600">{children}</p>;
 }

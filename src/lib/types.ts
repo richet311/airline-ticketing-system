@@ -311,6 +311,14 @@ export interface AirportOption extends RowDataPacket {
   country: string;
 }
 
+// Home: lowest round-trip Economy fare per destination
+export interface PopularDestination extends RowDataPacket {
+    origin: string;
+    destination: string;
+    city: string;
+    lowest_fare: number;
+}
+
 // /book/results: one flight
 export interface FlightSearchResult extends RowDataPacket {
     flight_id: number;
@@ -377,4 +385,25 @@ export interface ConfirmationTicket extends RowDataPacket {
     cabin_class_name: string;
     bag_count: number;
     bag_fees: number;
+}
+
+// session.ts getCurrentUser()
+export interface CurrentUser extends RowDataPacket {
+    user_id: number;
+    email: string;
+    loyalty_points: number;
+    passenger_id: number | null;
+    first_name: string | null;
+    last_name: string | null;
+}
+
+// session.ts getSignedInEmployee() (active employees only)
+export interface SignedInEmployee extends RowDataPacket {
+    employee_id: number;
+    user_id: number;
+    first_name: string | null;
+    last_name: string | null;
+    job_role_id: number;
+    job_role_name: string;
+    assigned_gate_id: number | null;
 }

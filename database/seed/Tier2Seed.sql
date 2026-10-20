@@ -23,7 +23,8 @@ INSERT INTO terminal (terminal_id, terminal_name, airport_id, created_by, create
 (30009, 'Terminal 6', 10006, 1, NOW(), 1, NOW()),
 (30010, 'Terminal 3', 10007, 1, NOW(), 1, NOW()),
 (30011, 'Terminal 1', 10008, 1, NOW(), 1, NOW()),
-(30012, 'Terminal 3', 10009, 1, NOW(), 1, NOW());
+(30012, 'Terminal 3', 10009, 1, NOW(), 1, NOW()),
+(30013, 'North Terminal', 10010, 1, NOW(), 1, NOW());
 
 -- 2 seats per row (A and B), so capacity is 6 or 8
 INSERT INTO aircraft (aircraft_id, aircraft_number, aircraft_type, capacity, maintenance_status_id, created_by, created_at, updated_by, last_updated) VALUES
@@ -48,7 +49,8 @@ INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by,
 (40009, '63', 1, 30009, 1, NOW(), 1, NOW()),
 (40010, 'K12', 1, 30010, 1, NOW(), 1, NOW()),
 (40011, 'A26', 2, 30011, 1, NOW(), 1, NOW()), -- AZ640 boarding here
-(40012, 'B14', 1, 30012, 1, NOW(), 1, NOW());
+(40012, 'B14', 1, 30012, 1, NOW(), 1, NOW()),
+(40013, 'D24', 1, 30013, 1, NOW(), 1, NOW());
 
 INSERT INTO employee (employee_id, user_id, first_name, last_name, date_of_birth, salary, direct_supervisor_id, assigned_gate_id, job_role_id, hire_date, is_active, created_by, created_at, updated_by, last_updated) VALUES
 (2001, 1, 'TESTEMPLOYEE', 'SYSADMIN', '2002-02-02', 75000, NULL, NULL, 91, '2026-08-28', TRUE, 1, NOW(), 1, NOW()),

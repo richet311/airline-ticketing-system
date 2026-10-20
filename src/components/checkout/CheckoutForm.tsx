@@ -7,7 +7,7 @@ import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import type { FareOption, FlightStatusRow, UpgradeType } from "@/lib/types";
 
 const inputClass =
-  "w-full rounded border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-azure-blue focus:ring-1 focus:ring-azure-blue focus:outline-none";
+  "h-11 w-full rounded-control border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-azure-blue focus:ring-1 focus:ring-azure-blue focus:outline-none";
 
 // must match check_payment_method in schema.sql
 const PAYMENT_METHODS = [
@@ -100,7 +100,7 @@ export function CheckoutForm({
             Per traveler, on every flight of your trip. 1st bag {feeLabel(CHECKED_BAG_FEES[0])}, 2nd bag{" "}
             {feeLabel(CHECKED_BAG_FEES[1])}. Up to 50 lb each.
           </p>
-          <ul className="mb-6 divide-y divide-gray-100 rounded border border-gray-200">
+          <ul className="mb-6 divide-y divide-gray-100 rounded-control border border-gray-200">
             {bags.map((count, i) => (
               <li key={i} className="flex items-center justify-between gap-4 px-4 py-2 text-sm">
                 <span className="text-gray-900">Traveler {i + 1}</span>
@@ -108,7 +108,7 @@ export function CheckoutForm({
                   name={`bags_${i}`}
                   value={count}
                   onChange={(event) => setBags(bags.map((old, j) => (j === i ? Number(event.target.value) : old)))}
-                  className={`${inputClass} w-40`}
+                  className={`${inputClass} max-w-48`}
                 >
                   {Array.from({ length: CHECKED_BAG_FEES.length + 1 }, (_, n) => (
                     <option key={n} value={n}>
@@ -129,7 +129,7 @@ export function CheckoutForm({
               return (
                 <label
                   key={upgrade.upgrade_id}
-                  className={`flex cursor-pointer gap-3 rounded-lg border p-3 ${
+                  className={`flex cursor-pointer gap-3 rounded-card border p-3 ${
                     checked ? "border-azure-blue bg-azure-sky" : "border-gray-200 hover:border-azure-blue"
                   }`}
                 >
@@ -155,7 +155,7 @@ export function CheckoutForm({
         </Section>
 
         <Section number={5} title="Payment">
-          <p className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          <p className="mb-4 rounded-control border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
             Test payment: no money is charged and card details are never saved. Any card number of 12 to 19
             digits works, for example 4242 4242 4242 4242.
           </p>
@@ -164,7 +164,7 @@ export function CheckoutForm({
             {PAYMENT_METHODS.map((method) => (
               <label
                 key={method.value}
-                className={`flex cursor-pointer items-center gap-2 rounded border px-4 py-2 text-sm ${
+                className={`flex cursor-pointer items-center gap-2 rounded-control border px-4 py-2 text-sm ${
                   paymentMethod === method.value
                     ? "border-azure-blue bg-azure-sky font-semibold text-azure-navy"
                     : "border-gray-300 text-gray-700 hover:border-azure-blue"
@@ -230,8 +230,8 @@ export function CheckoutForm({
       </div>
 
       <aside className="space-y-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-5">
-          <h2 className="mb-3 font-bold text-azure-navy">Your trip</h2>
+        <div className="rounded-card border border-gray-200 bg-white shadow-card p-5">
+          <h2 className="mb-3 font-semibold text-azure-navy">Your trip</h2>
           {legs.map(({ label, flight, fare, seats }) => (
             <div key={flight.flight_id} className="mb-3 last:mb-0">
               <p className="text-sm font-semibold text-gray-900">
@@ -248,7 +248,7 @@ export function CheckoutForm({
           ))}
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-5 text-sm">
+        <div className="rounded-card border border-gray-200 bg-white shadow-card p-5 text-sm">
           {legs.map(({ label, fare }) => (
             <PriceLine
               key={fare.fare_class_id}
@@ -265,7 +265,7 @@ export function CheckoutForm({
             .map((upgrade) => (
               <PriceLine key={upgrade.upgrade_id} label={upgrade.upgrade_name} amount={upgrade.upgrade_price} />
             ))}
-          <div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-bold text-azure-navy">
+          <div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-semibold text-azure-navy">
             <span>Total</span>
             <span>{formatPrice(total)}</span>
           </div>
@@ -276,7 +276,7 @@ export function CheckoutForm({
         </div>
 
         {message && (
-          <p role="alert" className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {message}
           </p>
         )}
@@ -284,7 +284,7 @@ export function CheckoutForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded bg-azure-blue px-6 py-3 text-sm font-semibold text-white enabled:hover:bg-azure-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-control bg-azure-blue px-6 py-3 text-sm font-semibold text-white enabled:hover:bg-azure-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending ? "Processing..." : `Purchase · ${formatPrice(total)}`}
         </button>
@@ -298,8 +298,8 @@ export function CheckoutForm({
 
 function Section({ number, title, children }: { number: number; title: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6">
-      <h2 className="mb-4 flex items-center gap-3 text-xl font-bold text-azure-navy">
+    <section className="rounded-card border border-gray-200 bg-white shadow-card p-6">
+      <h2 className="mb-4 flex items-center gap-3 text-xl font-semibold text-azure-navy">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-azure-navy text-sm text-white">
           {number}
         </span>
@@ -364,7 +364,7 @@ function TravelerFields({ index, legs }: { index: number; legs: TripLeg[] }) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase">{label}</span>
+      <span className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">{label}</span>
       {children}
     </label>
   );

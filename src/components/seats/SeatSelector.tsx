@@ -155,9 +155,9 @@ export function SeatSelector({
 
   return (
     <div className="grid grid-cols-[1fr_20rem] items-start gap-6">
-      <section className="rounded-lg border border-gray-200 bg-white p-6">
+      <section className="rounded-card border border-gray-200 bg-white shadow-card p-6">
         <div className="mb-4 flex items-baseline justify-between gap-4">
-          <h1 className="text-2xl font-bold text-azure-navy">
+          <h1 className="text-2xl font-semibold text-azure-navy">
             Choose your seat{passengers > 1 && ` (${seatCounter}/${passengers})`}
           </h1>
           {currentFlight && (
@@ -171,14 +171,14 @@ export function SeatSelector({
         <ul className="flex flex-wrap gap-5 text-xs text-gray-600">
           {LEGEND.map((item) => (
             <li key={item.look} className="flex items-center gap-2">
-              <span className={`h-4 w-4 rounded border-2 ${SEAT_CLASSES[item.look]}`} />
+              <span className={`h-4 w-4 rounded-sm border-2 ${SEAT_CLASSES[item.look]}`} />
               {item.label}
             </li>
           ))}
         </ul>
 
         {message && (
-          <p role="alert" className="mt-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="mt-4 rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {message}
           </p>
         )}
@@ -187,8 +187,8 @@ export function SeatSelector({
       </section>
 
       <aside className="space-y-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-5">
-          <h2 className="mb-3 font-bold text-azure-navy">Your trip</h2>
+        <div className="rounded-card border border-gray-200 bg-white shadow-card p-5">
+          <h2 className="mb-3 font-semibold text-azure-navy">Your trip</h2>
           {tripFlights.map(({ label, flight }) => (
             <div key={flight.flight_id} className="mb-3">
               <p className="text-sm font-semibold text-gray-900">
@@ -205,7 +205,7 @@ export function SeatSelector({
             <p className="text-sm text-gray-900">{travelerNames.join(", ")}</p>
             <div className="flex flex-wrap justify-end gap-1">
               {selected.map((seat) => (
-                <span key={seat} className="rounded bg-azure-blue px-2 py-0.5 text-xs font-bold text-white">
+                <span key={seat} className="rounded-control bg-azure-blue px-2 py-0.5 text-xs font-semibold text-white">
                   {seat}
                 </span>
               ))}
@@ -216,13 +216,13 @@ export function SeatSelector({
           )}
 
           {selected.length > 0 && (
-            <p className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <p className="mt-3 rounded-control border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               Seat held for you for <strong>{formatCountdown(secondsLeft)}</strong>. Continue before it&apos;s released.
             </p>
           )}
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-5 text-sm">
+        <div className="rounded-card border border-gray-200 bg-white shadow-card p-5 text-sm">
           <div className="flex justify-between text-gray-700">
             <span>Fare ({cabinLabel})</span>
             <span>{formatPrice(fareTotal)}</span>
@@ -231,7 +231,7 @@ export function SeatSelector({
             <span>Seat</span>
             <span>Included</span>
           </div>
-          <div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-bold text-azure-navy">
+          <div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-semibold text-azure-navy">
             <span>Total so far</span>
             <span>{formatPrice(fareTotal)}</span>
           </div>
@@ -245,7 +245,7 @@ export function SeatSelector({
           type="button"
           onClick={confirm}
           disabled={selected.length !== passengers || pending}
-          className="w-full rounded bg-azure-blue px-6 py-3 text-sm font-semibold text-white enabled:hover:bg-azure-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-control bg-azure-blue px-6 py-3 text-sm font-semibold text-white enabled:hover:bg-azure-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
           {continueLabel}
         </button>
@@ -277,7 +277,7 @@ function SeatMap({
 
         return (
           <div key={cabinName} className="mb-8 last:mb-0">
-            <p className="mb-3 text-center text-[11px] font-semibold tracking-wider text-gray-500 uppercase">{cabinName}</p>
+            <p className="mb-3 text-center text-[11px] font-semibold tracking-widest text-gray-600 uppercase">{cabinName}</p>
             {rows.map((row) => (
               <div key={row} className="mb-3 flex items-center justify-center gap-4">
                 <SeatButton
@@ -328,7 +328,7 @@ function SeatButton({
       disabled={!clickable || disabled}
       onClick={() => onSeatClick(seat.seat_number)}
       aria-label={`Seat ${seat.seat_number}: ${LEGEND.find((item) => item.look === look)?.label}`}
-      className={`h-14 w-14 rounded-lg border-2 text-sm font-semibold disabled:cursor-not-allowed ${SEAT_CLASSES[look]}`}
+      className={`h-14 w-14 rounded-md border-2 text-sm font-semibold disabled:cursor-not-allowed ${SEAT_CLASSES[look]}`}
     >
       {look === "taken" || look === "blocked" ? "" : seat.seat_number.slice(-1)}
     </button>

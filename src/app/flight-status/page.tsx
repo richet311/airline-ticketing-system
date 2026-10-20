@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 
+import { PageHeading } from "@/components/PageHeading";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FlightStatusSearch, type StatusSearchValues } from "@/components/flight-status/FlightStatusSearch";
@@ -27,9 +28,12 @@ export default function FlightStatusPage({ searchParams }: PageProps<"/flight-st
       <SiteHeader active="flight-status" />
 
       <main className="flex flex-1 flex-col">
-        <section className="bg-linear-to-b from-azure-hero to-azure-navy pt-10 pb-14 text-white">
-          <div className="mx-auto max-w-6xl px-4">
-            <h1 className="mb-6 text-3xl font-bold">Which flight are you tracking?</h1>
+        <section className="border-b border-gray-200 bg-white py-12">
+          <div className="mx-auto max-w-6xl space-y-8 px-4">
+            <PageHeading overline="Flight status" title="Which flight are you tracking?">
+              Search by route, or by flight number and departure date. Times can change, so check again before you
+              leave.
+            </PageHeading>
             <Suspense fallback={<FlightStatusSearch airports={[]} initial={{ from: "", to: "", flightNumber: "", date: "" }} />}>
               <SearchCard searchParams={searchParams} />
             </Suspense>
@@ -118,11 +122,11 @@ function readStatusSearch(params: SearchParams): StatusSearchValues {
 
 function StatusTable({ flights }: { flights: FlightStatusRow[] }) {
   return (
-    <div className="rounded-lg bg-white px-6 pt-4 pb-2">
-      <div className={`${STATUS_TABLE_GRID} text-center text-sm font-bold text-gray-900`}>
-        <p className="border-b-4 border-gray-300 pb-3">Flight</p>
-        <p className="border-b-4 border-gray-300 pb-3">Departure and Arrival</p>
-        <p className="border-b-4 border-gray-300 pb-3">Status</p>
+    <div className="rounded-card border border-gray-200 bg-white px-6 pt-4 pb-2 shadow-card">
+      <div className={`${STATUS_TABLE_GRID} text-center text-[11px] font-semibold tracking-widest text-gray-600 uppercase`}>
+        <p className="border-b border-gray-300 pb-3">Flight</p>
+        <p className="border-b border-gray-300 pb-3">Departure and Arrival</p>
+        <p className="border-b border-gray-300 pb-3">Status</p>
       </div>
 
       <ul className="divide-y divide-gray-200">
@@ -169,12 +173,12 @@ function StatusRow({ flight }: { flight: FlightStatusRow }) {
       </div>
 
       <div className="text-center">
-        <span className={`rounded px-2 py-1 text-xs font-semibold ${status.badgeClass}`}>{status.label}</span>
+        <span className={`rounded-control px-2.5 py-1 text-[11px] font-semibold tracking-widest uppercase ${status.badgeClass}`}>{status.label}</span>
       </div>
     </li>
   );
 }
 
 function MessageBox({ children }: { children: ReactNode }) {
-  return <p className="rounded-lg border border-gray-200 bg-white p-6 text-gray-600">{children}</p>;
+  return <p className="rounded-card border border-gray-200 bg-white p-6 text-gray-600 shadow-card">{children}</p>;
 }

@@ -17,7 +17,13 @@ SET @az640 = @now + INTERVAL '0:35' HOUR_MINUTE;     -- BOARDING
 SET @az301 = @now + INTERVAL '17:30' HOUR_MINUTE;    -- DELAYED
 SET @az350 = @now + INTERVAL '20:20' HOUR_MINUTE;    -- SCHEDULED, check-in open
 SET @az411 = @now + INTERVAL '15 6:00' DAY_MINUTE;   -- SCHEDULED
+SET @az330 = @now + INTERVAL '20 14:30' DAY_MINUTE;  -- SCHEDULED
+SET @az412 = @now + INTERVAL '21 12:15' DAY_MINUTE;  -- SCHEDULED
 SET @az310 = @now + INTERVAL '23 20:10' DAY_MINUTE;  -- SCHEDULED
+SET @az331 = @now + INTERVAL '24 21:00' DAY_MINUTE;  -- SCHEDULED
+SET @az413 = @now + INTERVAL '25 23:30' DAY_MINUTE;  -- SCHEDULED
+SET @az322 = @now + INTERVAL '26 15:45' DAY_MINUTE;  -- SCHEDULED
+SET @az323 = @now + INTERVAL '30 18:10' DAY_MINUTE;  -- SCHEDULED
 SET @az311 = @now + INTERVAL '38 5:45' DAY_MINUTE;   -- SCHEDULED
 SET @az101 = @now + INTERVAL '63 20:00' DAY_MINUTE;  -- SCHEDULED
 SET @az303 = @now + INTERVAL '68 19:00' DAY_MINUTE;  -- CANCELLED
@@ -34,7 +40,13 @@ INSERT INTO flight (flight_id, flight_number, aircraft_id, origin_airport_id, de
 (50008, 'AZ311', 20001, 10004, 10001, @az311, @az311 + INTERVAL '3:40' HOUR_MINUTE, NULL, NULL, 1, 1416, 1, NOW(), 1, NOW()), -- round trip E return
 (50009, 'AZ303', 20003, 10003, 10005, @az303, @az303 + INTERVAL '1:20' HOUR_MINUTE, NULL, NULL, 6, 215, 1, NOW(), 1, NOW()), -- cancelled
 (50010, 'AZ101', 20001, 10001, 10002, @az101, @az101 + INTERVAL '13:30' HOUR_MINUTE, 40002, 40003, 1, 6629, 1, NOW(), 1, NOW()), -- round trip A outbound
-(50011, 'AZ102', 20001, 10002, 10001, @az102, @az102 + INTERVAL '11:30' HOUR_MINUTE, NULL, NULL, 1, 6629, 1, NOW(), 1, NOW()); -- round trip A return
+(50011, 'AZ102', 20001, 10002, 10001, @az102, @az102 + INTERVAL '11:30' HOUR_MINUTE, NULL, NULL, 1, 6629, 1, NOW(), 1, NOW()), -- round trip A return
+(50012, 'AZ330', 20006, 10001, 10010, @az330, @az330 + INTERVAL '2:20' HOUR_MINUTE, NULL, NULL, 1, 964, 1, NOW(), 1, NOW()), -- popular route
+(50013, 'AZ331', 20006, 10010, 10001, @az331, @az331 + INTERVAL '2:45' HOUR_MINUTE, NULL, NULL, 1, 964, 1, NOW(), 1, NOW()), -- popular route
+(50014, 'AZ412', 20004, 10001, 10007, @az412, @az412 + INTERVAL '2:25' HOUR_MINUTE, NULL, NULL, 1, 925, 1, NOW(), 1, NOW()), -- popular route
+(50015, 'AZ413', 20004, 10007, 10001, @az413, @az413 + INTERVAL '2:40' HOUR_MINUTE, NULL, NULL, 1, 925, 1, NOW(), 1, NOW()), -- popular route
+(50016, 'AZ322', 20005, 10001, 10006, @az322, @az322 + INTERVAL '3:20' HOUR_MINUTE, NULL, NULL, 1, 1379, 1, NOW(), 1, NOW()), -- popular route
+(50017, 'AZ323', 20005, 10006, 10001, @az323, @az323 + INTERVAL '3:05' HOUR_MINUTE, NULL, NULL, 1, 1379, 1, NOW(), 1, NOW()); -- popular route
 
 INSERT INTO fare_class (fare_class_id, flight_id, cabin_class_id, base_price, seats_total, seats_available, is_refundable, change_fee, created_by, created_at, updated_by, last_updated) VALUES
 (60001, 50001, 1, 189.00, 6, 4, 1, 50.00, 1, NOW(), 1, NOW()),
@@ -55,7 +67,19 @@ INSERT INTO fare_class (fare_class_id, flight_id, cabin_class_id, base_price, se
 (60016, 50003, 4, 1650.00, 2, 0, 1, 300.00, 1, NOW(), 1, NOW()),
 (60017, 50004, 4, 599.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
 (60018, 50010, 4, 1450.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
-(60019, 50011, 4, 1420.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW());
+(60019, 50011, 4, 1420.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60020, 50012, 1, 119.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
+(60021, 50012, 4, 389.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60022, 50013, 1, 124.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
+(60023, 50013, 4, 399.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60024, 50014, 1, 149.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
+(60025, 50014, 4, 419.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60026, 50015, 1, 159.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
+(60027, 50015, 4, 429.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60028, 50016, 1, 199.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
+(60029, 50016, 4, 549.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60030, 50017, 1, 209.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
+(60031, 50017, 4, 559.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW());
 
 -- seat_status is reserved if it's nested in a confirmed/completed booking that's again nested in a ticket
 INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated) VALUES
@@ -143,7 +167,49 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 (50011, '3A', 2, 1, NULL, 1, NOW(), 1, NOW()),
 (50011, '3B', 2, 1, NULL, 1, NOW(), 1, NOW()),
 (50011, '4A', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50011, '4B', 2, 1, NULL, 1, NOW(), 1, NOW());
+(50011, '4B', 2, 1, NULL, 1, NOW(), 1, NOW()),
+-- AZ330
+(50012, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50012, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50012, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50012, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50012, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50012, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+-- AZ331
+(50013, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50013, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50013, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50013, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50013, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50013, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+-- AZ412
+(50014, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50014, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50014, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50014, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50014, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50014, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+-- AZ413
+(50015, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50015, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50015, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50015, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50015, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50015, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+-- AZ322
+(50016, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50016, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50016, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50016, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50016, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50016, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+-- AZ323
+(50017, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50017, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
+(50017, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50017, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50017, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
+(50017, '3B', 1, 1, NULL, 1, NOW(), 1, NOW());
 
 
 -- booking total = (base price x number of tickets) + the price of each booking upgrade

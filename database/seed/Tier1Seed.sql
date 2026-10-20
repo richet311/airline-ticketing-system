@@ -66,4 +66,5 @@ INSERT INTO airport (airport_id, airport_code, airport_name, city, country, time
 (10006, 'LAX', 'Los Angeles International Airport', 'Los Angeles', 'US', 'America/Los_Angeles', 1, NOW(), 1, NOW()),
 (10007, 'ORD', 'O''Hare International Airport', 'Chicago', 'US', 'America/Chicago', 1, NOW(), 1, NOW()),
 (10008, 'FRA', 'Frankfurt Airport', 'Frankfurt', 'DE', 'Europe/Berlin', 1, NOW(), 1, NOW()),
-(10009, 'DXB', 'Dubai International Airport', 'Dubai', 'AE', 'Asia/Dubai', 1, NOW(), 1, NOW());
+(10009, 'DXB', 'Dubai International Airport', 'Dubai', 'AE', 'Asia/Dubai', 1, NOW(), 1, NOW()),
+(10010, 'MIA', 'Miami International Airport', 'Miami', 'US', 'America/New_York', 1, NOW(), 1, NOW());

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { CheckCircleIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import type { BookingSummary, ConfirmationTicket, Payment, UpgradeType } from "@/lib/types";
 
@@ -105,17 +106,28 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
 
   return (
     <>
-      <section
-        className={`rounded-lg p-6 text-center ${confirmed ? "bg-green-700 text-white" : "border border-gray-200 bg-white text-azure-navy"}`}
-      >
-        <p className="text-sm font-semibold">
-          {confirmed ? "You're booked! A great trip starts here." : `Booking ${booking.booking_status_name.toLowerCase()}`}
-        </p>
-        <p className="mt-3 text-[11px] font-semibold tracking-wider uppercase opacity-80">Confirmation code</p>
-        <p className="font-mono text-4xl font-bold tracking-[0.3em]">{booking.booking_id}</p>
-        <p className="mt-3 text-xs opacity-80">
-          Keep this code. With traveler 1&apos;s last name, it opens your trip in My Trips and Check In.
-        </p>
+      <section className="flex items-center justify-between gap-8 rounded-card border border-gray-200 bg-white p-8 shadow-card">
+        <div>
+          <p
+            className={`flex items-center gap-2 text-[13px] font-semibold tracking-widest uppercase ${
+              confirmed ? "text-green-700" : "text-gray-500"
+            }`}
+          >
+            {confirmed && <CheckCircleIcon className="h-5 w-5" />}
+            {confirmed ? "Booking confirmed" : `Booking ${booking.booking_status_name.toLowerCase()}`}
+          </p>
+          <h1 className="mt-2 text-3xl leading-tight font-light text-balance text-azure-navy">
+            {confirmed ? "You're booked! A great trip starts here." : "This booking isn't confirmed."}
+          </h1>
+          <div className="mt-5 h-[3px] w-14 bg-azure-blue" />
+          <p className="mt-5 text-gray-700">
+            Keep this code. With traveler 1&apos;s last name, it opens your trip in My Trips and Check In.
+          </p>
+        </div>
+        <div className="shrink-0 rounded-card border border-gray-200 bg-azure-page px-8 py-6 text-center">
+          <p className="text-[11px] font-semibold tracking-widest text-gray-500 uppercase">Confirmation code</p>
+          <p className="mt-1 font-mono text-4xl font-semibold tracking-[0.2em] text-azure-navy">{booking.booking_id}</p>
+        </div>
       </section>
 
       {flights.map((flightTickets, i) => {
@@ -124,10 +136,10 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
           <Card key={flight.flight_id}>
             <div className="mb-4 flex items-baseline justify-between gap-4">
               <div>
-                <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase">
+                <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
                   {flights.length === 1 ? "Flight" : i === 0 ? "Depart" : "Return"} · {flight.departure_time.slice(0, 10)}
                 </p>
-                <h2 className="text-xl font-bold text-azure-navy">
+                <h2 className="text-xl font-semibold text-azure-navy">
                   {flight.origin} {flight.departure_time.slice(11, 16)} → {flight.destination}{" "}
                   {flight.arrival_time.slice(11, 16)} <span className="text-xs font-normal text-gray-500">UTC</span>
                 </h2>
@@ -139,7 +151,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
 
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-[11px] tracking-wider text-gray-500 uppercase">
+                <tr className="border-b border-gray-200 text-left text-[11px] tracking-widest text-gray-600 uppercase">
                   <th className="py-2 font-semibold">Traveler</th>
                   <th className="py-2 font-semibold">Seat</th>
                   <th className="py-2 font-semibold">Checked bags</th>
@@ -164,14 +176,14 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
       })}
 
       <Card>
-        <h2 className="mb-3 text-lg font-bold text-azure-navy">Payment</h2>
+        <h2 className="mb-3 text-lg font-semibold text-azure-navy">Payment</h2>
         <div className="space-y-1 text-sm">
           <PriceLine label={`Fares (${tickets.length} ${tickets.length === 1 ? "ticket" : "tickets"})`} amount={fareTotal} />
           {bagCount > 0 && <PriceLine label={`Checked bags (${bagCount})`} amount={bagFees} />}
           {upgrades.map((upgrade) => (
             <PriceLine key={upgrade.upgrade_id} label={upgrade.upgrade_name} amount={upgrade.upgrade_price} />
           ))}
-          <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-azure-navy">
+          <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold text-azure-navy">
             <span>Total</span>
             <span>
               {formatPrice(booking.total_amount)} {booking.currency}
@@ -190,13 +202,13 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
       <div className="flex flex-wrap gap-3">
         <Link
           href={`/my-trips/${booking.booking_id}`}
-          className="rounded bg-azure-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-azure-blue-dark"
+          className="rounded-control bg-azure-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-azure-blue-dark"
         >
           View trip
         </Link>
         <Link
           href={`/check-in/${booking.booking_id}`}
-          className="rounded border-2 border-azure-blue px-6 py-2 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white"
+          className="rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white"
         >
           Check in
         </Link>
@@ -210,7 +222,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
 }
 
 function Card({ children }: { children: ReactNode }) {
-  return <section className="rounded-lg border border-gray-200 bg-white p-6">{children}</section>;
+  return <section className="rounded-card border border-gray-200 bg-white shadow-card p-6">{children}</section>;
 }
 
 function PriceLine({ label, amount }: { label: string; amount: number }) {
