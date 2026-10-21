@@ -9,13 +9,9 @@ import { PopularDestinations } from "@/components/home/PopularDestinations";
 import { QuickLinks } from "@/components/home/QuickLinks";
 import { RewardsBanner } from "@/components/home/RewardsBanner";
 import { db } from "@/lib/db";
-import type { AirportCity, PopularDestination } from "@/lib/types";
+import type { AirportCity } from "@/lib/types";
 
 const HOME_AIRPORT = { code: "IAH", city: "Houston" };
-
-const FARE_WINDOW_DAYS = 30;
-
-const MAX_DESTINATION_CARDS = 4;
 
 export default function HomePage({ searchParams }: PageProps<"/">) {
   return (
@@ -47,9 +43,7 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
 
         <div className="border-t border-gray-200 bg-azure-page py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <Suspense fallback={null}>
-              <PopularDestinationsWithFares />
-            </Suspense>
+            <PopularDestinations from={HOME_AIRPORT} />
           </div>
         </div>
       </main>
@@ -77,40 +71,4 @@ async function BookingCardWithAirports({ searchParams }: { searchParams: PagePro
 
   // key resets the card when the route changes
   return <BookingCard key={`${from}-${to}`} airports={airports} initialFrom={from} initialTo={to} />;
-}
-
-// Lowest round-trip Economy fare per destination: a flight there in the next FARE_WINDOW_DAYS days plus a flight back after it lands.
-async function PopularDestinationsWithFares() {
-  await connection();
-  const [destinations] = await db.query<PopularDestination[]>(
-    `SELECT origin.airport_code AS origin, dest.airport_code AS destination, dest.city AS city,
-            MIN(outbound_fare.base_price + inbound_fare.base_price) AS lowest_fare
-       FROM flight outbound
-       JOIN airport origin             ON origin.airport_id = outbound.origin_airport_id
-       JOIN airport dest               ON dest.airport_id = outbound.destination_airport_id
-       JOIN flight_status outbound_fs  ON outbound_fs.flight_status_id = outbound.flight_status_id
-       JOIN fare_class outbound_fare   ON outbound_fare.flight_id = outbound.flight_id
-       JOIN cabin_class outbound_cabin ON outbound_cabin.cabin_class_id = outbound_fare.cabin_class_id
-       JOIN flight inbound             ON inbound.origin_airport_id = outbound.destination_airport_id
-                                      AND inbound.destination_airport_id = outbound.origin_airport_id
-                                      AND inbound.departure_time > outbound.arrival_time
-       JOIN flight_status inbound_fs   ON inbound_fs.flight_status_id = inbound.flight_status_id
-       JOIN fare_class inbound_fare    ON inbound_fare.flight_id = inbound.flight_id
-       JOIN cabin_class inbound_cabin  ON inbound_cabin.cabin_class_id = inbound_fare.cabin_class_id
-      WHERE origin.airport_code = ?
-        AND outbound.departure_time > NOW()
-        AND outbound.departure_time < NOW() + INTERVAL ? DAY
-        AND outbound_fs.flight_status_name IN ('SCHEDULED', 'DELAYED')
-        AND inbound_fs.flight_status_name IN ('SCHEDULED', 'DELAYED')
-        AND outbound_cabin.cabin_class_name = 'ECONOMY'
-        AND inbound_cabin.cabin_class_name = 'ECONOMY'
-        AND outbound_fare.seats_available > 0
-        AND inbound_fare.seats_available > 0
-      GROUP BY origin.airport_code, dest.airport_code, dest.city
-      ORDER BY lowest_fare, dest.city
-      LIMIT ?`,
-    [HOME_AIRPORT.code, FARE_WINDOW_DAYS, MAX_DESTINATION_CARDS],
-  );
-
-  return <PopularDestinations fromCity={HOME_AIRPORT.city} days={FARE_WINDOW_DAYS} destinations={destinations} />;
 }

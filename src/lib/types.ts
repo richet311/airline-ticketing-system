@@ -311,14 +311,6 @@ export interface AirportOption extends RowDataPacket {
   country: string;
 }
 
-// Home: lowest round-trip Economy fare per destination
-export interface PopularDestination extends RowDataPacket {
-    origin: string;
-    destination: string;
-    city: string;
-    lowest_fare: number;
-}
-
 // /book/results: one flight
 export interface FlightSearchResult extends RowDataPacket {
     flight_id: number;
