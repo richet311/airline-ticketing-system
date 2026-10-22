@@ -1,21 +1,11 @@
 "use client";
 
 import Form from "next/form";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 
-import { findTrip } from "@/app/actions";
 import { FieldBox, fieldControlClass } from "@/components/FieldBox";
-import { ClockIcon, PlaneIcon, SuitcaseIcon, SwapIcon, TicketIcon } from "@/components/icons";
+import { SwapIcon } from "@/components/icons";
 import type { AirportOption } from "@/lib/types";
-
-const tabs = [
-  { id: "book", label: "Book a flight", icon: <PlaneIcon className="h-4 w-4" /> },
-  { id: "check-in", label: "Check In", icon: <TicketIcon className="h-4 w-4" /> },
-  { id: "my-trips", label: "My Trips", icon: <SuitcaseIcon className="h-4 w-4" /> },
-  { id: "flight-status", label: "Flight Status", icon: <ClockIcon className="h-4 w-4" /> },
-] as const;
-
-type TabId = (typeof tabs)[number]["id"];
 
 const buttonClass =
   "h-16 rounded-control bg-azure-blue px-8 text-[15px] font-semibold tracking-wide text-white hover:bg-azure-blue-dark disabled:opacity-60";
@@ -29,44 +19,12 @@ export function BookingCard({
   initialFrom?: string;
   initialTo?: string;
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("book");
-
   return (
-    <>
-      <div className="bg-azure-navy">
-        <div role="tablist" aria-label="Plan your trip" className="mx-auto flex max-w-6xl gap-1 px-4">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              id={`tab-${tab.id}`}
-              aria-selected={tab.id === activeTab}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 rounded-t-control px-5 py-3 text-sm font-semibold ${
-                tab.id === activeTab ? "bg-white text-azure-navy" : "text-white/80 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
+    <div className="border-b border-gray-200 bg-white shadow-card">
+      <div className="mx-auto max-w-6xl px-4 py-6 text-gray-900">
+        <BookForm airports={airports} initialFrom={initialFrom} initialTo={initialTo} />
       </div>
-
-      <div className="border-b border-gray-200 bg-white shadow-card">
-        <div role="tabpanel" aria-labelledby={`tab-${activeTab}`} className="mx-auto max-w-6xl px-4 py-6 text-gray-900">
-          {activeTab === "book" && <BookForm airports={airports} initialFrom={initialFrom} initialTo={initialTo} />}
-          {activeTab === "check-in" && (
-            <TripLookupForm goTo="check-in" submitLabel="Check in" note="Check-in opens 24 hours before departure." />
-          )}
-          {activeTab === "my-trips" && (
-            <TripLookupForm goTo="my-trips" submitLabel="Find trip" note="No account needed: use your confirmation code." />
-          )}
-          {activeTab === "flight-status" && <FlightStatusForm />}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -248,81 +206,6 @@ function AirportPicker({
         ))}
       </select>
     </div>
-  );
-}
-
-function TripLookupForm({
-  goTo,
-  submitLabel,
-  note,
-}: {
-  goTo: "check-in" | "my-trips";
-  submitLabel: string;
-  note: string;
-}) {
-  const [state, formAction, pending] = useActionState(findTrip, null);
-
-  return (
-    <form action={formAction}>
-      <input type="hidden" name="go_to" value={goTo} />
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3">
-        <FieldBox label="Confirmation code">
-          <input
-            name="booking_id"
-            defaultValue={state?.bookingId}
-            placeholder="e.g. AZ42KQ"
-            required
-            minLength={6}
-            maxLength={6}
-            autoCapitalize="characters"
-            className={`${fieldControlClass} uppercase placeholder:normal-case`}
-          />
-        </FieldBox>
-        <FieldBox label="Last name">
-          <input
-            name="last_name"
-            defaultValue={state?.lastName}
-            required
-            autoComplete="family-name"
-            className={fieldControlClass}
-          />
-        </FieldBox>
-        <button type="submit" disabled={pending} className={buttonClass}>
-          {pending ? "Searching..." : submitLabel}
-        </button>
-      </div>
-      {state && (
-        <p role="alert" className="mt-3 text-sm text-red-600">
-          {state.error}
-        </p>
-      )}
-      <p className="mt-3 text-xs text-gray-500">{note}</p>
-    </form>
-  );
-}
-
-function FlightStatusForm() {
-  return (
-    <Form action="/flight-status">
-      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-3">
-        <FieldBox label="Flight number">
-          <input
-            name="flight_number"
-            placeholder="e.g. AZ101"
-            required
-            autoCapitalize="characters"
-            className={`${fieldControlClass} uppercase placeholder:normal-case`}
-          />
-        </FieldBox>
-        <FieldBox label="Date">
-          <input type="date" name="date" required className={fieldControlClass} />
-        </FieldBox>
-        <button type="submit" className={buttonClass}>
-          Check status
-        </button>
-      </div>
-      <p className="mt-3 text-xs text-gray-500">Gate and times can change. Check again before you leave.</p>
-    </Form>
   );
 }
 
