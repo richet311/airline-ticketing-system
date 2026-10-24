@@ -16,7 +16,6 @@ const PAYMENT_METHODS = [
   { value: "PAYPAL", label: "PayPal" },
 ];
 
-// seats[i] belongs to traveler i
 type TripLeg = { label: string; flight: FlightStatusRow; fare: FareOption; seats: string[] };
 
 export function CheckoutForm({
@@ -44,7 +43,6 @@ export function CheckoutForm({
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // same math as purchase() on the server
   const fareTotal = legs.reduce((sum, leg) => sum + leg.fare.base_price * passengers, 0);
   const upgradeTotal = upgrades
     .filter((upgrade) => chosenUpgrades.includes(upgrade.upgrade_id))
@@ -59,7 +57,6 @@ export function CheckoutForm({
     );
   }
 
-  // preventDefault + startTransition instead of <form action> so the form keeps its values on an error
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -289,7 +286,7 @@ export function CheckoutForm({
           {pending ? "Processing..." : `Purchase · ${formatPrice(total)}`}
         </button>
         <p className="text-xs text-gray-500">
-          All fares are refundable, less the cabin&apos;s change fee. See Travel info for the full policy.
+          All fares are fully refundable. Changing cabins costs the cabin&apos;s change fee. See Travel info for the full policy.
         </p>
       </aside>
     </form>
@@ -310,7 +307,6 @@ function Section({ number, title, children }: { number: number; title: string; c
   );
 }
 
-// input names end in _<index> so purchase() can tell the travelers apart
 function TravelerFields({ index, legs }: { index: number; legs: TripLeg[] }) {
   return (
     <fieldset className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">

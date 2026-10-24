@@ -216,10 +216,10 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, currency, expires_at, created_by, created_at, updated_by, last_updated) VALUES
 ('AZ42KU', 1003, 2, 320.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Flight cancelled, REFUND STILL OWED
 ('AZ42KV', 1004, 3, 300.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Flight cancelled, already refunded
-('AZ43AA', 1005, 2, 778.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Round trip B, parent + child, outbound flown
-('AZ43AB', 1007, 2, 810.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Round trip E, premium
-('AZ43AC', 1005, 1, 507.00, 'USD', DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- PENDING round trip E: choosing seats, no payment yet
-('AZ43AD', 1013, 1, 258.00, 'USD', DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- PENDING one way: at the payment step
+('AZ43AA', 1005, 2, 778.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Round trip, parent & child, outbound flown
+('AZ43AB', 1007, 2, 810.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Round trip, premium
+('AZ43AC', 1005, 1, 507.00, 'USD', DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- PENDING round trip, choosing seats, no payment yet
+('AZ43AD', 1013, 1, 258.00, 'USD', DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- PENDING one way, at the payment step
 ('AZ43AE', 1008, 2, 650.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- One way, business
 ('AZ43AF', 1014, 2, 249.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- One way, economy
 ('AZ43AG', 1009, 2, 1395.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Two travelers, one booking
@@ -228,7 +228,7 @@ INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, 
 ('AZ43AJ', 1003, 2, 230.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Check-in open, not yet done
 ('AZ43AK', 1004, 2, 289.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Delayed flight, not checked in
 ('AZ43AL', 1015, 2, 3300.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Two travelers in First on sold-out AZ640
-('AZ42KQ', 1001, 2, 2593.00, 'USD', NULL, 1, NOW(), 1, NOW()); -- Round trip A, US to Japan and back, parent + child
+('AZ42KQ', 1001, 2, 2593.00, 'USD', NULL, 1, NOW(), 1, NOW()); -- Round trip, US to Japan and back, parent & child
 
 INSERT INTO booking_upgrade (upgrade_id, booking_id, created_by, created_at, updated_by, last_updated) VALUES
 (4, 'AZ42KU', 1, NOW(), 1, NOW()),
@@ -243,33 +243,34 @@ INSERT INTO booking_upgrade (upgrade_id, booking_id, created_by, created_at, upd
 (1, 'AZ42KQ', 1, NOW(), 1, NOW());
 
 -- flight fare is an attribute of ticket but we want to show the derived value on the ticket that is the total amount (the base price plus any booking upgrade)
-INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id, seat_number, flight_fare, checked_in, created_by, created_at, updated_by, last_updated) VALUES
-('A2345678B', 'AZ42KU', 1003, 50009, 60012, '1B', 300.00, FALSE, 1, NOW(), 1, NOW()),
-('B2345678C', 'AZ42KV', 1004, 50009, 60012, NULL, 300.00, FALSE, 1, NOW(), 1, NOW()), -- cancelled, seat released
-('C2345678D', 'AZ43AA', 1005, 50001, 60001, '1A', 189.00, TRUE, 1, NOW(), 1, NOW()),
-('D2345678E', 'AZ43AA', 1006, 50001, 60001, '1B', 189.00, TRUE, 1, NOW(), 1, NOW()),
-('E2345678F', 'AZ43AA', 1005, 50006, 60007, '2A', 195.00, FALSE, 1, NOW(), 1, NOW()),
-('F2345678G', 'AZ43AA', 1006, 50006, 60007, '2B', 195.00, FALSE, 1, NOW(), 1, NOW()),
-('G2345678H', 'AZ43AB', 1007, 50007, 60008, '1A', 410.00, FALSE, 1, NOW(), 1, NOW()),
-('H2345678I', 'AZ43AB', 1007, 50008, 60010, '1A', 395.00, FALSE, 1, NOW(), 1, NOW()),
-('I2345678J', 'AZ43AC', 1005, 50007, 60009, '2A', 248.00, FALSE, 1, NOW(), 1, NOW()),
-('J2345678K', 'AZ43AC', 1005, 50008, 60011, '2A', 259.00, FALSE, 1, NOW(), 1, NOW()),
-('K2345678L', 'AZ43AD', 1013, 50007, 60009, '2B', 248.00, FALSE, 1, NOW(), 1, NOW()),
-('L2345678M', 'AZ43AE', 1008, 50002, 60002, '1A', 640.00, TRUE, 1, NOW(), 1, NOW()),
-('M2345678N', 'AZ43AF', 1014, 50002, 60003, '2A', 229.00, TRUE, 1, NOW(), 1, NOW()),
-('N2345678O', 'AZ43AG', 1009, 50003, 60004, '2A', 695.00, TRUE, 1, NOW(), 1, NOW()),
-('O2345678P', 'AZ43AG', 1010, 50003, 60004, '2B', 695.00, TRUE, 1, NOW(), 1, NOW()),
-('P2345678Q', 'AZ43AH', 1011, 50003, 60004, '3A', 695.00, TRUE, 1, NOW(), 1, NOW()),
-('Q2345678R', 'AZ43AH', 1012, 50003, 60004, '3B', 695.00, TRUE, 1, NOW(), 1, NOW()),
-('Y2345678Z', 'AZ43AL', 1015, 50003, 60016, '1A', 1650.00, TRUE, 1, NOW(), 1, NOW()),
-('Z2345678A', 'AZ43AL', 1007, 50003, 60016, '1B', 1650.00, TRUE, 1, NOW(), 1, NOW()),
-('R2345678S', 'AZ43AI', 1013, 50004, 60005, '2A', 215.00, TRUE, 1, NOW(), 1, NOW()),
-('S2345678T', 'AZ43AJ', 1003, 50004, 60005, '2B', 215.00, FALSE, 1, NOW(), 1, NOW()),
-('T2345678U', 'AZ43AK', 1004, 50005, 60006, '1A', 289.00, FALSE, 1, NOW(), 1, NOW()),
-('U2345678V', 'AZ42KQ', 1001, 50010, 60013, '2A', 653.00, FALSE, 1, NOW(), 1, NOW()),
-('V2345678W', 'AZ42KQ', 1002, 50010, 60013, '2B', 653.00, FALSE, 1, NOW(), 1, NOW()),
-('W2345678X', 'AZ42KQ', 1001, 50011, 60014, '2A', 641.00, FALSE, 1, NOW(), 1, NOW()),
-('X2345678Y', 'AZ42KQ', 1002, 50011, 60014, '2B', 641.00, FALSE, 1, NOW(), 1, NOW());
+-- boarded: AZ640 is boarding, and 2 of its 6 checked-in passengers are on.
+INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id, seat_number, flight_fare, checked_in, boarded, created_by, created_at, updated_by, last_updated) VALUES
+('A2345678B', 'AZ42KU', 1003, 50009, 60012, '1B', 300.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('B2345678C', 'AZ42KV', 1004, 50009, 60012, NULL, 300.00, FALSE, FALSE, 1, NOW(), 1, NOW()), -- cancelled, seat released
+('C2345678D', 'AZ43AA', 1005, 50001, 60001, '1A', 189.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('D2345678E', 'AZ43AA', 1006, 50001, 60001, '1B', 189.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('E2345678F', 'AZ43AA', 1005, 50006, 60007, '2A', 195.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('F2345678G', 'AZ43AA', 1006, 50006, 60007, '2B', 195.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('G2345678H', 'AZ43AB', 1007, 50007, 60008, '1A', 410.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('H2345678I', 'AZ43AB', 1007, 50008, 60010, '1A', 395.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('I2345678J', 'AZ43AC', 1005, 50007, 60009, '2A', 248.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('J2345678K', 'AZ43AC', 1005, 50008, 60011, '2A', 259.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('K2345678L', 'AZ43AD', 1013, 50007, 60009, '2B', 248.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('L2345678M', 'AZ43AE', 1008, 50002, 60002, '1A', 640.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('M2345678N', 'AZ43AF', 1014, 50002, 60003, '2A', 229.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('N2345678O', 'AZ43AG', 1009, 50003, 60004, '2A', 695.00, TRUE, TRUE, 1, NOW(), 1, NOW()),
+('O2345678P', 'AZ43AG', 1010, 50003, 60004, '2B', 695.00, TRUE, TRUE, 1, NOW(), 1, NOW()),
+('P2345678Q', 'AZ43AH', 1011, 50003, 60004, '3A', 695.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('Q2345678R', 'AZ43AH', 1012, 50003, 60004, '3B', 695.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('Y2345678Z', 'AZ43AL', 1015, 50003, 60016, '1A', 1650.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('Z2345678A', 'AZ43AL', 1007, 50003, 60016, '1B', 1650.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('R2345678S', 'AZ43AI', 1013, 50004, 60005, '2A', 215.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('S2345678T', 'AZ43AJ', 1003, 50004, 60005, '2B', 215.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('T2345678U', 'AZ43AK', 1004, 50005, 60006, '1A', 289.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('U2345678V', 'AZ42KQ', 1001, 50010, 60013, '2A', 653.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('V2345678W', 'AZ42KQ', 1002, 50010, 60013, '2B', 653.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('W2345678X', 'AZ42KQ', 1001, 50011, 60014, '2A', 641.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('X2345678Y', 'AZ42KQ', 1002, 50011, 60014, '2B', 641.00, FALSE, FALSE, 1, NOW(), 1, NOW());
 
 -- AZ42KU still owes a refund, AZ42KV is refunded, AZ43AC and AZ43AD are pending
 INSERT INTO payment (payment_id, booking_id, payment_status, total_amount, payment_method, idempotency_key, payment_time, created_by, created_at, updated_by, last_updated) VALUES

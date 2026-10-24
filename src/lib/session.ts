@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { createHmac, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -8,42 +8,36 @@ import { cache } from "react";
 import { db } from "@/lib/db";
 import type { CurrentUser, SignedInEmployee } from "@/lib/types";
 
-// Login helpers: password hashing, the session cookie, and who is signed in.
-// The cookie is signed with SESSION_SECRET from .env.local.
+//Login helpers include the passwords, the session cookie, and who is signed in.
+//The cookie is SESSION_SECRET from .env.local.
 
 const COOKIE_NAME = "session";
 const SESSION_DAYS = 7;
 
-// changing these breaks every stored hash
-const SALT_BYTES = 16;
-const KEY_BYTES = 64;
+//Passwords are stored as plain text in user.password_hash, but in case we wanted to store hashes
+const SCRYPT_KEY_BYTES = 64;
 
-// the cast picks scrypt's 3-argument overload
 const scryptAsync = promisify(scrypt) as (password: string, salt: Buffer, keyLength: number) => Promise<Buffer>;
 
-// Returns "scrypt$<salt>$<hash>" with a new random salt each time.
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(SALT_BYTES);
-  const key = await scryptAsync(password, salt, KEY_BYTES);
-  return `scrypt$${salt.toString("hex")}$${key.toString("hex")}`;
+  return password;
 }
 
-// False for anything that isn't a scrypt hash (like an old plain-text password).
+//True when the typed password matches what's stored in the db, a plain text or an older hash value
+//from a prior implementation
 export async function checkPassword(password: string, storedHash: string): Promise<boolean> {
   const [scheme, saltHex, keyHex] = storedHash.split("$");
-  if (scheme !== "scrypt" || !saltHex || !keyHex) return false;
-
-  const storedKey = Buffer.from(keyHex, "hex");
-  if (storedKey.length !== KEY_BYTES) return false;
-
-  const key = await scryptAsync(password, Buffer.from(saltHex, "hex"), KEY_BYTES);
-  // constant-time compare
-  return timingSafeEqual(key, storedKey);
+  if (scheme === "scrypt" && saltHex && keyHex) {
+    const storedKey = Buffer.from(keyHex, "hex");
+    if (storedKey.length !== SCRYPT_KEY_BYTES) return false;
+    const key = await scryptAsync(password, Buffer.from(saltHex, "hex"), SCRYPT_KEY_BYTES);
+    return timingSafeEqual(key, storedKey);
+  }
+  return password === storedHash;
 }
 
-// keepLoggedIn: 7-day cookie, otherwise it ends when the browser closes. Server Actions only.
 export async function startSession(userId: number, keepLoggedIn = true): Promise<void> {
-  const expires = Math.floor(Date.now() / 1000) + SESSION_DAYS * 24 * 60 * 60; // seconds
+  const expires = Math.floor(Date.now() / 1000) + SESSION_DAYS * 24 * 60 * 60;
   const payload = `${userId}.${expires}`;
 
   const cookieStore = await cookies();
@@ -61,7 +55,6 @@ export async function endSession(): Promise<void> {
   cookieStore.delete(COOKIE_NAME);
 }
 
-// The signed-in user, or null for a guest. cache() runs it once per request.
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const userId = await readSessionUserId();
   if (userId === null) return null;
@@ -76,7 +69,6 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return users[0] ?? null;
 });
 
-// The signed-in employee, or null for guests, customers and inactive employees.
 export const getSignedInEmployee = cache(async (): Promise<SignedInEmployee | null> => {
   const userId = await readSessionUserId();
   if (userId === null) return null;
@@ -92,7 +84,6 @@ export const getSignedInEmployee = cache(async (): Promise<SignedInEmployee | nu
   return employees[0] ?? null;
 });
 
-// null when there's no cookie, it expired, or the signature doesn't match
 async function readSessionUserId(): Promise<number | null> {
   const cookieStore = await cookies();
   const value = cookieStore.get(COOKIE_NAME)?.value;
@@ -109,7 +100,6 @@ async function readSessionUserId(): Promise<number | null> {
   return Number(userId);
 }
 
-// HMAC with SESSION_SECRET
 function sign(text: string): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret || secret.length < 32) {

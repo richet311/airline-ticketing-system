@@ -1,7 +1,5 @@
 "use server";
 
-// TODO: use the signed-in user once sign-in works
-
 import { randomInt } from "node:crypto";
 import { redirect } from "next/navigation";
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
@@ -10,10 +8,10 @@ import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import { db } from "@/lib/db";
 import type { FareOption, UpgradeType } from "@/lib/types";
 
-// guests are saved as the system user for now
+//guests are saved as the system user for now
 const SYSTEM_USER_ID = 1;
 
-// placeholder weight (lb) until the bag is weighed at the airport
+// "default weight" until the bag is weighed at the airport
 const BOOKED_BAG_WEIGHT_LB = 50;
 
 const MAX_PASSENGERS = 9;
@@ -27,17 +25,15 @@ export type PurchaseResult = { ok: false; error: string };
 type Traveler = {
   firstName: string;
   lastName: string;
-  dateOfBirth: string; // YYYY-MM-DD
+  dateOfBirth: string;
   passportNumber: string;
-  passportExpiry: string; // YYYY-MM-DD
-  nationality: string; // e.g. "US"
-  bags: number; // checked bags on each flight
+  passportExpiry: string;
+  nationality: string;
+  bags: number;
 };
 
-// seats[i] belongs to traveler i
 type Leg = { fare: FareOption; seats: string[] };
 
-// TODO: switch to withTransaction() from src/lib/transaction.ts
 async function inTransaction<T>(work: (conn: PoolConnection) => Promise<T>): Promise<T> {
   const conn = await db.getConnection();
   try {
@@ -49,19 +45,16 @@ async function inTransaction<T>(work: (conn: PoolConnection) => Promise<T>): Pro
     await conn.rollback();
     throw error;
   } finally {
-    // always give the connection back to the pool
     conn.release();
   }
 }
 
 class CheckoutError extends Error {}
 
-// Called by the checkout form when Purchase is pressed.
 export async function purchase(formData: FormData): Promise<PurchaseResult> {
   function text(name: string): string {
     return String(formData.get(name) ?? "").trim();
   }
-  // "3A,4A" -> ["3A", "4A"]; "" -> []
   function list(name: string): string[] {
     return text(name) === "" ? [] : text(name).split(",");
   }
@@ -109,7 +102,6 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
   const paymentError = checkPayment(formData, paymentMethod);
   if (paymentError) return { ok: false, error: paymentError };
 
-  // already paid with this key (double click or resubmit)
   const [paid] = await db.query<RowDataPacket[]>("SELECT booking_id FROM payment WHERE idempotency_key = ?", [
     idempotencyKey,
   ]);
@@ -117,7 +109,7 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
     redirect(`/book/confirmation?booking=${paid[0].booking_id}`);
   }
 
-  // prices come from the database, not the form
+//prices are determined from the db
   const fareIds = returnFare === null ? [outbound] : [outbound, returnFare];
   const [fares] = await db.query<FareOption[]>(
     `SELECT fc.fare_class_id, fc.flight_id, cc.cabin_class_name,
@@ -159,10 +151,8 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
         passengerIds.push(await findOrCreatePassenger(conn, traveler));
       }
 
-      // traveler 1 is the one booking
       const newBookingId = await insertBooking(conn, passengerIds[0], total);
 
-      // ticket numbers are the booking code + a counter (AZ7K3Q-01, AZ7K3Q-02, ...)
       let ticketCount = 0;
       let bagCount = 0;
       for (const leg of legs) {
@@ -170,9 +160,9 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
           const ticketNumber = `${newBookingId}-${String(++ticketCount).padStart(2, "0")}`;
           await conn.query(
             `INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id,
-                                 seat_number, flight_fare, checked_in,
+                                 seat_number, flight_fare, checked_in, boarded,
                                  created_by, created_at, updated_by, last_updated)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, NOW())`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, NOW(), ?, NOW())`,
             [
               ticketNumber,
               newBookingId,
@@ -206,7 +196,7 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
         );
       }
 
-      // test payment, card details are never saved
+      //card details aren't collected for the scope of our project
       await conn.query(
         `INSERT INTO payment (booking_id, payment_status, total_amount, payment_method, idempotency_key,
                               payment_time, created_by, created_at, updated_by, last_updated)
@@ -227,7 +217,7 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
 }
 
 function checkTraveler(t: Traveler, n: number): string | null {
-  const today = new Date().toISOString().slice(0, 10); // UTC, "YYYY-MM-DD"
+  const today = new Date().toISOString().slice(0, 10);
   const who = `Traveler ${n}`;
 
   if (t.firstName === "" || t.lastName === "") return `${who}: enter a first and last name.`;
@@ -255,7 +245,6 @@ function checkPayment(formData: FormData, method: string): string | null {
   if (!/^\d{12,19}$/.test(number)) return "Enter a card number of 12 to 19 digits.";
   const match = /^(\d{2})\/(\d{2})$/.exec(expiry);
   if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) return "Enter the card's expiry as MM/YY.";
-  // A card is good through the last day of its expiry month.
   const now = new Date();
   const expiresYear = 2000 + Number(match[2]);
   const expiresMonth = Number(match[1]);
@@ -341,7 +330,6 @@ async function findOrCreatePassenger(conn: PoolConnection, t: Traveler): Promise
 
 // Inserts the booking with a random code, retrying if the code is taken.
 async function insertBooking(conn: PoolConnection, passengerId: number, total: number): Promise<string> {
-  // no 0/O or 1/I
   const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
   for (let attempt = 0; attempt < 10; attempt++) {

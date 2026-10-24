@@ -12,7 +12,7 @@ export default function EmployeeLoginPage() {
         <div className="mx-auto max-w-md px-4 py-14">
           <section
             aria-labelledby="staff-heading"
-            className="rounded-card border-t-4 border-t-sky-300 bg-azure-navy p-10 text-white shadow-card"
+            className="rounded-card bg-azure-navy p-10 text-white"
           >
             <p className="text-[11px] font-semibold tracking-widest text-sky-300 uppercase">Employee portal</p>
             <h1 id="staff-heading" className="mt-1 mb-8 text-3xl font-semibold">

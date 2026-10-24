@@ -1,3 +1,45 @@
 "use server";
 
-// TODO: add and edit aircraft and their maintenance status
+import { revalidatePath } from "next/cache";
+
+import { db } from "@/lib/db";
+import type { AdminFormState } from "@/lib/types";
+
+import { getSignedInAdmin } from "../requireAdmin";
+
+// Aircraft capacities. We can change this if we want to expand our mini world capabilities
+const CAPACITIES = [6, 8];
+
+export async function addAircraft(previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+  const values = {
+    aircraft_number: String(formData.get("aircraft_number") ?? "").trim().toUpperCase(),
+    aircraft_type: String(formData.get("aircraft_type") ?? "").trim(),
+    capacity: String(formData.get("capacity") ?? "").trim(),
+    status: String(formData.get("status") ?? ""),
+  };
+  const fail = (error: string): AdminFormState => ({ error, values });
+
+  const admin = await getSignedInAdmin();
+  if (!admin) return fail("Only a System Administrator can add aircraft.");
+
+  if (values.aircraft_number === "" || values.aircraft_number.length > 10) return fail("Number: 1 to 10 characters.");
+  if (values.aircraft_type === "" || values.aircraft_type.length > 50) return fail("Type: 1 to 50 characters.");
+  if (!CAPACITIES.includes(Number(values.capacity))) return fail("Capacity must be 6 or 8 seats.");
+
+  try {
+    await db.query(
+      `INSERT INTO aircraft (aircraft_number, aircraft_type, capacity, maintenance_status_id,
+                             created_by, created_at, updated_by, last_updated)
+       VALUES (?, ?, ?, (SELECT maintenance_status_id FROM maintenance_status WHERE maintenance_status_name = ?),
+               ?, NOW(), ?, NOW())`,
+      [values.aircraft_number, values.aircraft_type, Number(values.capacity), values.status, admin.user_id, admin.user_id],
+    );
+  } catch (error) {
+    if ((error as { code?: string }).code === "ER_DUP_ENTRY") return fail(`Aircraft ${values.aircraft_number} already exists.`);
+    if ((error as { code?: string }).code === "ER_BAD_NULL_ERROR") return fail("Choose a status.");
+    throw error;
+  }
+
+  revalidatePath("/employee/admin");
+  return { ok: true };
+}

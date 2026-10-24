@@ -1,5 +1,3 @@
-// TODO: only signed-in customers should be able to pick a fare
-
 import { Suspense } from "react";
 import Link from "next/link";
 
@@ -22,7 +20,6 @@ const ModSearchBtn =
   "rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white";
 type SearchParams = { [key: string]: string | string[] | undefined };
 
-// returnDate is null for one-way trips, outbound is the picked departing fare (or "")
 type Search = {
   from: string;
   to: string;
@@ -98,8 +95,8 @@ async function Results({ searchParams }: { searchParams: Promise<SearchParams> }
         <div className="space-y-1 text-xs text-gray-500">
           <p>Fares are per person and include taxes. Selecting a fare holds nothing yet: seats are held on the next step.</p>
           <p>
-            All flights are refundable, however, Economy bookings will incur a $50 fee, Premium $100, Business $150, and
-            First $300 per passenger.
+            All flights are fully refundable. Changing to a different cabin costs a change fee per passenger, set by the
+            cabin you&apos;re leaving: Economy $50, Premium $100, Business $150, and First $300.
           </p>
         </div>
       </div>
