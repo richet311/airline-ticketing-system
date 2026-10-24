@@ -1,5 +1,3 @@
-// TODO: only signed-in customers should be able to pick a fare
-
 import { Suspense } from "react";
 import Link from "next/link";
 
@@ -22,7 +20,6 @@ const ModSearchBtn =
   "rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white";
 type SearchParams = { [key: string]: string | string[] | undefined };
 
-// returnDate is null for one-way trips, outbound is the picked departing fare (or "")
 type Search = {
   from: string;
   to: string;

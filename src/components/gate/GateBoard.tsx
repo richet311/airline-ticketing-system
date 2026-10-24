@@ -14,17 +14,10 @@ import { formatMonthDay, formatTime } from "@/lib/format";
 import { ASSIGNABLE_GATE_STATUS, BOARDING_FLIGHT_STATUSES, DEPARTED_FLIGHT_STATUSES } from "@/lib/gateRules";
 import type { GateFlightRow, GatePassengerRow } from "@/lib/types";
 
-// The Gate tile once a flight is found. Two steps:
-// 1. both gates must be set and AVAILABLE. A pending gate is picked here; a gate whose status is
-//    changed to OCCUPIED or MAINTENANCE is saved straight away, then the flight has to move to
-//    another AVAILABLE gate. Once the flight has departed, gate statuses are locked.
-// 2. the passenger table: Check in -> Board (both saved), and a Check in carry-on toggle
-// Props (from GateTile):
-// - flight          the flight, with both gates and their statuses
-// - gateStatuses    every gate_status_name
-// - departureGates  AVAILABLE gates at the origin airport
-// - arrivalGates    AVAILABLE gates at the destination airport
-// - passengers      everyone on a confirmed booking
+//Conditions for the gate tile
+//1. Both gates have to be not null and available. Anything that is set to occupied or maintenance needs to be
+//sent straight to a reselect where they can choose an available gate. Gate statuses are locked when the flight takes off
+//currently no functionality to unoccupy or complete maintenance on a flight
 
 type Gate = { gate_id: number; label: string };
 type Which = "departure" | "arrival";
@@ -45,9 +38,8 @@ export function GateBoard({
   arrivalGates: Gate[];
   passengers: GatePassengerRow[];
 }) {
-  // step 1 is done once both gates are confirmed
+  //step 1 is done once both gates are confirmed
   const [confirmed, setConfirmed] = useState(false);
-  // carry-on toggles: on screen only, nothing is saved
   const [carryOns, setCarryOns] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -56,7 +48,7 @@ export function GateBoard({
   const flightOpen = BOARDING_FLIGHT_STATUSES.includes(flight.flight_status_name);
   const usable = (gateId: number | null, status: string | null) => gateId !== null && status === ASSIGNABLE_GATE_STATUS;
   const bothGatesSet = flight.departure_gate_id !== null && flight.arrival_gate_id !== null;
-  // ready for step 2: both gates set, and both AVAILABLE (a departed flight's gates can't change any more)
+  // ready for step 2: both gates set and both AVAILABLE. A departed flight's gates can't change any more
   const gatesReady =
     bothGatesSet &&
     (departed ||
@@ -96,7 +88,6 @@ export function GateBoard({
         {flight.flight_status_name}
       </p>
 
-      {/* Step 1: both gates */}
       <div className="grid max-w-3xl grid-cols-[1fr_1fr_auto] items-start gap-3">
         <GateField label="Departure gate" {...gateProps("departure")} />
         <GateField label="Arrival gate" {...gateProps("arrival")} />
@@ -128,7 +119,6 @@ export function GateBoard({
         </p>
       )}
 
-      {/* Step 2: the passengers */}
       {confirmed && gatesReady && (
         <>
           <div className="grid max-w-2xl grid-cols-4 gap-3">
@@ -158,7 +148,6 @@ export function GateBoard({
                   <td className="py-2 pr-4">{passenger.passport_number ?? "—"}</td>
                   <td className="py-2 pr-4">{passenger.bag_count}</td>
                   <td className="py-2 pr-4">{isBoarded ? "Boarded" : isCheckedIn ? "Checked in" : "Not checked in"}</td>
-                  {/* one button, two steps: Check in, then Board (both saved) */}
                   <td className="py-2 pr-2">
                     <button
                       type="button"
@@ -175,7 +164,6 @@ export function GateBoard({
                       {isBoarded ? "Boarded" : isCheckedIn ? "Board" : "Check in"}
                     </button>
                   </td>
-                  {/* on screen only: turns blue when toggled */}
                   <td className="py-2 pr-4">
                     <button
                       type="button"
@@ -207,11 +195,6 @@ export function GateBoard({
   );
 }
 
-// One gate:
-// - pending (no gate yet): pick an AVAILABLE gate at that airport, saved straight away
-// - AVAILABLE: its status dropdown; OCCUPIED or MAINTENANCE is saved straight away
-// - OCCUPIED or MAINTENANCE: the flight has to move, so pick an AVAILABLE gate (saved straight away)
-// - the flight has departed: the status is shown but locked
 function GateField({
   label,
   which,

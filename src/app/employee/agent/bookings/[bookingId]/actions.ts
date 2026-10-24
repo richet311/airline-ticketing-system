@@ -18,22 +18,14 @@ import {
 import { CUSTOMER_SERVICE_AGENT } from "@/lib/roles";
 import { withTransaction } from "@/lib/transaction";
 
-// The Bookings tile's Confirm changes button. Everything staged on the tile is saved here in one
-// transaction: all of it, or (if anything is refused) none of it.
-// Customer Service Agents and System Administrators only. Rules: src/lib/bookingRules.ts.
-//
-// Money, per booking (worked out here again, never trusted from the page):
-// - fare and bag changes move booking.total_amount by the difference; a rise is charged
-//   (a RECEIVED payment), a drop is refunded (a REFUNDED payment)
-// - a new cabin also costs the change fee of the cabin it leaves; a new seat in the same cabin is free
-// - cancelling refunds everything paid; the total becomes 0
+//The Booking tile is for customer service agents and system administrators to adjust certain aspects of a traveler's booking
+//Monetary calculations are done here, adding into account change fees
 
-// One booking's staged changes.
 export type BookingChange = {
   bookingId: string;
-  status: string | null; // null = unchanged
-  tickets: { eTicket: string; fareClassId: number; seatNumber: string }[]; // new fare and/or seat
-  bags: { eTicket: string; weights: number[] }[]; // new bags, in pounds
+  status: string | null;
+  tickets: { eTicket: string; fareClassId: number; seatNumber: string }[];
+  bags: { eTicket: string; weights: number[] }[];
 };
 
 export type ConfirmResult = { ok: true } | { ok: false; error: string };
@@ -42,7 +34,6 @@ const AVAILABLE = "(SELECT seat_status_id FROM seat_status WHERE seat_status_nam
 const HELD = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'HELD')";
 const BOOKED = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'BOOKED')";
 
-// Thrown inside the transaction to undo everything and show this message instead.
 class Refused extends Error {}
 
 export async function confirmBookingChanges(changes: BookingChange[]): Promise<ConfirmResult> {
@@ -57,7 +48,6 @@ export async function confirmBookingChanges(changes: BookingChange[]): Promise<C
         try {
           await applyBookingChange(conn, change, employee.user_id, flightsTouched);
         } catch (error) {
-          // say which booking the problem is on
           if (error instanceof Refused) throw new Refused(`${change.bookingId}: ${error.message}`);
           throw error;
         }
@@ -75,7 +65,6 @@ export async function confirmBookingChanges(changes: BookingChange[]): Promise<C
 }
 
 async function applyBookingChange(conn: PoolConnection, change: BookingChange, userId: number, flightsTouched: Set<number>) {
-  // the booking, locked so two agents can't change it at once, with what has been paid
   const [bookings] = await conn.query<RowDataPacket[]>(
     `SELECT b.total_amount, bs.booking_status_name,
             (SELECT COALESCE(SUM(CASE p.payment_status WHEN 'RECEIVED' THEN p.total_amount
@@ -110,7 +99,7 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
   );
   for (const ticket of tickets) flightsTouched.add(ticket.flight_id);
 
-  // Cancelling: free the seats, refund everything paid. Other staged changes don't apply.
+  //In the event of cancelling, free the seat(s) and refund everything paid
   if (newStatus === "CANCELLED") {
     const refund = cancellationRefund(paid);
     await conn.query(
@@ -130,7 +119,6 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
 
   let difference = 0;
   const ticketById = new Map(tickets.map((ticket) => [ticket.e_ticket_number as string, ticket]));
-  // the ticket, if its flight's status allows this kind of change (bags are allowed for longer)
   const openTicket = (eTicket: string, allowedStatuses = CHANGEABLE_FLIGHT_STATUSES) => {
     const ticket = ticketById.get(eTicket);
     if (!ticket) throw new Refused(`ticket ${eTicket} isn't on this booking.`);
@@ -140,8 +128,6 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
     return ticket;
   };
 
-  // New fare and/or seat. The new seat takes over the old seat's status (BOOKED, or HELD for a
-  // pending booking); the old seat becomes AVAILABLE.
   for (const move of change.tickets) {
     const ticket = openTicket(move.eTicket);
     if (ticket.seat_number === null) throw new Refused(`ticket ${move.eTicket} has no seat to change.`);
@@ -185,14 +171,14 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
         [userId, ticket.flight_id, ticket.seat_number],
       );
     }
-    // a new cabin: price difference plus the old cabin's change fee; same cabin: the difference (none)
+    //calculating upgrade/downgrade costs
     difference +=
       move.fareClassId !== ticket.fare_class_id
         ? cabinChangeCost(Number(ticket.flight_fare), Number(fares[0].base_price), Number(ticket.change_fee))
         : Number(fares[0].base_price) - Number(ticket.flight_fare);
   }
 
-  // New bags. No limit; fees as checkout's, each bag after those at the last fee.
+  //adding more bags to the booking
   for (const added of change.bags) {
     openTicket(added.eTicket, BAG_FLIGHT_STATUSES);
     const [[{ bags }]] = await conn.query<RowDataPacket[]>(
@@ -204,7 +190,6 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
       if (weightProblem) throw new Refused(weightProblem);
       const fee = bagFeeAt(Number(bags) + i);
 
-      // tag like checkout's: BG + confirmation code + a number not used yet
       let tag = "";
       for (let n = 1; ; n++) {
         tag = `BG${change.bookingId}${String(n).padStart(2, "0")}`;
@@ -222,7 +207,7 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
     }
   }
 
-  // PENDING -> CONFIRMED: the booking's held seats become BOOKED.
+  // PENDING to CONFIRMED: the booking's held seats become BOOKED
   if (newStatus === "CONFIRMED" && savedStatus === "PENDING") {
     await conn.query(
       `UPDATE seat s JOIN ticket t ON t.flight_id = s.flight_id AND t.seat_number = s.seat_number
@@ -234,7 +219,6 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
 
   difference = roundCents(difference);
   await saveBooking(conn, change.bookingId, newStatus, roundCents(total + difference), userId);
-  // charge the rise, refund the drop
   if (difference > 0) await addPayment(conn, change.bookingId, "RECEIVED", difference, userId);
   if (difference < 0) await addPayment(conn, change.bookingId, "REFUNDED", -difference, userId);
 }
@@ -249,7 +233,6 @@ async function saveBooking(conn: PoolConnection, bookingId: string, status: stri
   );
 }
 
-// A charge (RECEIVED) or refund (REFUNDED), on the card the booking last paid with (CREDIT if none).
 async function addPayment(conn: PoolConnection, bookingId: string, status: "RECEIVED" | "REFUNDED", amount: number, userId: number) {
   await conn.query(
     `INSERT INTO payment (booking_id, payment_status, total_amount, payment_method, idempotency_key, payment_time,
@@ -261,7 +244,6 @@ async function addPayment(conn: PoolConnection, bookingId: string, status: "RECE
   );
 }
 
-// fare_class.seats_available = AVAILABLE seats of that cabin (the seed's rule)
 async function recountSeats(conn: PoolConnection, flightId: number) {
   await conn.query(
     `UPDATE fare_class fc

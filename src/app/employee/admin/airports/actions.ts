@@ -7,8 +7,7 @@ import type { AdminFormState } from "@/lib/types";
 
 import { getSignedInAdmin } from "../requireAdmin";
 
-// Add airport row on /employee/admin: code, name, city, country, time zone.
-export async function addAirport(_previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+export async function addAirport(previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
   const values = {
     airport_code: String(formData.get("airport_code") ?? "").trim().toUpperCase(),
     airport_name: String(formData.get("airport_name") ?? "").trim(),
@@ -21,7 +20,7 @@ export async function addAirport(_previousState: AdminFormState, formData: FormD
   const admin = await getSignedInAdmin();
   if (!admin) return fail("Only a System Administrator can add airports.");
 
-  // same rules as the CHECKs on airport in schema.sql
+  // validation from our schema reiterated
   if (!/^[A-Z]{3}$/.test(values.airport_code)) return fail("Code: 3 letters, like IAH.");
   if (values.airport_name === "" || values.airport_name.length > 100) return fail("Name: 1 to 100 characters.");
   if (values.city === "" || values.city.length > 50) return fail("City: 1 to 50 characters.");
@@ -44,7 +43,6 @@ export async function addAirport(_previousState: AdminFormState, formData: FormD
   return { ok: true };
 }
 
-// format.ts shows local times with this zone, so it has to be one the browser knows.
 function isTimeZone(zone: string): boolean {
   if (zone === "") return false;
   try {

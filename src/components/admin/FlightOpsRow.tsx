@@ -9,17 +9,9 @@ import type { OpsFlightRow } from "@/lib/types";
 
 import { adminInputClass } from "./AdminTile";
 
-// One gate in a dropdown. label = "Terminal B · 12B"; status = its gate_status_name.
+//This is for gate dropdowns
 export type GateChoice = { gate_id: number; label: string; status: string };
 
-// One row of the Scheduled flights tile. Changing a dropdown saves it right away (no Save
-// button); if the save fails, the dropdown goes back and the error shows under the row.
-// Choices the rules in src/lib/gateRules.ts don't allow are greyed out (the server checks too).
-// Props:
-// - flight          the flight's row
-// - departureGates  gates at its origin airport
-// - arrivalGates    gates at its destination airport
-// - statuses        every flight_status_name
 export function FlightOpsRow({
   flight,
   departureGates,
@@ -31,14 +23,13 @@ export function FlightOpsRow({
   arrivalGates: GateChoice[];
   statuses: string[];
 }) {
-  // "" = no gate yet (Pending Gate Designation)
   const [departureGate, setDepartureGate] = useState(String(flight.departure_gate_id ?? ""));
   const [arrivalGate, setArrivalGate] = useState(String(flight.arrival_gate_id ?? ""));
   const [status, setStatus] = useState(flight.flight_status_name);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // Show the new value, save it, and undo it if the save fails.
+  //Try the update on the dropdown and prevent it if it fails
   function save(apply: () => void, undo: () => void, run: () => Promise<FlightUpdateResult>) {
     apply();
     setMessage(null);
@@ -101,7 +92,6 @@ export function FlightOpsRow({
       </td>
       <td className="py-2 pr-4">
         <select value={status} disabled={pending} onChange={(event) => changeStatus(event.target.value)} className={adminInputClass}>
-          {/* a status whose gates aren't set yet can't be picked */}
           {statuses.map((name) => (
             <option key={name} disabled={missingGateMessage(name, departureGate !== "", arrivalGate !== "") !== null}>
               {name}
@@ -118,11 +108,8 @@ export function FlightOpsRow({
   );
 }
 
-// A gate dropdown. Its first choice, "Pending Gate Designation", means no gate yet; it's greyed
-// out when the flight's status needs a gate. Occupied and maintenance gates are greyed out too,
-// except the flight's own gate.
-// - ownGateId  the gate the flight had when the page loaded (it may keep it whatever its status)
-// - required   true when the status needs this gate
+//Pending Gate Designation means there is a null for the gate currently. Validation occurs to ensure that this is never the case
+// when a flight absolutely needs a gate
 function GateSelect({
   value,
   gates,

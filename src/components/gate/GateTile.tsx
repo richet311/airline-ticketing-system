@@ -7,18 +7,11 @@ import type { GateFlightRow, GatePassengerRow, GateStatus } from "@/lib/types";
 
 import { GateBoard } from "./GateBoard";
 
-// The flight number typed into the Gate tile, from the page's URL: "az 640" -> "AZ640", "" if none.
 export function gateFlightFromUrl(params: { [key: string]: string | string[] | undefined }): string {
   const value = params.gate_flight;
   return (Array.isArray(value) ? value[0] : (value ?? "")).trim().toUpperCase().replace(/\s/g, "");
 }
 
-// Gate tile (Gate Agents, and System Administrators): type a flight number, then GateBoard walks
-// through the gate status, a new gate if needed, and check-in / boarding.
-// The flight number is in the page's URL (?gate_flight=AZ640), so the lookup is a plain form.
-// Props:
-// - flightNumber  what was typed, "" before anything is searched
-// - basePath      the page the tile is on (/employee/agent or /employee/admin), where the form goes
 export async function GateTile({ flightNumber, basePath }: { flightNumber: string; basePath: string }) {
   return (
     <AdminTile overline="Gate" title="Boarding">
@@ -45,8 +38,6 @@ export async function GateTile({ flightNumber, basePath }: { flightNumber: strin
 
 // Loads the flight, its gates, the gates it could move to, and its passengers.
 async function GateFlight({ flightNumber }: { flightNumber: string }) {
-  // the next flight with this number that has yet to arrive: not marked ARRIVED, and its arrival
-  // time hasn't passed (a status isn't updated on its own, so a landed flight can still say DEPARTED)
   const [flights] = await db.query<GateFlightRow[]>(
     `SELECT f.flight_id, f.flight_number, o.airport_code AS origin, d.airport_code AS destination,
             f.origin_airport_id, f.destination_airport_id, f.departure_time, o.timezone AS origin_timezone,
@@ -76,8 +67,8 @@ async function GateFlight({ flightNumber }: { flightNumber: string }) {
   const flight = flights[0];
 
   const [statuses] = await db.query<GateStatus[]>("SELECT * FROM gate_status ORDER BY gate_status_id");
-  // AVAILABLE gates at the origin and destination airports: for pending gates, and for moving
-  // the flight off a departure gate passengers can't board at
+  //AVAILABLE gates at the origin and destination airports: for pending gates, and for moving
+  //the flight off a departure gate passengers can't board at
   const [gates] = await db.query<RowDataPacket[]>(
     `SELECT g.gate_id, t.airport_id, CONCAT(t.terminal_name, ' · ', g.gate_number) AS label
        FROM gate g
@@ -91,7 +82,7 @@ async function GateFlight({ flightNumber }: { flightNumber: string }) {
     gates
       .filter((gate) => gate.airport_id === airportId)
       .map((gate) => ({ gate_id: gate.gate_id as number, label: gate.label as string }));
-  // everyone on a confirmed booking, front of the plane first
+  //shows everyone on a confirmed booking where the front of the plane is first
   const [passengers] = await db.query<GatePassengerRow[]>(
     `SELECT t.e_ticket_number, t.seat_number, p.first_name, p.last_name, p.passport_number, t.checked_in, t.boarded,
             (SELECT COUNT(*) FROM baggage bg WHERE bg.e_ticket_number = t.e_ticket_number) AS bag_count
@@ -105,7 +96,6 @@ async function GateFlight({ flightNumber }: { flightNumber: string }) {
   );
 
   return (
-    // key: a different flight starts the steps again
     <GateBoard
       key={flight.flight_id}
       flight={flight}

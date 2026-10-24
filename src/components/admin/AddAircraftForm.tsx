@@ -6,8 +6,7 @@ import { addAircraft } from "@/app/employee/admin/aircraft/actions";
 
 import { adminButtonClass, adminInputClass, adminLabelClass, FormError } from "./AdminTile";
 
-// The blank row at the top of the Aircraft tile. On success the row clears and the page
-// reloads with the new aircraft in the table; on error it keeps what was typed.
+//This goes above the System Admin's view of all aircraft in our db and allows them to fill in fields to add one with validations
 export function AddAircraftForm({ statuses }: { statuses: string[] }) {
   const [state, formAction, pending] = useActionState(addAircraft, null);
   const typed = state && "error" in state ? state.values : {};

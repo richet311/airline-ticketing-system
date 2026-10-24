@@ -7,11 +7,10 @@ import type { AdminFormState } from "@/lib/types";
 
 import { getSignedInAdmin } from "../requireAdmin";
 
-// Aircraft have rows of 2 seats, and every aircraft is 6 or 8 seats (see Tier2Seed.sql).
+// Aircraft capacities. We can change this if we want to expand our mini world capabilities
 const CAPACITIES = [6, 8];
 
-// Add aircraft row on /employee/admin: number, type, capacity, status.
-export async function addAircraft(_previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+export async function addAircraft(previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
   const values = {
     aircraft_number: String(formData.get("aircraft_number") ?? "").trim().toUpperCase(),
     aircraft_type: String(formData.get("aircraft_type") ?? "").trim(),
@@ -37,12 +36,10 @@ export async function addAircraft(_previousState: AdminFormState, formData: Form
     );
   } catch (error) {
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return fail(`Aircraft ${values.aircraft_number} already exists.`);
-    // NULL status id = a status that isn't in maintenance_status
     if ((error as { code?: string }).code === "ER_BAD_NULL_ERROR") return fail("Choose a status.");
     throw error;
   }
 
-  // reload /employee/admin so the new row shows
   revalidatePath("/employee/admin");
   return { ok: true };
 }

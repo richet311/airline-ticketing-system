@@ -9,8 +9,7 @@ import type { AdminFormState } from "@/lib/types";
 
 import { getSignedInAdmin } from "../../requireAdmin";
 
-// Front of the plane to the back, with each cabin's change fee (the seed's rule, also shown
-// under the search results).
+//order in which the cabins appear in seat selector
 const CABINS = [
   { name: "FIRST", field: "first", changeFee: 300 },
   { name: "BUSINESS", field: "business", changeFee: 150 },
@@ -18,12 +17,8 @@ const CABINS = [
   { name: "ECONOMY", field: "economy", changeFee: 50 },
 ];
 
-// Schedule flight form on /employee/admin. Saves, in one transaction:
-// - the flight (SCHEDULED, no gates yet)
-// - one fare_class per cabin offered (refundable, the cabin's change fee)
-// - its seats, rows of 2: First from row 1, then Business, Premium, Economy
-// Times are typed in UTC, like everything stored in the database.
-export async function scheduleFlight(_previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
+//schedule flight form for sys admins and operations managers
+export async function scheduleFlight(previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
   const values: Record<string, string> = {};
   for (const [key, value] of formData.entries()) values[key] = String(value).trim();
   const fail = (error: string): AdminFormState => ({ error, values });
@@ -32,19 +27,17 @@ export async function scheduleFlight(_previousState: AdminFormState, formData: F
   if (!admin) return fail("Only a System Administrator can schedule flights.");
 
   const flightNumber = (values.flight_number ?? "").toUpperCase().replace(/\s/g, "");
-  // "2026-11-20T14:30" (datetime-local) -> "2026-11-20 14:30:00"
   const departure = toDatabaseTime(values.departure);
   const arrival = toDatabaseTime(values.arrival);
   const distance = Number(values.distance);
 
-  if (flightNumber === "" || flightNumber.length > 10) return fail("Flight number: 1 to 10 characters, like AZ500.");
+  if (flightNumber === "" || flightNumber.length > 10) return fail("Flight number is at most 10 characters, like AZ500.");
   if (!values.origin || !values.destination) return fail("Choose both airports.");
   if (values.origin === values.destination) return fail("From and To must be different airports.");
-  if (!departure || !arrival) return fail("Enter departure and arrival times.");
+  if (!departure || !arrival) return fail("Enter both departure and arrival time.");
   if (arrival <= departure) return fail("Arrival must be after departure.");
-  if (!Number.isInteger(distance) || distance <= 0) return fail("Distance: a whole number of miles above 0.");
+  if (!Number.isInteger(distance) || distance <= 0) return fail("Distance is in miles and is greater than 0.");
 
-  // seats and price for each cabin; 0 seats = not offered
   const cabins = CABINS.map((cabin) => ({
     ...cabin,
     seats: Number(values[`${cabin.field}_seats`] || 0),
@@ -59,7 +52,7 @@ export async function scheduleFlight(_previousState: AdminFormState, formData: F
   const offered = cabins.filter((cabin) => cabin.seats > 0);
   if (offered.length === 0) return fail("Offer at least one cabin.");
 
-  // The aircraft must be OPERATIONAL, and its seats must all be given a cabin.
+  // The aircraft has to be OPERATIONAL and all seats should be assigned to a specific cabin.
   const [aircraft] = await db.query<RowDataPacket[]>(
     `SELECT a.aircraft_id, a.capacity
        FROM aircraft a
@@ -95,7 +88,6 @@ export async function scheduleFlight(_previousState: AdminFormState, formData: F
            VALUES (?, (SELECT cabin_class_id FROM cabin_class WHERE cabin_class_name = ?), ?, ?, ?, 1, ?, ?, NOW(), ?, NOW())`,
           [flightId, cabin.name, cabin.price, cabin.seats, cabin.seats, cabin.changeFee, admin.user_id, admin.user_id],
         );
-        // this cabin's rows, continuing from the cabin in front: 1A, 1B, 2A, 2B, ...
         for (let i = 0; i < cabin.seats / 2; i++, row++) {
           for (const letter of ["A", "B"]) {
             await conn.query(
@@ -111,7 +103,6 @@ export async function scheduleFlight(_previousState: AdminFormState, formData: F
       }
     });
   } catch (error) {
-    // unique_flight_number_departure
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return fail(`${flightNumber} already departs at that time.`);
     throw error;
   }
@@ -120,7 +111,6 @@ export async function scheduleFlight(_previousState: AdminFormState, formData: F
   return { ok: true };
 }
 
-// "2026-11-20T14:30" -> "2026-11-20 14:30:00"; null if it isn't that shape
 function toDatabaseTime(value: string | undefined): string | null {
   return value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? `${value.replace("T", " ")}:00` : null;
 }

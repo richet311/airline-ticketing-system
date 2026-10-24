@@ -3,7 +3,6 @@ import Link from "next/link";
 import { signOut } from "@/app/employee/actions";
 import type { SignedInEmployee } from "@/lib/types";
 
-// Navy bar on every employee portal page: logo, "Employee Portal", who's signed in, Sign out.
 export function EmployeeHeader({ employee }: { employee: SignedInEmployee }) {
   return (
     <header className="bg-azure-navy text-white">

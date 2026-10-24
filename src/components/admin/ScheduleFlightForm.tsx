@@ -103,7 +103,6 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
         </label>
       </div>
 
-      {/* Seats and price per cabin. 0 seats = the flight doesn't offer that cabin. */}
       <div className="grid grid-cols-[repeat(4,1fr)_auto] items-end gap-2">
         {CABINS.map((cabin) => (
           <div key={cabin.field} className="grid grid-cols-2 gap-1">

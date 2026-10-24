@@ -4,11 +4,7 @@ import type { AgentFareRow, AvailableSeatRow, BookingStatus, BookingTicketRow, T
 
 import { BookingsEditor } from "./BookingsEditor";
 
-// Every booking, one row per ticket (a passenger on a flight). Shown to Customer Service Agents
-// on /employee/agent and to System Administrators on /employee/admin.
-// Tickets on flights that have already arrived are left out; a booking whose flights have all
-// arrived doesn't show at all.
-// This part loads the data; BookingsEditor stages changes and saves them with Confirm changes.
+//booking tile
 export async function BookingsTile() {
   const [tickets] = await db.query<BookingTicketRow[]>(
     `SELECT t.e_ticket_number, t.booking_id, t.flight_id, t.fare_class_id, t.seat_number, t.flight_fare,
@@ -34,7 +30,7 @@ export async function BookingsTile() {
   const flightIds = [...new Set(tickets.map((ticket) => ticket.flight_id))];
   const ticketIds = tickets.map((ticket) => ticket.e_ticket_number);
 
-  // every fare on those flights, with its change fee
+  //The change fee for every fare
   const [fares] = flightIds.length
     ? await db.query<AgentFareRow[]>(
         `SELECT fc.fare_class_id, fc.flight_id, cc.cabin_class_name, fc.base_price, fc.seats_available,
@@ -46,7 +42,7 @@ export async function BookingsTile() {
         [flightIds],
       )
     : [[] as AgentFareRow[]];
-  // every AVAILABLE seat on those flights, with the fare (flight + cabin) it belongs to
+
   const [seats] = flightIds.length
     ? await db.query<AvailableSeatRow[]>(
         `SELECT fc.fare_class_id, s.seat_number
@@ -58,7 +54,7 @@ export async function BookingsTile() {
         [flightIds],
       )
     : [[] as AvailableSeatRow[]];
-  // every checked bag on those tickets, oldest first
+
   const [bags] = ticketIds.length
     ? await db.query<TicketBagRow[]>(
         "SELECT tag_number, e_ticket_number, weightage FROM baggage WHERE e_ticket_number IN (?) ORDER BY created_at, tag_number",
@@ -67,10 +63,9 @@ export async function BookingsTile() {
     : [[] as TicketBagRow[]];
   const [statuses] = await db.query<BookingStatus[]>("SELECT * FROM booking_status ORDER BY booking_status_id");
 
-  // fare_class_id -> its available seat numbers
   const seatsByFare: Record<number, string[]> = {};
   for (const seat of seats) (seatsByFare[seat.fare_class_id] ??= []).push(seat.seat_number);
-  // e_ticket_number -> its bags' weights
+  
   const bagWeights: Record<string, number[]> = {};
   for (const bag of bags) (bagWeights[bag.e_ticket_number] ??= []).push(Number(bag.weightage));
 

@@ -8,8 +8,6 @@ import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT } from "@/lib/roles";
 import { getSignedInEmployee } from "@/lib/session";
 
-// Agent portal page (staff sign-in sends Customer Service, Gate and Tarmac Agents here).
-// Same idea as /employee/admin: each tile lists the roles that can see it.
 export default function AgentPage({ searchParams }: PageProps<"/employee/agent">) {
   return (
     <Suspense fallback={<p className="p-6 text-gray-500">Loading...</p>}>
@@ -19,7 +17,6 @@ export default function AgentPage({ searchParams }: PageProps<"/employee/agent">
 }
 
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/agent">["searchParams"] }) {
-  // only at request time (mysql2 calls Date.now(), which breaks prerendering)
   await connection();
   const employee = await getSignedInEmployee();
   if (!employee) redirect("/login/employee");

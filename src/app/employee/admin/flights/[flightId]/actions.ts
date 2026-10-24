@@ -9,18 +9,15 @@ import { OPERATIONS_MANAGER } from "@/lib/roles";
 
 import { getSignedInStaff } from "../../requireAdmin";
 
-// The Scheduled flights tile's dropdowns. Each change saves straight away.
-// Operations Managers and System Administrators only. The rules are in src/lib/gateRules.ts.
-
+//This is for scheduled flights tile in employee view. Updates are reflected in real time. Only visible to admin and manager
 export type FlightUpdateResult = { ok: true } | { ok: false; error: string };
 
-// Which flight columns a gate dropdown changes, and whose gates it may use.
 const GATE_COLUMNS = {
   departure: { gate: "departure_gate_id", airport: "origin_airport_id" },
   arrival: { gate: "arrival_gate_id", airport: "destination_airport_id" },
 } as const;
 
-// gateId null = back to Pending Gate Designation.
+// gate logic
 export async function updateFlightGate(input: {
   flightId: number;
   which: "departure" | "arrival";
@@ -32,7 +29,6 @@ export async function updateFlightGate(input: {
   const columns = GATE_COLUMNS[input.which];
   if (!columns) return { ok: false, error: "Unknown gate." };
 
-  // the flight's current gate and status
   const [flights] = await db.query<RowDataPacket[]>(
     `SELECT f.${columns.gate} AS current_gate_id, fs.flight_status_name
        FROM flight f
@@ -45,10 +41,9 @@ export async function updateFlightGate(input: {
 
   if (input.gateId === null) {
     if (gateRequired(input.which, status)) {
-      return { ok: false, error: `A ${status} flight must keep its ${input.which} gate.` };
+      return { ok: false, error: `${status} flight. Cannot modify ${input.which} gate.` };
     }
   } else if (input.gateId !== currentGateId) {
-    // a new gate: at this flight's origin (departure) or destination (arrival), and AVAILABLE
     const [gates] = await db.query<RowDataPacket[]>(
       `SELECT g.gate_number, gs.gate_status_name
          FROM gate g
@@ -74,12 +69,10 @@ export async function updateFlightGate(input: {
   return { ok: true };
 }
 
-// status = a flight_status_name, e.g. "DELAYED"
 export async function updateFlightStatus(input: { flightId: number; status: string }): Promise<FlightUpdateResult> {
   const employee = await getSignedInStaff([OPERATIONS_MANAGER]);
   if (!employee) return { ok: false, error: "Only Operations Managers and System Administrators can change statuses." };
 
-  // BOARDING, DEPARTED and ARRIVED need gates first
   const [flights] = await db.query<RowDataPacket[]>(
     "SELECT departure_gate_id, arrival_gate_id FROM flight WHERE flight_id = ?",
     [input.flightId],
@@ -91,14 +84,12 @@ export async function updateFlightStatus(input: { flightId: number; status: stri
   try {
     const [result] = await db.query<ResultSetHeader>(
       `UPDATE flight
-          SET flight_status_id = (SELECT flight_status_id FROM flight_status WHERE flight_status_name = ?),
-              updated_by = ?, last_updated = NOW()
-        WHERE flight_id = ?`,
+       SET flight_status_id = (SELECT flight_status_id FROM flight_status WHERE flight_status_name = ?), updated_by = ?, last_updated = NOW()
+       WHERE flight_id = ?`,
       [input.status, employee.user_id, input.flightId],
     );
     if (result.affectedRows !== 1) return { ok: false, error: "That flight no longer exists." };
   } catch (error) {
-    // NULL status id = a name that isn't in flight_status
     if ((error as { code?: string }).code === "ER_BAD_NULL_ERROR") return { ok: false, error: "Unknown status." };
     throw error;
   }

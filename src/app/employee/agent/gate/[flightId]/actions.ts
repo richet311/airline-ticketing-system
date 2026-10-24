@@ -8,14 +8,12 @@ import { db } from "@/lib/db";
 import { ASSIGNABLE_GATE_STATUS, BOARDING_FLIGHT_STATUSES, DEPARTED_FLIGHT_STATUSES } from "@/lib/gateRules";
 import { GATE_AGENT } from "@/lib/roles";
 
-// The Gate tile: gate statuses, giving a flight a gate, check-in and boarding.
-// Gate Agents and System Administrators only. Rules: src/lib/gateRules.ts.
+//This builds out the gate tile that the gate agent sees
 
 export type GateActionResult = { ok: true } | { ok: false; error: string };
 
 const NOT_ALLOWED: GateActionResult = { ok: false, error: "Only Gate Agents and System Administrators can do this." };
 
-// Which flight columns each gate uses, and whose gates it can be given.
 const GATE_COLUMNS = {
   departure: { gate: "departure_gate_id", airport: "origin_airport_id" },
   arrival: { gate: "arrival_gate_id", airport: "destination_airport_id" },
@@ -26,8 +24,8 @@ function refresh() {
   revalidatePath("/employee/admin");
 }
 
-// Sets the status of the flight's departure or arrival gate. Not once the flight has left.
-// Setting OCCUPIED or MAINTENANCE makes the gate unusable; the tile then asks for a new one.
+//You can adjust the gates up until the flight departs
+//Setting a gate as occupied or under maintenance prevents the gate from being checked into
 export async function setGateStatus(input: {
   flightId: number;
   which: "departure" | "arrival";
@@ -109,7 +107,6 @@ export async function boardPassenger(input: { eTicket: string }): Promise<GateAc
   return movePassenger(input.eTicket, "boarded = 1", "t.checked_in = 1 AND t.boarded = 0", "not checked in, or already boarded");
 }
 
-// One guarded UPDATE: only changes the ticket if it's at the right step and its flight hasn't left.
 async function movePassenger(eTicket: string, set: string, step: string, wrongStep: string): Promise<GateActionResult> {
   const employee = await getSignedInStaff([GATE_AGENT]);
   if (!employee) return NOT_ALLOWED;

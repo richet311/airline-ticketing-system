@@ -6,7 +6,7 @@ import { addAirport } from "@/app/employee/admin/airports/actions";
 
 import { adminButtonClass, adminInputClass, adminLabelClass, FormError } from "./AdminTile";
 
-// The blank row at the top of the Airports tile. Works like AddAircraftForm.
+//Similarly to the aircraft add form component, this allows admins to fill in fields to add airports with validations
 export function AddAirportForm() {
   const [state, formAction, pending] = useActionState(addAirport, null);
   const typed = state && "error" in state ? state.values : {};
