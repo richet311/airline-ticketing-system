@@ -1,0 +1,148 @@
+"use client";
+
+import { useActionState, useState } from "react";
+
+import { scheduleFlight } from "@/app/employee/admin/flights/new/actions";
+import type { AdminFormState, AirportOption } from "@/lib/types";
+
+import { adminButtonClass, adminInputClass, adminLabelClass, FormError } from "./AdminTile";
+
+export type AircraftOption = { aircraft_number: string; aircraft_type: string; capacity: number };
+
+// plane configuration
+const CABINS = [
+  { name: "First", field: "first" },
+  { name: "Business", field: "business" },
+  { name: "Premium", field: "premium" },
+  { name: "Economy", field: "economy" },
+];
+
+//condition for no available seats in any class
+const NO_SEATS = { first: "0", business: "0", premium: "0", economy: "0" };
+
+// tile to add a flight to the db. seat counts update in real time
+export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOption[]; aircraft: AircraftOption[] }) {
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+  const [aircraftNumber, setAircraftNumber] = useState("");
+  const [seats, setSeats] = useState<Record<string, string>>(NO_SEATS);
+
+  const [state, formAction, pending] = useActionState(async (previous: AdminFormState, formData: FormData) => {
+    const result = await scheduleFlight(previous, formData);
+    if (result && "ok" in result) {
+      setOrigin("");
+      setDestination("");
+      setAircraftNumber("");
+      setSeats(NO_SEATS);
+    }
+    return result;
+  }, null);
+  const typed = state && "error" in state ? state.values : {};
+
+  const capacity = aircraft.find((plane) => plane.aircraft_number === aircraftNumber)?.capacity;
+  const seatTotal = CABINS.reduce((sum, cabin) => sum + (Number(seats[cabin.field]) || 0), 0);
+
+  function changeOrigin(code: string) {
+    setOrigin(code);
+    if (code === destination) setDestination("");
+  }
+
+  return (
+    <form action={formAction} className="space-y-3">
+      <div className="grid grid-cols-[7rem_1fr_1fr_1.3fr_1fr_1fr_6rem] items-end gap-2">
+        <label>
+          <span className={adminLabelClass}>Flight</span>
+          <input name="flight_number" defaultValue={typed.flight_number} placeholder="AZ500" required maxLength={10} className={`${adminInputClass} uppercase`} />
+        </label>
+        <label>
+          <span className={adminLabelClass}>From</span>
+          <select name="origin" value={origin} onChange={(event) => changeOrigin(event.target.value)} required className={adminInputClass}>
+            <option value="">Choose</option>
+            {airports.map((airport) => (
+              <option key={airport.airport_code} value={airport.airport_code}>
+                {airport.airport_code} · {airport.city}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className={adminLabelClass}>To</span>
+          <select name="destination" value={destination} onChange={(event) => setDestination(event.target.value)} required className={adminInputClass}>
+            <option value="">Choose</option>
+            {airports
+              .filter((airport) => airport.airport_code !== origin)
+              .map((airport) => (
+                <option key={airport.airport_code} value={airport.airport_code}>
+                  {airport.airport_code} · {airport.city}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          <span className={adminLabelClass}>Aircraft</span>
+          <select name="aircraft" value={aircraftNumber} onChange={(event) => setAircraftNumber(event.target.value)} required className={adminInputClass}>
+            <option value="">Choose</option>
+            {aircraft.map((plane) => (
+              <option key={plane.aircraft_number} value={plane.aircraft_number}>
+                {plane.aircraft_number} · {plane.capacity} seats
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className={adminLabelClass}>Departs (UTC)</span>
+          <input name="departure" type="datetime-local" defaultValue={typed.departure} required className={adminInputClass} />
+        </label>
+        <label>
+          <span className={adminLabelClass}>Arrives (UTC)</span>
+          <input name="arrival" type="datetime-local" defaultValue={typed.arrival} required className={adminInputClass} />
+        </label>
+        <label>
+          <span className={adminLabelClass}>Miles</span>
+          <input name="distance" type="number" min={1} defaultValue={typed.distance} placeholder="925" required className={adminInputClass} />
+        </label>
+      </div>
+
+      {/* Seats and price per cabin. 0 seats = the flight doesn't offer that cabin. */}
+      <div className="grid grid-cols-[repeat(4,1fr)_auto] items-end gap-2">
+        {CABINS.map((cabin) => (
+          <div key={cabin.field} className="grid grid-cols-2 gap-1">
+            <label>
+              <span className={adminLabelClass}>{cabin.name} seats</span>
+              <input
+                name={`${cabin.field}_seats`}
+                type="number"
+                min={0}
+                step={2}
+                value={seats[cabin.field]}
+                onChange={(event) => setSeats({ ...seats, [cabin.field]: event.target.value })}
+                className={adminInputClass}
+              />
+            </label>
+            <label>
+              <span className={adminLabelClass}>Price $</span>
+              <input
+                name={`${cabin.field}_price`}
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={typed[`${cabin.field}_price`]}
+                disabled={Number(seats[cabin.field]) === 0}
+                className={`${adminInputClass} disabled:bg-gray-50`}
+              />
+            </label>
+          </div>
+        ))}
+        <button type="submit" disabled={pending} className={adminButtonClass}>
+          {pending ? "Scheduling..." : "Schedule"}
+        </button>
+      </div>
+
+      <p className={`text-xs ${capacity !== undefined && seatTotal !== capacity ? "text-amber-700" : "text-gray-500"}`}>
+        Seats assigned: {seatTotal}
+        {capacity !== undefined && ` of ${capacity}`}
+      </p>
+      <FormError message={state && "error" in state ? state.error : undefined} />
+    </form>
+  );
+}

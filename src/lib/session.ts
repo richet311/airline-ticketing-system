@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { createHmac, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -8,37 +8,35 @@ import { cache } from "react";
 import { db } from "@/lib/db";
 import type { CurrentUser, SignedInEmployee } from "@/lib/types";
 
-// Login helpers: password hashing, the session cookie, and who is signed in.
+// Login helpers: passwords, the session cookie, and who is signed in.
 // The cookie is signed with SESSION_SECRET from .env.local.
 
 const COOKIE_NAME = "session";
 const SESSION_DAYS = 7;
 
-// changing these breaks every stored hash
-const SALT_BYTES = 16;
-const KEY_BYTES = 64;
+// Passwords are stored as plain text in user.password_hash (the class doesn't need real hashes).
+// A real site would hash them; scrypt hashes from before this change still log in (see checkPassword).
+const SCRYPT_KEY_BYTES = 64;
 
 // the cast picks scrypt's 3-argument overload
 const scryptAsync = promisify(scrypt) as (password: string, salt: Buffer, keyLength: number) => Promise<Buffer>;
 
-// Returns "scrypt$<salt>$<hash>" with a new random salt each time.
+// What to store in user.password_hash for a new account (register): the password as typed.
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(SALT_BYTES);
-  const key = await scryptAsync(password, salt, KEY_BYTES);
-  return `scrypt$${salt.toString("hex")}$${key.toString("hex")}`;
+  return password;
 }
 
-// False for anything that isn't a scrypt hash (like an old plain-text password).
+// True when the typed password matches what's stored: plain text, or an older
+// "scrypt$<salt>$<hash>" value from before passwords were stored as plain text.
 export async function checkPassword(password: string, storedHash: string): Promise<boolean> {
   const [scheme, saltHex, keyHex] = storedHash.split("$");
-  if (scheme !== "scrypt" || !saltHex || !keyHex) return false;
-
-  const storedKey = Buffer.from(keyHex, "hex");
-  if (storedKey.length !== KEY_BYTES) return false;
-
-  const key = await scryptAsync(password, Buffer.from(saltHex, "hex"), KEY_BYTES);
-  // constant-time compare
-  return timingSafeEqual(key, storedKey);
+  if (scheme === "scrypt" && saltHex && keyHex) {
+    const storedKey = Buffer.from(keyHex, "hex");
+    if (storedKey.length !== SCRYPT_KEY_BYTES) return false;
+    const key = await scryptAsync(password, Buffer.from(saltHex, "hex"), SCRYPT_KEY_BYTES);
+    return timingSafeEqual(key, storedKey);
+  }
+  return password === storedHash;
 }
 
 // keepLoggedIn: 7-day cookie, otherwise it ends when the browser closes. Server Actions only.

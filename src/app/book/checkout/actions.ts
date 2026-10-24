@@ -170,9 +170,9 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
           const ticketNumber = `${newBookingId}-${String(++ticketCount).padStart(2, "0")}`;
           await conn.query(
             `INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id,
-                                 seat_number, flight_fare, checked_in,
+                                 seat_number, flight_fare, checked_in, boarded,
                                  created_by, created_at, updated_by, last_updated)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW(), ?, NOW())`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, NOW(), ?, NOW())`,
             [
               ticketNumber,
               newBookingId,

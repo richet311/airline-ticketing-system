@@ -264,6 +264,7 @@ export interface Ticket extends RowDataPacket {
     seat_number: string | null;
     flight_fare: number;
     checked_in: 0 | 1 | null;
+    boarded: 0 | 1;
     created_at: string;
     last_updated: string;
     created_by: number;
@@ -398,4 +399,109 @@ export interface SignedInEmployee extends RowDataPacket {
     job_role_id: number;
     job_role_name: string;
     assigned_gate_id: number | null;
+}
+
+// /employee/admin: aircraft list (aircraft joined to maintenance_status)
+export interface AircraftListRow extends RowDataPacket {
+    aircraft_id: number;
+    aircraft_number: string;
+    aircraft_type: string;
+    capacity: number;
+    maintenance_status_name: string;
+}
+
+// /employee/admin: flights list. The Flight Status columns plus the aircraft.
+export interface AdminFlightRow extends FlightStatusRow {
+    aircraft_number: string;
+}
+
+// What an admin "add" form's action sends back: an error with what was typed, or ok.
+export type AdminFormState = { error: string; values: Record<string, string> } | { ok: true } | null;
+
+// /employee/admin Scheduled flights: the flights list plus what the gate dropdowns need.
+export interface OpsFlightRow extends AdminFlightRow {
+    origin_airport_id: number;
+    destination_airport_id: number;
+    departure_gate_id: number | null;
+    arrival_gate_id: number | null;
+}
+
+// A gate for the dropdowns: gate joined to terminal (which gives its airport) and gate_status.
+export interface GateOption extends RowDataPacket {
+    gate_id: number;
+    airport_id: number;
+    terminal_name: string;
+    gate_number: string;
+    gate_status_name: string;
+}
+
+// /employee Bookings tile: one ticket (a passenger on a flight) with its booking.
+export interface BookingTicketRow extends RowDataPacket {
+    e_ticket_number: string;
+    booking_id: string;
+    flight_id: number;
+    fare_class_id: number;
+    seat_number: string | null; // NULL once a cancelled booking gave its seat up
+    flight_fare: number; // what this ticket cost (its fare's base_price when booked)
+    first_name: string | null;
+    last_name: string | null;
+    flight_number: string;
+    origin: string;
+    destination: string;
+    departure_time: string;
+    origin_timezone: string; // airport.timezone of the origin, for local departure time
+    flight_status_name: string;
+    cabin_class_name: string;
+    total_amount: number; // booking.total_amount
+    paid_amount: number; // the booking's RECEIVED payments minus its REFUNDED ones
+    booking_status_name: string;
+}
+
+// /employee Bookings tile: an AVAILABLE seat, and the fare (flight + cabin) it belongs to.
+export interface AvailableSeatRow extends RowDataPacket {
+    fare_class_id: number;
+    seat_number: string;
+}
+
+// /employee Bookings tile: a fare on a booked flight. FareOption plus its change fee.
+export interface AgentFareRow extends FareOption {
+    change_fee: number;
+}
+
+// /employee Bookings tile: one checked bag on a ticket.
+export interface TicketBagRow extends RowDataPacket {
+    tag_number: string;
+    e_ticket_number: string;
+    weightage: number; // pounds
+}
+
+// /employee Gate tile: the flight being boarded, with both gates and their statuses.
+export interface GateFlightRow extends RowDataPacket {
+    flight_id: number;
+    flight_number: string;
+    origin: string;
+    destination: string;
+    origin_airport_id: number;
+    destination_airport_id: number;
+    departure_time: string;
+    origin_timezone: string;
+    flight_status_name: string;
+    departure_gate_id: number | null;
+    departure_gate: string | null; // "Terminal 1 · A26"
+    departure_gate_status: string | null;
+    arrival_gate_id: number | null;
+    arrival_gate: string | null;
+    arrival_gate_status: string | null;
+}
+
+// /employee Gate tile: one passenger on the flight (confirmed bookings only).
+export interface GatePassengerRow extends RowDataPacket {
+    e_ticket_number: string;
+    seat_number: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    passport_number: string | null;
+    bag_count: number;
+    checked_in: 0 | 1 | null;
+    boarded: 0 | 1;
 }

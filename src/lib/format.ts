@@ -16,6 +16,11 @@ export function formatDate(value: string, timeZone = "UTC"): string {
   }).format(fromDatabase(value));
 }
 
+// "Dec 15" (no year). Pass airport.timezone for the local day.
+export function formatMonthDay(value: string, timeZone = "UTC"): string {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone }).format(fromDatabase(value));
+}
+
 // "7:00 AM". Pass airport.timezone for local time.
 export function formatTime(value: string, timeZone = "UTC"): string {
   return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone }).format(

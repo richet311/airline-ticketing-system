@@ -404,6 +404,8 @@ CREATE TABLE ticket (
     seat_number VARCHAR(4) NULL,
     flight_fare DECIMAL(10, 2) NOT NULL,
     checked_in BOOLEAN NULL,
+    -- set by the gate agent at boarding. A passenger can only board after checking in
+    boarded BOOLEAN NOT NULL,
 
     created_at TIMESTAMP NOT NULL,
     last_updated TIMESTAMP NOT NULL,
@@ -412,6 +414,8 @@ CREATE TABLE ticket (
 
     CONSTRAINT check_ticket_flight_fare CHECK (flight_fare >= 0),
     CONSTRAINT check_ticket_checked_in CHECK (checked_in IN (0, 1)),
+    CONSTRAINT check_ticket_boarded CHECK (boarded IN (0, 1)),
+    CONSTRAINT check_ticket_boarded_after_check_in CHECK (boarded = 0 OR checked_in = 1),
     CONSTRAINT unique_ticket_flight_seat UNIQUE (flight_id, seat_number)
 );
 

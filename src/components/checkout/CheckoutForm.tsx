@@ -289,7 +289,7 @@ export function CheckoutForm({
           {pending ? "Processing..." : `Purchase · ${formatPrice(total)}`}
         </button>
         <p className="text-xs text-gray-500">
-          All fares are refundable, less the cabin&apos;s change fee. See Travel info for the full policy.
+          All fares are fully refundable. Changing cabins costs the cabin&apos;s change fee. See Travel info for the full policy.
         </p>
       </aside>
     </form>
