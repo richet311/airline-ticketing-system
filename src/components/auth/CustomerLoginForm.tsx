@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 
 import { customerLogin } from "@/app/login/actions";
@@ -45,15 +44,10 @@ export function CustomerLoginForm() {
         />
       </div>
 
-      <div className="flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2 text-gray-700">
-          <input type="checkbox" name="keep_logged_in" defaultChecked className="h-4 w-4 accent-azure-blue" />
-          Keep me logged in
-        </label>
-        <Link href="/help" className="text-azure-blue hover:text-azure-blue-dark hover:underline">
-          Forgot password?
-        </Link>
-      </div>
+      <label className="flex items-center gap-2 text-sm text-gray-700">
+        <input type="checkbox" name="keep_logged_in" defaultChecked className="h-4 w-4 accent-azure-blue" />
+        Keep me logged in
+      </label>
 
       {state && (
         <p role="alert" className="rounded-control border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

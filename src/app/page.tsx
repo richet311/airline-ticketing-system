@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 
-import { SiteFooter } from "@/components/SiteFooter";
 import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { BookingCard } from "@/components/home/BookingCard";
@@ -36,19 +35,17 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
 
         <section aria-labelledby="experience-heading" className="py-16">
           <div className="mx-auto max-w-6xl space-y-10 px-4">
-            <PageHeading as="h2" id="experience-heading" center overline="The Azure Air experience" title="Everything for your trip, from booking to boarding" />
+            <PageHeading as="h2" id="experience-heading" center title="Before you fly" />
             <QuickLinks />
           </div>
         </section>
 
-        <div className="border-t border-gray-200 bg-azure-page py-16">
+        <div className="py-16">
           <div className="mx-auto max-w-6xl px-4">
             <PopularDestinations from={HOME_AIRPORT} />
           </div>
         </div>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

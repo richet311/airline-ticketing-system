@@ -1,6 +1,5 @@
 // TODO: upcoming, past and cancelled trips for signed-in customers
 import { PageHeading } from "@/components/PageHeading";
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { TripLookupForm } from "@/components/TripLookupForm";
 
@@ -19,8 +18,6 @@ export default function MyTripsPage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

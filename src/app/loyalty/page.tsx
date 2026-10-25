@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { formatDate, formatMoney } from "@/lib/format";
 import { POINTS_PER_DOLLAR, POINTS_PER_DOLLAR_OFF } from "@/lib/rewardPoints";
@@ -47,8 +46,6 @@ export default function LoyaltyPage() {
           </Suspense>
         </div>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

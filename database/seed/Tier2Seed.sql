@@ -110,4 +110,4 @@ INSERT INTO employee (employee_id, user_id, first_name, last_name, date_of_birth
 (2001, 1, 'TESTEMPLOYEE', 'SYSADMIN', '2002-02-02', 75000, NULL, NULL, 91, '2026-08-28', TRUE, 1, NOW(), 1, NOW()),
 (2002, 3, 'Taylor', 'Johnson', '1985-05-14', 68000.00, 2001, NULL, 92, '2022-03-10', TRUE, 1, NOW(), 1, NOW()),
 (2003, 6, 'Kenny', 'Lee', '1990-09-22', 60000.00, 2002, 40011, 96, '2024-01-15', TRUE, 1, NOW(), 1, NOW()),
-(2004, 17, 'Miranda', 'Cosgrove', '1990-05-14', 000.00, 2002, NULL, 95, '2024-06-01', TRUE, 1, NOW(), 1, NOW());
+(2004, 17, 'Miranda', 'Cosgrove', '1990-05-14', 52000.00, 2002, NULL, 95, '2024-06-01', TRUE, 1, NOW(), 1, NOW());

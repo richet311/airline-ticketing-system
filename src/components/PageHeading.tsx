@@ -8,7 +8,7 @@ export function PageHeading({
   center = false,
   children,
 }: {
-  overline: string;
+  overline?: string;
   title: string;
   as?: "h1" | "h2";
   id?: string;
@@ -17,7 +17,7 @@ export function PageHeading({
 }) {
   return (
     <div className={center ? "text-center" : ""}>
-      <p className="text-[13px] font-semibold tracking-widest text-azure-navy uppercase">{overline}</p>
+      {overline && <p className="text-[13px] font-semibold tracking-widest text-azure-navy uppercase">{overline}</p>}
       <Heading id={id} className="mt-2 text-4xl leading-tight font-light text-balance text-azure-navy">
         {title}
       </Heading>

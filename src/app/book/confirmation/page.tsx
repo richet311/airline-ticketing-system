@@ -3,7 +3,6 @@
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CheckCircleIcon } from "@/components/icons";
 import { db } from "@/lib/db";
@@ -29,8 +28,6 @@ export default function ConfirmationPage({ searchParams }: PageProps<"/book/conf
           </Suspense>
         </div>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

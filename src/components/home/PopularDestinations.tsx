@@ -22,9 +22,7 @@ const pictureColors = [
 export function PopularDestinations({ from }: { from: { code: string; city: string } }) {
   return (
     <section aria-labelledby="popular-heading">
-      <PageHeading as="h2" id="popular-heading" overline={`Popular from ${from.city}`} title="Where will you go next?">
-        Pick a city to start your search.
-      </PageHeading>
+      <PageHeading as="h2" id="popular-heading" title={`Popular trips from ${from.city}`} />
 
       <ul className="mt-10 grid grid-cols-4 gap-6">
         {destinations.map((trip, index) => (

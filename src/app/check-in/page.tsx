@@ -1,5 +1,4 @@
 import { PageHeading } from "@/components/PageHeading";
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { TripLookupForm } from "@/components/TripLookupForm";
 
@@ -18,8 +17,6 @@ export default function CheckInPage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </>
   );
 }
