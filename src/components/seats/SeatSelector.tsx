@@ -12,17 +12,23 @@ const HOLD_SECONDS = 10 * 60;
 // front of the plane to the back
 const CABIN_ORDER = ["FIRST", "BUSINESS", "PREMIUM", "ECONOMY"];
 
+// 3 seats on each side of the aisle
+const LEFT_SEATS = ["A", "B", "C"];
+const RIGHT_SEATS = ["D", "E", "F"];
+
+// emergency exits come right before these rows
+const EXIT_ROWS = [6, 11];
+
 // TODO: use the signed-in user's name
 const TEMP_TRAVELER_NAME = "Guest Traveler";
 
-type SeatLook = "available" | "mine" | "other" | "taken" | "blocked";
+type SeatLook = "available" | "mine" | "other" | "taken";
 
 const SEAT_CLASSES: Record<SeatLook, string> = {
   available: "border-gray-300 bg-white text-gray-700 enabled:hover:border-azure-blue enabled:hover:bg-azure-blue enabled:hover:text-white",
   mine: "border-azure-blue bg-azure-blue text-white enabled:hover:bg-azure-blue-dark",
   other: "border-blue-200 bg-azure-sky text-azure-navy/50",
-  taken: "border-gray-200 bg-gray-200",
-  blocked: "border-dashed border-gray-300 bg-white",
+  taken: "border-gray-200 bg-gray-200 text-gray-400",
 };
 
 const LEGEND: { look: SeatLook; label: string }[] = [
@@ -30,7 +36,6 @@ const LEGEND: { look: SeatLook; label: string }[] = [
   { look: "other", label: "Other seat classes" },
   { look: "mine", label: "Your seat" },
   { look: "taken", label: "Taken" },
-  { look: "blocked", label: "Blocked" },
 ];
 
 type TripFlight = { label: string; flight: FlightStatusRow };
@@ -43,7 +48,6 @@ export function SeatSelector({
   currentFlightId,
   currentFareId,
   fareTotal,
-  flightCount,
   leg,
   outbound,
   returnFare,
@@ -56,7 +60,6 @@ export function SeatSelector({
   currentFlightId: number;
   currentFareId: number;
   fareTotal: number;
-  flightCount: number;
   leg: "outbound" | "return";
   outbound: number;
   returnFare: number | null;
@@ -116,7 +119,7 @@ export function SeatSelector({
     }
 
     if (selected.length >= passengers) {
-      setMessage(`You've chosen a seat for every passenger. Click one of your seats to give it up first.`);
+      setMessage("Maximum seats selected");
       return;
     }
 
@@ -224,7 +227,7 @@ export function SeatSelector({
 
         <div className="rounded-card border border-gray-200 bg-white shadow-card p-5 text-sm">
           <div className="flex justify-between text-gray-700">
-            <span>Fare ({cabinLabel})</span>
+            <span>Fare</span>
             <span>{formatPrice(fareTotal)}</span>
           </div>
           <div className="mt-1 flex justify-between text-gray-700">
@@ -232,12 +235,11 @@ export function SeatSelector({
             <span>Included</span>
           </div>
           <div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-semibold text-azure-navy">
-            <span>Total so far</span>
+            <span>Total</span>
             <span>{formatPrice(fareTotal)}</span>
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            {flightCount} {flightCount === 1 ? "flight" : "flights"} · {passengers}{" "}
-            {passengers === 1 ? "passenger" : "passengers"}
+            {passengers} {passengers === 1 ? "passenger" : "passengers"}
           </p>
         </div>
 
@@ -269,37 +271,65 @@ function SeatMap({
 }) {
   const cabins = CABIN_ORDER.filter((name) => seats.some((seat) => seat.cabin_class_name === name));
 
+  // one SeatButton per letter, so a missing seat still leaves its gap
+  function seatGroup(cabinSeats: SeatMapRow[], row: number, letters: string[]) {
+    return letters.map((letter) => (
+      <SeatButton
+        key={letter}
+        seat={cabinSeats.find((seat) => seat.seat_number === `${row}${letter}`)}
+        cabin={cabin}
+        selected={selected}
+        disabled={disabled}
+        onSeatClick={onSeatClick}
+      />
+    ));
+  }
+
   return (
-    <div className="mx-auto mt-6 w-fit rounded-t-[10rem] rounded-b-3xl border-2 border-gray-200 px-16 pt-24 pb-10">
+    <div className="mx-auto mt-6 w-fit rounded-t-[8rem] rounded-b-3xl border-2 border-gray-200 px-8 pt-20 pb-8">
       {cabins.map((cabinName) => {
         const cabinSeats = seats.filter((seat) => seat.cabin_class_name === cabinName);
         const rows = [...new Set(cabinSeats.map((seat) => parseInt(seat.seat_number)))].sort((a, b) => a - b);
 
         return (
-          <div key={cabinName} className="mb-8 last:mb-0">
-            <p className="mb-3 text-center text-[11px] font-semibold tracking-widest text-gray-600 uppercase">{cabinName}</p>
+          <div key={cabinName} className="mb-5">
+            <p className="mb-2 text-center text-[11px] font-semibold tracking-widest text-gray-600 uppercase">{cabinName}</p>
+            <div className="mb-1 flex items-center justify-center gap-1.5 text-[10px] font-semibold text-gray-400">
+              {LEFT_SEATS.map((letter) => (
+                <span key={letter} className="w-8 text-center">
+                  {letter}
+                </span>
+              ))}
+              <span className="w-7" />
+              {RIGHT_SEATS.map((letter) => (
+                <span key={letter} className="w-8 text-center">
+                  {letter}
+                </span>
+              ))}
+            </div>
             {rows.map((row) => (
-              <div key={row} className="mb-3 flex items-center justify-center gap-4">
-                <SeatButton
-                  seat={cabinSeats.find((seat) => seat.seat_number === `${row}A`)}
-                  cabin={cabin}
-                  selected={selected}
-                  disabled={disabled}
-                  onSeatClick={onSeatClick}
-                />
-                <span className="w-6 text-center text-xs text-gray-400">{row}</span>
-                <SeatButton
-                  seat={cabinSeats.find((seat) => seat.seat_number === `${row}B`)}
-                  cabin={cabin}
-                  selected={selected}
-                  disabled={disabled}
-                  onSeatClick={onSeatClick}
-                />
+              <div key={row}>
+                {EXIT_ROWS.includes(row) && <ExitRow />}
+                <div className="mb-1.5 flex items-center justify-center gap-1.5">
+                  {seatGroup(cabinSeats, row, LEFT_SEATS)}
+                  <span className="w-7 text-center text-[11px] text-gray-400">{row}</span>
+                  {seatGroup(cabinSeats, row, RIGHT_SEATS)}
+                </div>
               </div>
             ))}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// red EXIT signs on both sides, with extra space around the exit row
+function ExitRow() {
+  return (
+    <div className="-mx-8 my-4 flex items-center justify-between">
+      <span className="rounded-r bg-red-600 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">◀ EXIT</span>
+      <span className="rounded-l bg-red-600 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">EXIT ▶</span>
     </div>
   );
 }
@@ -317,7 +347,7 @@ function SeatButton({
   disabled: boolean;
   onSeatClick: (seatNumber: string) => void;
 }) {
-  if (!seat) return <span className="h-14 w-14" />;
+  if (!seat) return <span className="h-8 w-8" />;
 
   const look = seatLook(seat, cabin, selected);
   const clickable = look === "available" || look === "mine";
@@ -328,9 +358,9 @@ function SeatButton({
       disabled={!clickable || disabled}
       onClick={() => onSeatClick(seat.seat_number)}
       aria-label={`Seat ${seat.seat_number}: ${LEGEND.find((item) => item.look === look)?.label}`}
-      className={`h-14 w-14 rounded-md border-2 text-sm font-semibold disabled:cursor-not-allowed ${SEAT_CLASSES[look]}`}
+      className={`h-8 w-8 rounded-md border-2 text-[11px] font-semibold disabled:cursor-not-allowed ${SEAT_CLASSES[look]}`}
     >
-      {look === "taken" || look === "blocked" ? "" : seat.seat_number.slice(-1)}
+      {seat.seat_number.slice(-1)}
     </button>
   );
 }
@@ -338,8 +368,7 @@ function SeatButton({
 // own seats first: after a reload they show as HELD but are still ours
 function seatLook(seat: SeatMapRow, cabin: string, selected: string[]): SeatLook {
   if (selected.includes(seat.seat_number)) return "mine";
-  if (seat.seat_status_name === "BLOCKED") return "blocked";
-  if (seat.seat_status_name !== "AVAILABLE") return "taken"; // BOOKED, or HELD by someone else
+  if (seat.seat_status_name !== "AVAILABLE") return "taken"; // BOOKED, BLOCKED, or HELD by someone else
   return seat.cabin_class_name === cabin ? "available" : "other";
 }
 

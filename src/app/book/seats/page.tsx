@@ -107,7 +107,6 @@ async function SeatSelection({ searchParams }: { searchParams: Promise<SearchPar
       currentFlightId={currentFare.flight_id}
       currentFareId={currentFare.fare_class_id}
       fareTotal={farePerPerson * passengers}
-      flightCount={fares.length}
       leg={leg}
       outbound={outbound}
       returnFare={returnFare}
