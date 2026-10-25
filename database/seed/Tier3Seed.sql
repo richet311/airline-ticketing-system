@@ -211,6 +211,38 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 (50017, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
 (50017, '3B', 1, 1, NULL, 1, NOW(), 1, NOW());
 
+-- fill every plane to 15 rows of A-F. The seats above stay as they are (tickets point at them).
+-- new seats use the cabin of that row, or of the last row above if the row is new
+-- about 40% of the new seats are randomly BOOKED as filler (no ticket behind them), AZ640 stays sold out
+INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated)
+WITH RECURSIVE seat_row (n) AS (
+    SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 15
+),
+seat_letter (letter) AS (
+    SELECT 'A' UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E' UNION ALL SELECT 'F'
+)
+SELECT f.flight_id,
+       CONCAT(r.n, l.letter),
+       COALESCE(
+           (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, 'A')),
+           (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id ORDER BY CAST(REGEXP_SUBSTR(s.seat_number, '^[0-9]+') AS UNSIGNED) DESC LIMIT 1)
+       ),
+       IF(f.flight_id = 50003 OR RAND() < 0.4, 3, 1),
+       NULL, 1, NOW(), 1, NOW()
+FROM flight f
+CROSS JOIN seat_row r
+CROSS JOIN seat_letter l
+WHERE NOT EXISTS (SELECT 1 FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, l.letter));
+
+-- seat counts per fare now come from the seat table
+UPDATE fare_class fc
+   SET fc.seats_total = (SELECT COUNT(*) FROM seat s
+                          WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id),
+       fc.seats_available = (SELECT COUNT(*) FROM seat s
+                              WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id
+                                AND s.seat_status_id = 1)
+ WHERE fc.fare_class_id > 0;
+
 
 -- booking total = (base price x number of tickets) + the price of each booking upgrade
 INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, currency, expires_at, created_by, created_at, updated_by, last_updated) VALUES

@@ -26,16 +26,16 @@ INSERT INTO terminal (terminal_id, terminal_name, airport_id, created_by, create
 (30012, 'Terminal 3', 10009, 1, NOW(), 1, NOW()),
 (30013, 'North Terminal', 10010, 1, NOW(), 1, NOW());
 
--- 2 seats per row (A and B), so capacity is 6 or 8
+-- 15 rows of A-F, so capacity is 90
 INSERT INTO aircraft (aircraft_id, aircraft_number, aircraft_type, capacity, maintenance_status_id, created_by, created_at, updated_by, last_updated) VALUES
-(20001, 'N123DL', 'Boeing medium', 8, 1, 1, NOW(), 1, NOW()),
-(20002, 'N456DL', 'Boeing private jet', 6, 1, 1, NOW(), 1, NOW()),
-(20003, 'N789DL', 'Boeing small', 6, 1, 1, NOW(), 1, NOW()),
-(20004, 'N234DL', 'Boeing private jet', 6, 1, 1, NOW(), 1, NOW()),
-(20005, 'N567DL', 'Boeing small', 6, 1, 1, NOW(), 1, NOW()),
-(20006, 'N890DL', 'Boeing private jet', 6, 1, 1, NOW(), 1, NOW()),
-(20007, 'N345DL', 'Boeing private jet', 6, 1, 1, NOW(), 1, NOW()),
-(20008, 'N678DL', 'Boeing small', 6, 3, 1, NOW(), 1, NOW()); -- grounded
+(20001, 'N123DL', 'Boeing medium', 90, 1, 1, NOW(), 1, NOW()),
+(20002, 'N456DL', 'Boeing private jet', 90, 1, 1, NOW(), 1, NOW()),
+(20003, 'N789DL', 'Boeing small', 90, 1, 1, NOW(), 1, NOW()),
+(20004, 'N234DL', 'Boeing private jet', 90, 1, 1, NOW(), 1, NOW()),
+(20005, 'N567DL', 'Boeing small', 90, 1, 1, NOW(), 1, NOW()),
+(20006, 'N890DL', 'Boeing private jet', 90, 1, 1, NOW(), 1, NOW()),
+(20007, 'N345DL', 'Boeing private jet', 90, 1, 1, NOW(), 1, NOW()),
+(20008, 'N678DL', 'Boeing small', 90, 3, 1, NOW(), 1, NOW()); -- grounded
 
 INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by, created_at, updated_by, last_updated) VALUES
 (40001, '23A', 1, 30001, 1 , NOW(), 1, NOW()),
