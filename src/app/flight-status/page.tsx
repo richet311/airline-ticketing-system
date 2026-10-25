@@ -1,7 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 
 import { PageHeading } from "@/components/PageHeading";
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FlightStatusSearch, type StatusSearchValues } from "@/components/flight-status/FlightStatusSearch";
 import { db } from "@/lib/db";
@@ -48,8 +47,6 @@ export default function FlightStatusPage({ searchParams }: PageProps<"/flight-st
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

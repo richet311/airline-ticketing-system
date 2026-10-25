@@ -6,7 +6,6 @@ import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportCity, FareOption, FlightSearchResult } from "@/lib/types";
 import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
 import { StepPills } from "@/components/steps/StepPills";
 
 const CABINS = ["ECONOMY", "PREMIUM", "BUSINESS", "FIRST"];
@@ -40,7 +39,6 @@ export default function FlightResultsPage({ searchParams }: PageProps<"/book/res
         <Results searchParams={searchParams} />
       </Suspense>
       </main>
-      <SiteFooter />
     </>
   );
 }

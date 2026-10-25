@@ -2,7 +2,6 @@
 
 import { Suspense } from "react";
 
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SeatSelector } from "@/components/seats/SeatSelector";
 import { StepPills } from "@/components/steps/StepPills";
@@ -24,8 +23,6 @@ export default function SeatsPage({ searchParams }: PageProps<"/book/seats">) {
           </Suspense>
         </div>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

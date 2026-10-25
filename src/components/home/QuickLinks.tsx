@@ -1,12 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { ArrowRightIcon, BagIcon, ClockIcon, SuitcaseIcon, TicketIcon } from "@/components/icons";
+import { ArrowRightIcon, ClockIcon, SuitcaseIcon, TicketIcon } from "@/components/icons";
 
 const cards = [
   {
     title: "Check in online",
-    text: "Check-in opens 24 hours before departure. Check in online with your confirmation code and get your boarding pass.",
+    text: "Check in starting 24 hours before your flight.",
     linkText: "Check in",
     href: "/check-in",
     icon: <TicketIcon className="h-10 w-10" />,
@@ -14,7 +14,7 @@ const cards = [
   },
   {
     title: "Manage your trip",
-    text: "Find a trip with your confirmation code and last name to see your flights, seats and payments.",
+    text: "Look up a booking to see your flights, seats and payments.",
     linkText: "Go to My Trips",
     href: "/my-trips",
     icon: <SuitcaseIcon className="h-9 w-9" />,
@@ -22,19 +22,11 @@ const cards = [
   },
   {
     title: "Track a flight",
-    text: "Search by flight number or by route to see departure and arrival times and the flight's status.",
+    text: "See if a flight is on time.",
     linkText: "Check flight status",
     href: "/flight-status",
     icon: <ClockIcon className="h-9 w-9" />,
     gradient: "from-azure-blue to-sky-500",
-  },
-  {
-    title: "Bags and travel fees",
-    text: "See checked-bag fees, and what it costs to change or cancel a trip.",
-    linkText: "See travel info",
-    href: "/travel-info",
-    icon: <BagIcon className="h-9 w-9" />,
-    gradient: "from-azure-hero to-sky-600",
   },
 ];
 
@@ -45,7 +37,7 @@ export function QuickLinks() {
     <div className="space-y-6">
       <Card card={wide} className="grid grid-cols-[2fr_3fr]" artClassName="min-h-56" />
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         {rest.map((card) => (
           <Card key={card.title} card={card} className="flex flex-col" artClassName="h-40" />
         ))}

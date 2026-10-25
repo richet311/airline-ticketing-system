@@ -26,19 +26,24 @@ const LIGHTS = [
 const STAR =
   "160,17 162.12,23.09 168.56,23.22 163.42,27.11 165.29,33.28 160,29.6 154.71,33.28 156.58,27.11 151.44,23.22 157.88,23.09";
 
+// the outline of each feather is cut out of the wing, so the gaps show whatever is behind the logo
+function FeatherGaps() {
+  return (
+    <mask id="dawn-crest-feather-gaps">
+      {FEATHERS.map((feather) => (
+        <path key={feather.d} d={feather.d} fill="white" stroke="black" strokeWidth="1" />
+      ))}
+    </mask>
+  );
+}
+
 function Wing() {
   return (
-    <>
+    <g mask="url(#dawn-crest-feather-gaps)">
       {FEATHERS.map((feather) => (
-        <path
-          key={feather.d}
-          d={feather.d}
-          fill={feather.light ? "#d9b45c" : "#b38a33"}
-          stroke="#0b1d3a"
-          strokeWidth="1"
-        />
+        <path key={feather.d} d={feather.d} fill={feather.light ? "#d9b45c" : "#b38a33"} />
       ))}
-    </>
+    </g>
   );
 }
 
@@ -75,6 +80,7 @@ export function DawnCrest({ ribbon = true, className }: { ribbon?: boolean; clas
         <clipPath id="dawn-crest-shield">
           <path d={SHIELD} />
         </clipPath>
+        <FeatherGaps />
         <path id="dawn-crest-ribbon" d="M108 165 Q160 156 212 165" />
       </defs>
 

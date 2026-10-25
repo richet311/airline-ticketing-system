@@ -13,11 +13,7 @@ const links: { section: Section; label: string; href: string }[] = [
   { section: "flight-status", label: "Flight Status", href: "/flight-status" },
 ];
 
-const moreLinks = [
-  { label: "Travel Info", href: "/travel-info" },
-  { label: "Azure Rewards", href: "/loyalty" },
-  { label: "Need Help?", href: "/help" },
-];
+const moreLinks = [{ label: "Azure Rewards", href: "/loyalty" }];
 
 export function SiteHeader({ active, minimal = false }: { active?: Section; minimal?: boolean }) {
   return (

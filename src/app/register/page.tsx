@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { DawnCrest } from "@/components/Logo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
@@ -11,19 +10,10 @@ export default function RegisterPage() {
 
       <main className="flex-1 bg-azure-page">
         <div className="mx-auto max-w-xl px-4 py-14">
-          <DawnCrest className="mx-auto mb-8 h-28 w-auto" />
-          <section
-            aria-labelledby="register-heading"
-            className="rounded-card border border-t-4 border-gray-200 border-t-azure-blue bg-white p-10 shadow-card"
-          >
-            <p className="text-[11px] font-semibold tracking-widest text-azure-blue uppercase">Azure Rewards</p>
-            <h1 id="register-heading" className="mt-1 text-3xl font-semibold text-azure-navy">
+          <section aria-labelledby="register-heading" className="rounded-card border border-gray-200 bg-white p-10">
+            <h1 id="register-heading" className="mb-8 text-3xl font-semibold text-azure-navy">
               Create your account
             </h1>
-            <p className="mt-2 mb-8 text-[15px] leading-relaxed text-gray-600">
-              Join for free to save travelers, manage trips in one place, and collect loyalty points you can use on future
-              bookings.
-            </p>
 
             <RegisterForm />
 
@@ -34,8 +24,6 @@ export default function RegisterPage() {
               </Link>
             </p>
           </section>
-
-          <p className="mt-6 text-center text-xs text-gray-500">© Azure Air</p>
         </div>
       </main>
     </>

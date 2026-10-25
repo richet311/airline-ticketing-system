@@ -6,7 +6,6 @@ import Link from "next/link";
 import type { RowDataPacket } from "mysql2";
 
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
-import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StepPills } from "@/components/steps/StepPills";
 import { db } from "@/lib/db";
@@ -29,8 +28,6 @@ export default function CheckoutPage({ searchParams }: PageProps<"/book/checkout
           </Suspense>
         </div>
       </main>
-
-      <SiteFooter />
     </>
   );
 }
