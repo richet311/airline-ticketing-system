@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DawnCrest } from "@/components/Logo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
@@ -10,6 +11,7 @@ export default function RegisterPage() {
 
       <main className="flex-1 bg-azure-page">
         <div className="mx-auto max-w-xl px-4 py-14">
+          <DawnCrest className="mx-auto mb-8 h-28 w-auto" />
           <section
             aria-labelledby="register-heading"
             className="rounded-card border border-t-4 border-gray-200 border-t-azure-blue bg-white p-10 shadow-card"

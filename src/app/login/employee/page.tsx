@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { DawnCrest } from "@/components/Logo";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StaffSignInForm } from "@/components/auth/StaffSignInForm";
 
@@ -10,6 +11,7 @@ export default function EmployeeLoginPage() {
 
       <main className="flex-1 bg-azure-page">
         <div className="mx-auto max-w-md px-4 py-14">
+          <DawnCrest className="mx-auto mb-8 h-28 w-auto" />
           <section
             aria-labelledby="staff-heading"
             className="rounded-card bg-azure-navy p-10 text-white"

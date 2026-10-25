@@ -211,6 +211,38 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 (50017, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
 (50017, '3B', 1, 1, NULL, 1, NOW(), 1, NOW());
 
+-- fill every plane to 15 rows of A-F. The seats above stay as they are (tickets point at them).
+-- new seats use the cabin of that row, or of the last row above if the row is new
+-- about 40% of the new seats are randomly BOOKED as filler (no ticket behind them), AZ640 stays sold out
+INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated)
+WITH RECURSIVE seat_row (n) AS (
+    SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 15
+),
+seat_letter (letter) AS (
+    SELECT 'A' UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E' UNION ALL SELECT 'F'
+)
+SELECT f.flight_id,
+       CONCAT(r.n, l.letter),
+       COALESCE(
+           (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, 'A')),
+           (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id ORDER BY CAST(REGEXP_SUBSTR(s.seat_number, '^[0-9]+') AS UNSIGNED) DESC LIMIT 1)
+       ),
+       IF(f.flight_id = 50003 OR RAND() < 0.4, 3, 1),
+       NULL, 1, NOW(), 1, NOW()
+FROM flight f
+CROSS JOIN seat_row r
+CROSS JOIN seat_letter l
+WHERE NOT EXISTS (SELECT 1 FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, l.letter));
+
+-- seat counts per fare now come from the seat table
+UPDATE fare_class fc
+   SET fc.seats_total = (SELECT COUNT(*) FROM seat s
+                          WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id),
+       fc.seats_available = (SELECT COUNT(*) FROM seat s
+                              WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id
+                                AND s.seat_status_id = 1)
+ WHERE fc.fare_class_id > 0;
+
 
 -- booking total = (base price x number of tickets) + the price of each booking upgrade
 INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, currency, expires_at, created_by, created_at, updated_by, last_updated) VALUES
@@ -296,3 +328,38 @@ INSERT INTO baggage (tag_number, e_ticket_number, weightage, baggage_status_id, 
 ('BG77803', 'M2345678N', 47.80, 3, 0.00, 1, NOW(), 1, NOW()), -- AZ320 IN TRANSIT
 ('BG77804', 'N2345678O', 28.40, 2, 0.00, 1, NOW(), 1, NOW()), -- AZ640 LOADED
 ('BG77805', 'O2345678P', 53.10, 1, 35.00, 1, NOW(), 1, NOW()); -- AZ640 CHECKED (overweight fee)
+
+
+-- Azure Rewards history (points_transaction)
+
+-- opening balance: the points each user had before these bookings, with some earlier spend so tiers vary
+INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description, created_by, created_at, updated_by, last_updated)
+SELECT u.user_id, NULL, 'ADJUST', u.loyalty_points, FLOOR(u.loyalty_points / 10), 'Opening balance',
+       1, NOW() - INTERVAL 90 DAY, 1, NOW() - INTERVAL 90 DAY
+  FROM user u
+ WHERE u.loyalty_points > 0;
+
+-- 5 points per $1 for every paid booking, credited to the user who booked it
+INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description, created_by, created_at, updated_by, last_updated)
+SELECT p.user_id, b.booking_id, 'EARN', FLOOR(pay.total_amount * 5), pay.total_amount, CONCAT('Booking ', b.booking_id),
+       1, pay.payment_time, 1, pay.payment_time
+  FROM payment pay
+  JOIN booking b   ON b.booking_id = pay.booking_id
+  JOIN passenger p ON p.passenger_id = b.passenger_id
+ WHERE pay.payment_status IN ('RECEIVED', 'REFUNDED')
+   AND p.user_id IS NOT NULL;
+
+-- a refunded booking takes its points and spend back
+INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description, created_by, created_at, updated_by, last_updated)
+SELECT p.user_id, b.booking_id, 'REFUND', -FLOOR(pay.total_amount * 5), -pay.total_amount, CONCAT('Refund of ', b.booking_id),
+       1, pay.payment_time + INTERVAL 1 DAY, 1, pay.payment_time + INTERVAL 1 DAY
+  FROM payment pay
+  JOIN booking b   ON b.booking_id = pay.booking_id
+  JOIN passenger p ON p.passenger_id = b.passenger_id
+ WHERE pay.payment_status = 'REFUNDED'
+   AND p.user_id IS NOT NULL;
+
+-- the balance on user is the sum of the history
+UPDATE user u
+   SET u.loyalty_points = (SELECT COALESCE(SUM(pt.points), 0) FROM points_transaction pt WHERE pt.user_id = u.user_id)
+ WHERE u.user_id > 0;

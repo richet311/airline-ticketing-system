@@ -10,6 +10,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StepPills } from "@/components/steps/StepPills";
 import { db } from "@/lib/db";
+import { getQualifyingSpend, getTiers, tierFor, tierLabel } from "@/lib/rewards";
+import { getCurrentUser } from "@/lib/session";
 import type { FareOption, FlightStatusRow, UpgradeType } from "@/lib/types";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
@@ -121,8 +123,17 @@ async function Checkout({ searchParams }: { searchParams: Promise<SearchParams> 
     return flight ? [{ label: i === 0 ? "Depart" : "Return", flight, fare: leg.fare, seats: leg.seats }] : [];
   });
 
+  // Azure Rewards box in the price summary (null for guests)
+  const user = await getCurrentUser();
+  let rewards = null;
+  if (user) {
+    const tier = tierFor(await getQualifyingSpend(user.user_id), await getTiers());
+    rewards = { points: user.loyalty_points, tierName: tierLabel(tier.tier_name), bonusPercent: tier.bonus_percent };
+  }
+
   return (
     <CheckoutForm
+      rewards={rewards}
       passengers={passengers}
       legs={tripLegs}
       upgrades={upgrades}

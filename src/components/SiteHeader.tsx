@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { DawnCrest } from "@/components/Logo";
+
 // TODO: show the signed-in user's name and points instead of Sign Up / Log In
 
 type Section = "book" | "check-in" | "my-trips" | "flight-status";
@@ -24,7 +26,7 @@ export function SiteHeader({ active, minimal = false }: { active?: Section; mini
         className={`mx-auto flex h-17 max-w-6xl items-center px-4 ${minimal ? "justify-center" : "gap-10"}`}
       >
         <Link href="/" className="flex shrink-0 items-center gap-2.5 text-lg font-semibold tracking-[0.18em]">
-          <LogoIcon />
+          <DawnCrest ribbon={false} className="h-12 w-auto" />
           AZURE AIR
         </Link>
 
@@ -72,13 +74,5 @@ function MainLinks({ active }: { active?: Section }) {
         </Link>
       </div>
     </>
-  );
-}
-
-function LogoIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 rotate-45 fill-sky-300">
-      <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" />
-    </svg>
   );
 }

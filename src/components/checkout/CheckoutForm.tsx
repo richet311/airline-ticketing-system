@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 
 import { purchase } from "@/app/book/checkout/actions";
+import { PointsBox, type CheckoutRewards } from "@/components/rewards/PointsBox";
 import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import type { FareOption, FlightStatusRow, UpgradeType } from "@/lib/types";
 
@@ -19,6 +20,7 @@ const PAYMENT_METHODS = [
 type TripLeg = { label: string; flight: FlightStatusRow; fare: FareOption; seats: string[] };
 
 export function CheckoutForm({
+  rewards,
   passengers,
   legs,
   upgrades,
@@ -28,6 +30,7 @@ export function CheckoutForm({
   returnSeats,
   idempotencyKey,
 }: {
+  rewards: CheckoutRewards | null;
   passengers: number;
   legs: TripLeg[];
   upgrades: UpgradeType[];
@@ -271,6 +274,8 @@ export function CheckoutForm({
             {passengers === 1 ? "passenger" : "passengers"} · taxes included
           </p>
         </div>
+
+        <PointsBox rewards={rewards} total={total} />
 
         {message && (
           <p role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-700">
