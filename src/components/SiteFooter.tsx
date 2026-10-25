@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { DawnCrest } from "@/components/Logo";
+
 const popularTopics = [
   { label: "Baggage policy", href: "/travel-info" },
   { label: "Change & cancel policy", href: "/travel-info" },
@@ -72,7 +74,10 @@ export function SiteFooter() {
         </div>
 
         <div className="flex items-center justify-between gap-6 border-t border-white/15 py-6 text-xs text-white/55">
-          <p className="font-semibold tracking-[0.18em] text-white/80">AZURE AIR</p>
+          <p className="flex items-center gap-2.5 font-semibold tracking-[0.18em] text-white/80">
+            <DawnCrest ribbon={false} className="h-8 w-auto" />
+            AZURE AIR
+          </p>
           <p>© Azure Air · A course project: flights, fares and bookings are sample data.</p>
         </div>
       </div>
