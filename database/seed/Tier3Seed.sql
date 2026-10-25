@@ -327,3 +327,38 @@ INSERT INTO baggage (tag_number, e_ticket_number, weightage, baggage_status_id, 
 ('BG77803', 'M2345678N', 47.80, 3, 0.00, 1, NOW(), 1, NOW()), -- AZ320 IN TRANSIT
 ('BG77804', 'N2345678O', 28.40, 2, 0.00, 1, NOW(), 1, NOW()), -- AZ640 LOADED
 ('BG77805', 'O2345678P', 53.10, 1, 35.00, 1, NOW(), 1, NOW()); -- AZ640 CHECKED (overweight fee)
+
+
+-- Azure Rewards history (points_transaction)
+
+-- opening balance: the points each user had before these bookings, with some earlier spend so tiers vary
+INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description, created_by, created_at, updated_by, last_updated)
+SELECT u.user_id, NULL, 'ADJUST', u.loyalty_points, FLOOR(u.loyalty_points / 10), 'Opening balance',
+       1, NOW() - INTERVAL 90 DAY, 1, NOW() - INTERVAL 90 DAY
+  FROM user u
+ WHERE u.loyalty_points > 0;
+
+-- 5 points per $1 for every paid booking, credited to the user who booked it
+INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description, created_by, created_at, updated_by, last_updated)
+SELECT p.user_id, b.booking_id, 'EARN', FLOOR(pay.total_amount * 5), pay.total_amount, CONCAT('Booking ', b.booking_id),
+       1, pay.payment_time, 1, pay.payment_time
+  FROM payment pay
+  JOIN booking b   ON b.booking_id = pay.booking_id
+  JOIN passenger p ON p.passenger_id = b.passenger_id
+ WHERE pay.payment_status IN ('RECEIVED', 'REFUNDED')
+   AND p.user_id IS NOT NULL;
+
+-- a refunded booking takes its points and spend back
+INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description, created_by, created_at, updated_by, last_updated)
+SELECT p.user_id, b.booking_id, 'REFUND', -FLOOR(pay.total_amount * 5), -pay.total_amount, CONCAT('Refund of ', b.booking_id),
+       1, pay.payment_time + INTERVAL 1 DAY, 1, pay.payment_time + INTERVAL 1 DAY
+  FROM payment pay
+  JOIN booking b   ON b.booking_id = pay.booking_id
+  JOIN passenger p ON p.passenger_id = b.passenger_id
+ WHERE pay.payment_status = 'REFUNDED'
+   AND p.user_id IS NOT NULL;
+
+-- the balance on user is the sum of the history
+UPDATE user u
+   SET u.loyalty_points = (SELECT COALESCE(SUM(pt.points), 0) FROM points_transaction pt WHERE pt.user_id = u.user_id)
+ WHERE u.user_id > 0;

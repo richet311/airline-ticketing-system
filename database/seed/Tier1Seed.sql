@@ -68,3 +68,10 @@ INSERT INTO airport (airport_id, airport_code, airport_name, city, country, time
 (10008, 'FRA', 'Frankfurt Airport', 'Frankfurt', 'DE', 'Europe/Berlin', 1, NOW(), 1, NOW()),
 (10009, 'DXB', 'Dubai International Airport', 'Dubai', 'AE', 'Asia/Dubai', 1, NOW(), 1, NOW()),
 (10010, 'MIA', 'Miami International Airport', 'Miami', 'US', 'America/New_York', 1, NOW(), 1, NOW());
+
+-- Azure Rewards tiers, by spend in the last 12 months
+INSERT INTO loyalty_tier (tier_id, tier_name, min_qualifying_spend, bonus_percent, free_bags, upgrade_discount_percent, priority_boarding, free_seat_choice, created_by, created_at, updated_by, last_updated) VALUES
+(1, 'BLUE', 0.00, 0, 0, 0, FALSE, FALSE, 1, NOW(), 1, NOW()),
+(2, 'SILVER', 1000.00, 25, 0, 0, TRUE, FALSE, 1, NOW(), 1, NOW()),
+(3, 'GOLD', 2500.00, 50, 1, 0, TRUE, FALSE, 1, NOW(), 1, NOW()),
+(4, 'PLATINUM', 5000.00, 100, 1, 25, TRUE, FALSE, 1, NOW(), 1, NOW());

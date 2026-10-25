@@ -389,6 +389,28 @@ export interface CurrentUser extends RowDataPacket {
     last_name: string | null;
 }
 
+// BOOLEAN columns come back as 0 or 1
+export interface LoyaltyTier extends RowDataPacket {
+    tier_id: number;
+    tier_name: string;
+    min_qualifying_spend: number;
+    bonus_percent: number;
+    free_bags: number;
+    upgrade_discount_percent: number;
+    priority_boarding: number;
+    free_seat_choice: number;
+}
+
+// /loyalty recent activity
+export interface PointsActivity extends RowDataPacket {
+    transaction_id: number;
+    booking_id: string | null;
+    transaction_type: string;
+    points: number;
+    description: string | null;
+    created_at: string;
+}
+
 // session.ts getSignedInEmployee() (active employees only)
 export interface SignedInEmployee extends RowDataPacket {
     employee_id: number;

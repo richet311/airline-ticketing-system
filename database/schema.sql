@@ -1,5 +1,5 @@
 -- airline_db schema. Run this first, then the seed files (Tier0 to Tier3) in order.
--- WARNING: drops and recreates all 25 tables.
+-- WARNING: drops and recreates all 27 tables.
 -- If you change a table, update the seed files in the same commit.
 -- All times are stored in UTC.
 
@@ -38,6 +38,8 @@ DROP TABLE IF EXISTS baggage_status;
 DROP TABLE IF EXISTS ticket;
 DROP TABLE IF EXISTS baggage;
 DROP TABLE IF EXISTS payment;
+DROP TABLE IF EXISTS loyalty_tier;
+DROP TABLE IF EXISTS points_transaction;
 -- old name of upgrade_type
 DROP TABLE IF EXISTS comfort_upgrade_type;
 
@@ -452,6 +454,49 @@ CREATE TABLE payment(
     constraint check_payment_status CHECK (payment_status IN ('PENDING', 'RECEIVED', 'REFUNDED'))
 )   AUTO_INCREMENT = 70001;
 
+-- Azure Rewards tiers. Your tier is the highest one your spend in the last 12 months reaches.
+CREATE TABLE loyalty_tier(
+    tier_id INT PRIMARY KEY,
+    tier_name VARCHAR(20) NOT NULL UNIQUE,
+    min_qualifying_spend DECIMAL(10,2) NOT NULL,
+    bonus_percent INT NOT NULL,
+    free_bags INT NOT NULL,
+    upgrade_discount_percent INT NOT NULL,
+    priority_boarding BOOLEAN NOT NULL,
+    free_seat_choice BOOLEAN NOT NULL,
+
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_tier_spend CHECK (min_qualifying_spend >= 0),
+    CONSTRAINT check_tier_bonus CHECK (bonus_percent >= 0),
+    CONSTRAINT check_tier_bags CHECK (free_bags >= 0),
+    CONSTRAINT check_tier_upgrade_discount CHECK (upgrade_discount_percent BETWEEN 0 AND 100)
+);
+
+-- every change to a user's points, one row each. Rows are never edited or deleted.
+-- SUM(points) for a user should match user.loyalty_points
+CREATE TABLE points_transaction(
+    transaction_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    booking_id CHAR(6) NULL,
+    transaction_type VARCHAR(20) NOT NULL,
+    points INT NOT NULL,
+    qualifying_spend DECIMAL(10,2) NOT NULL,
+    description VARCHAR(255) NULL,
+
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_transaction_type CHECK (transaction_type IN ('EARN', 'REDEEM', 'REFUND', 'ADJUST')),
+    -- stops a booking from earning (or being refunded) twice
+    CONSTRAINT unique_booking_transaction UNIQUE (user_id, booking_id, transaction_type)
+)   AUTO_INCREMENT = 80001;
+
 
 ALTER TABLE user
     ADD CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
@@ -608,3 +653,15 @@ ALTER TABLE cabin_class
 ALTER TABLE airport
     ADD CONSTRAINT fk_airport_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_airport_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
+
+
+ALTER TABLE loyalty_tier
+    ADD CONSTRAINT fk_loyalty_tier_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_loyalty_tier_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
+
+
+ALTER TABLE points_transaction
+    ADD CONSTRAINT fk_points_transaction_user FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_points_transaction_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_points_transaction_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_points_transaction_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
