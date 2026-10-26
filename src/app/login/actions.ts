@@ -4,12 +4,13 @@ import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
+import { bookingPath } from "@/lib/loginRedirect";
 import { checkPassword, endSession, startSession } from "@/lib/session";
 
 // same message for both, so it doesn't reveal which emails have accounts
 const WRONG_LOGIN = "That email and password don't match an account.";
 
-export type CustomerLoginState = { error: string; email: string } | null;
+export type CustomerLoginState = { error: string; email: string; redirectTo?: string } | null;
 
 export async function customerLogin(
   previousState: CustomerLoginState,
@@ -26,7 +27,7 @@ export async function customerLogin(
   }
 
   await startSession(users[0].user_id, keepLoggedIn);
-  redirect("/my-trips");
+  return { error: "", email, redirectTo: bookingPath(formData.get("next")) ?? "/my-trips" };
 }
 
 export async function signOut() {

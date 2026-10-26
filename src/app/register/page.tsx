@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { bookingPath } from "@/lib/loginRedirect";
 
-export default function RegisterPage() {
+export default function RegisterPage({ searchParams }: PageProps<"/register">) {
   return (
     <>
       <SiteHeader minimal />
@@ -15,17 +17,32 @@ export default function RegisterPage() {
               Create your account
             </h1>
 
-            <RegisterForm />
-
-            <p className="mt-8 border-t border-gray-200 pt-5 text-center text-sm text-gray-700">
-              Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-azure-blue hover:text-azure-blue-dark hover:underline">
-                Log in
-              </Link>
-            </p>
+            <Suspense fallback={null}>
+              <RegisterBody searchParams={searchParams} />
+            </Suspense>
           </section>
         </div>
       </main>
+    </>
+  );
+}
+
+async function RegisterBody({ searchParams }: { searchParams: PageProps<"/register">["searchParams"] }) {
+  const next = bookingPath((await searchParams).next);
+
+  return (
+    <>
+      <RegisterForm next={next} />
+
+      <p className="mt-8 border-t border-gray-200 pt-5 text-center text-sm text-gray-700">
+        Already have an account?{" "}
+        <Link
+          href={next ? `/login?${new URLSearchParams({ next })}` : "/login"}
+          className="font-semibold text-azure-blue hover:text-azure-blue-dark hover:underline"
+        >
+          Log in
+        </Link>
+      </p>
     </>
   );
 }

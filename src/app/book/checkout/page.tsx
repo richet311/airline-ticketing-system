@@ -1,14 +1,14 @@
-// TODO: only signed-in customers should reach this page
-
 import { randomUUID } from "node:crypto";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
 import { SiteHeader } from "@/components/SiteHeader";
 import { StepPills } from "@/components/steps/StepPills";
 import { db } from "@/lib/db";
+import { loginUrl } from "@/lib/loginRedirect";
 import { getQualifyingSpend, getTiers, tierFor, tierLabel } from "@/lib/rewards";
 import { getCurrentUser } from "@/lib/session";
 import type { FareOption, FlightStatusRow, UpgradeType } from "@/lib/types";
@@ -34,6 +34,7 @@ export default function CheckoutPage({ searchParams }: PageProps<"/book/checkout
 
 async function Checkout({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  if (!(await getCurrentUser())) redirect(loginUrl("/book/checkout", params));
   function text(name: string): string {
     const value = params[name];
     return (Array.isArray(value) ? value[0] : (value ?? "")).trim();
