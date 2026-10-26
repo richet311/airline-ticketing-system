@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import type { Connection } from "mysql2/promise";
 
 import { db } from "@/lib/db";
 import { POINTS_PER_DOLLAR, pointsEarned } from "@/lib/rewardPoints";
@@ -107,6 +108,35 @@ export async function awardPoints(bookingId: string, updatedBy: number): Promise
   } finally {
     conn.release();
   }
+}
+
+// Takes back the points a booking earned when it is cancelled. Run inside the cancel's transaction.
+// Returns the points removed. Never takes the balance below 0 (points may already be spent).
+export async function refundPoints(conn: Connection, bookingId: string, updatedBy: number): Promise<number> {
+  const [earned] = await conn.query<RowDataPacket[]>(
+    `SELECT pt.user_id, pt.points, pt.qualifying_spend, u.loyalty_points
+       FROM points_transaction pt
+       JOIN user u ON u.user_id = pt.user_id
+      WHERE pt.booking_id = ? AND pt.transaction_type = 'EARN'
+        FOR UPDATE`,
+    [bookingId],
+  );
+  const earn = earned[0];
+  if (!earn) return 0;
+
+  const points = Math.min(earn.points, earn.loyalty_points);
+  // unique_booking_transaction stops a second REFUND for the same booking
+  await conn.query(
+    `INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description,
+                                     created_by, created_at, updated_by, last_updated)
+     VALUES (?, ?, 'REFUND', ?, ?, ?, ?, NOW(), ?, NOW())`,
+    [earn.user_id, bookingId, -points, -earn.qualifying_spend, `Cancelled booking ${bookingId}`, updatedBy, updatedBy],
+  );
+  await conn.query(
+    "UPDATE user SET loyalty_points = loyalty_points - ?, updated_by = ?, last_updated = NOW() WHERE user_id = ?",
+    [points, updatedBy, earn.user_id],
+  );
+  return points;
 }
 
 // "SILVER" -> "Silver"
