@@ -6,8 +6,7 @@ import { db } from "@/lib/db";
 import { POINTS_PER_DOLLAR, pointsEarned } from "@/lib/rewardPoints";
 import type { LoyaltyTier, PointsActivity } from "@/lib/types";
 
-// Azure Rewards: tiers, points history and earning.
-// Tier rules live in the loyalty_tier table, every points change is a row in points_transaction.
+// Azure Rewards: tiers, points history, earnings
 
 // lowest spend first
 export async function getTiers(): Promise<LoyaltyTier[]> {
@@ -64,7 +63,7 @@ export async function getRecentActivity(userId: number, limit = 6): Promise<Poin
   return rows;
 }
 
-// Gives the booker points for a paid booking. Not called from checkout yet.
+// Gives the booker points for a paid booking.
 // Returns the points added, or 0 if there was nothing to add.
 export async function awardPoints(bookingId: string, updatedBy: number): Promise<number> {
   const [payments] = await db.query<RowDataPacket[]>(

@@ -527,3 +527,30 @@ export interface GatePassengerRow extends RowDataPacket {
     checked_in: 0 | 1 | null;
     boarded: 0 | 1;
 }
+
+// /employee/admin/reports
+export interface RouteRevenueRow extends RowDataPacket {
+    route: string;
+    distance: number;
+    flights: number;
+    tickets: number;
+    revenue: number;
+    passenger_miles: number;
+    revenue_per_100_miles: number;
+}
+
+export interface CabinRevenueRow extends RowDataPacket {
+    cabin: string;
+    tickets: number;
+    revenue: number;
+    average_fare: number;
+    revenue_share: number;
+}
+
+export interface DailyRevenueRow extends RowDataPacket {
+    day: string;
+    received: number;
+    refunded: number;
+    net: number;
+    running_total: number;
+}

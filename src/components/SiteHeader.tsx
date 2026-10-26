@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { connection } from "next/server";
+import { Suspense } from "react";
 
+import { signOut } from "@/app/login/actions";
 import { DawnCrest } from "@/components/Logo";
-
-// TODO: show the signed-in user's name and points instead of Sign Up / Log In
+import { canUse, OPERATIONS_MANAGER } from "@/lib/roles";
+import { getCurrentUser, getSignedInEmployee } from "@/lib/session";
 
 type Section = "book" | "check-in" | "my-trips" | "flight-status";
 
@@ -62,13 +65,48 @@ function MainLinks({ active }: { active?: Section }) {
       </nav>
 
       <div className="flex items-center gap-4 border-l border-white/20 pl-5 text-[13px] font-semibold tracking-widest uppercase">
+        <Suspense fallback={null}>
+          <Account />
+        </Suspense>
+      </div>
+    </>
+  );
+}
+
+async function Account() {
+  await connection();
+  const [user, employee] = await Promise.all([getCurrentUser(), getSignedInEmployee()]);
+
+  if (!user) {
+    return (
+      <>
         <Link href="/register" className="hover:underline hover:underline-offset-4">
           Sign Up
         </Link>
         <Link href="/login" className="rounded-control bg-azure-blue px-5 py-2.5 hover:bg-azure-blue-dark">
           Log In
         </Link>
-      </div>
+      </>
+    );
+  }
+
+  const first = employee?.first_name ?? user.first_name;
+  const last = employee?.last_name ?? user.last_name;
+  const name = first || last ? `${first ?? ""} ${last ?? ""}`.trim() : user.email;
+
+  return (
+    <>
+      <span className="tracking-normal normal-case">{name}</span>
+      {employee && canUse(employee.job_role_name, [OPERATIONS_MANAGER]) && (
+        <Link href="/employee/admin/reports" className="rounded-control bg-azure-blue px-4 py-2 hover:bg-azure-blue-dark">
+          Reports
+        </Link>
+      )}
+      <form action={signOut}>
+        <button type="submit" className="rounded-control border border-white/40 px-4 py-2 uppercase hover:bg-white/10">
+          Sign out
+        </button>
+      </form>
     </>
   );
 }
