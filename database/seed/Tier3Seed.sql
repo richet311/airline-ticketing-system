@@ -211,9 +211,9 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 (50017, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
 (50017, '3B', 1, 1, NULL, 1, NOW(), 1, NOW());
 
--- fill every plane to 15 rows of A-F. The seats above stay as they are (tickets point at them).
--- new seats use the cabin of that row, or of the last row above if the row is new
--- about 40% of the new seats are randomly BOOKED as filler (no ticket behind them), AZ640 stays sold out
+-- New code to expand the number of rows and seats per row to A-F. Our previous method of seeding data is still intact
+-- Part of the code randomly books seats to make the seat selector more realistic. However, these seats are "hard coded" and don't actually have an associated ticket
+-- Made it a point that flight AZ640 remains sold out
 INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated)
 WITH RECURSIVE seat_row (n) AS (
     SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 15
