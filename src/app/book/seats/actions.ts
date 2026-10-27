@@ -1,11 +1,11 @@
 "use server";
 
-// TODO: check who is signed in before changing seats
-
 import { redirect } from "next/navigation";
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { db } from "@/lib/db";
+import { LOGIN_REQUIRED } from "@/lib/loginRedirect";
+import { getCurrentUser } from "@/lib/session";
 
 // keep in sync with the countdown in SeatSelector
 const HOLD_MINUTES = 10;
@@ -79,6 +79,7 @@ export async function holdSeat(input: {
   seatNumber: string;
   keepSeats: string[];
 }): Promise<SeatActionResult> {
+  if (!(await getCurrentUser())) return { ok: false, error: LOGIN_REQUIRED };
   const held = await inTransaction(async (conn) => {
     await releaseExpiredHolds(conn, input.flightId);
 
@@ -130,6 +131,7 @@ export async function confirmSeats(input: {
   outboundSeats: string[];
   seats: string[];
 }): Promise<SeatActionResult> {
+  if (!(await getCurrentUser())) return { ok: false, error: LOGIN_REQUIRED };
   if (input.seats.length !== input.passengers) {
     return { ok: false, error: "Choose a seat for every passenger first." };
   }
