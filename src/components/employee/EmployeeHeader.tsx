@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { signOut } from "@/app/employee/actions";
+import { canUse, OPERATIONS_MANAGER } from "@/lib/roles";
 import type { SignedInEmployee } from "@/lib/types";
 
 export function EmployeeHeader({ employee }: { employee: SignedInEmployee }) {
@@ -16,6 +17,11 @@ export function EmployeeHeader({ employee }: { employee: SignedInEmployee }) {
           <span>
             {employee.first_name} {employee.last_name} · <span className="text-white/70">{employee.job_role_name}</span>
           </span>
+          {canUse(employee.job_role_name, [OPERATIONS_MANAGER]) && (
+            <Link href="/employee/admin/reports" className="rounded-control bg-azure-blue px-3 py-1.5 font-semibold hover:bg-azure-blue-dark">
+              Reports
+            </Link>
+          )}
           <form action={signOut}>
             <button type="submit" className="font-semibold underline underline-offset-4 hover:text-white/80">
               Sign out

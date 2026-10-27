@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
-import { checkPassword, startSession } from "@/lib/session";
+import { checkPassword, endSession, startSession } from "@/lib/session";
 
 // same message for both, so it doesn't reveal which emails have accounts
 const WRONG_LOGIN = "That email and password don't match an account.";
@@ -27,4 +27,9 @@ export async function customerLogin(
 
   await startSession(users[0].user_id, keepLoggedIn);
   redirect("/my-trips");
+}
+
+export async function signOut() {
+  await endSession();
+  redirect("/");
 }
