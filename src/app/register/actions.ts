@@ -1,9 +1,9 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
+import { bookingPath } from "@/lib/loginRedirect";
 import { hashPassword, startSession } from "@/lib/session";
 import { withTransaction } from "@/lib/transaction";
 
@@ -18,6 +18,7 @@ export type RegisterState = {
   lastName: string;
   email: string;
   phone: string;
+  redirectTo?: string;
 } | null;
 
 // Creates the user and their passenger row, signs them in, then opens My Trips.
@@ -84,5 +85,5 @@ export async function register(previousState: RegisterState, formData: FormData)
   }
 
   await startSession(userId);
-  redirect("/my-trips");
+  return { error: "", ...typed, redirectTo: bookingPath(formData.get("next")) ?? "/my-trips" };
 }

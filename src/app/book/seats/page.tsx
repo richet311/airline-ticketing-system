@@ -1,11 +1,12 @@
-// TODO: only signed-in customers should reach this page
-
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { SeatSelector } from "@/components/seats/SeatSelector";
 import { StepPills } from "@/components/steps/StepPills";
 import { db } from "@/lib/db";
+import { loginUrl } from "@/lib/loginRedirect";
+import { getCurrentUser } from "@/lib/session";
 import type { FareOption, FlightStatusRow, SeatMapRow } from "@/lib/types";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
@@ -29,6 +30,7 @@ export default function SeatsPage({ searchParams }: PageProps<"/book/seats">) {
 
 async function SeatSelection({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
+  if (!(await getCurrentUser())) redirect(loginUrl("/book/seats", params));
   function text(name: string): string {
     const value = params[name];
     return (Array.isArray(value) ? value[0] : (value ?? "")).trim();
