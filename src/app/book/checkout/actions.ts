@@ -7,6 +7,7 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/prom
 import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import { db } from "@/lib/db";
 import { awardPoints } from "@/lib/rewards";
+import { LOGIN_REQUIRED } from "@/lib/loginRedirect";
 import { getCurrentUser } from "@/lib/session";
 import type { FareOption, UpgradeType } from "@/lib/types";
 
@@ -54,6 +55,9 @@ async function inTransaction<T>(work: (conn: PoolConnection) => Promise<T>): Pro
 class CheckoutError extends Error {}
 
 export async function purchase(formData: FormData): Promise<PurchaseResult> {
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, error: LOGIN_REQUIRED };
+
   function text(name: string): string {
     return String(formData.get(name) ?? "").trim();
   }
@@ -140,7 +144,6 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
   const upgradeTotal = upgrades.reduce((sum, upgrade) => sum + upgrade.upgrade_price, 0);
   const bagTotal = travelers.reduce((sum, t) => sum + bagFee(t.bags), 0) * legs.length;
   const total = fareTotal + upgradeTotal + bagTotal;
-  const user = await getCurrentUser();
 
   let bookingId: string;
   try {
@@ -154,7 +157,7 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
         passengerIds.push(await findOrCreatePassenger(conn, traveler));
       }
 
-      const newBookingId = await insertBooking(conn, user?.passenger_id ?? passengerIds[0], total);
+      const newBookingId = await insertBooking(conn, user.passenger_id ?? passengerIds[0], total);
 
       let ticketCount = 0;
       let bagCount = 0;
@@ -213,14 +216,15 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
     if (error instanceof CheckoutError) {
       return { ok: false, error: error.message };
     }
+    if ((error as { sqlState?: string }).sqlState === "45000") {
+      return { ok: false, error: (error as Error).message };
+    }
     throw error;
   }
 
-  if (user) {
-    await awardPoints(bookingId, SYSTEM_USER_ID).catch((error) => {
-      console.error(`Couldn't award points for booking ${bookingId}:`, error);
-    });
-  }
+  await awardPoints(bookingId, SYSTEM_USER_ID).catch((error) => {
+    console.error(`Couldn't award points for booking ${bookingId}:`, error);
+  });
 
   redirect(`/book/confirmation?booking=${bookingId}`);
 }

@@ -669,3 +669,24 @@ ALTER TABLE points_transaction
     ADD CONSTRAINT fk_points_transaction_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_points_transaction_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_points_transaction_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
+
+DELIMITER $$
+
+CREATE TRIGGER check_passport_expiry_is_after_flight_departure
+BEFORE INSERT ON ticket
+FOR EACH ROW
+BEGIN
+    IF (SELECT COUNT(*) -- if the result of the query contains even one row of output
+          FROM flight AS f
+          JOIN airport AS OrigArprt ON OrigArprt.airport_id = f.origin_airport_id -- relates airport table to flight table
+          JOIN airport AS DestArprt ON DestArprt.airport_id = f.destination_airport_id
+          JOIN passenger AS p ON p.passenger_id = NEW.passenger_id -- (1/2) ensures we are validating the passenger and his/her passport associated with the
+         WHERE f.flight_id = NEW.flight_id -- (2/2) current process of building out a NEW ticket tuple for one specific flight
+           AND OrigArprt.country <> DestArprt.country -- the origin and destination airports' countries have to NOT be equal to each other to be an international flight, where passports are necessary
+           AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time))) > 0 -- this condition captures all tuples that should not be allowed under a semantic constraint
+          THEN SIGNAL SQLSTATE '45000' -- error code with error message that's to be displayed to the customer
+           SET MESSAGE_TEXT = 'Your passport expires before this flight departs.';
+    END IF;
+END$$
+
+DELIMITER ;
