@@ -690,3 +690,28 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER check_passport_expiry_on_flight_change
+BEFORE UPDATE ON ticket
+FOR EACH ROW
+BEGIN
+    -- Same rule as check_passport_expiry_is_after_flight_departure, for tickets that move to a different flight
+    -- (My Trips > Change flight) or to a different passenger. Check-in, boarding, and seat updates keep the same
+    -- flight and passenger, so they skip the check.
+    IF (NEW.flight_id <> OLD.flight_id OR NEW.passenger_id <> OLD.passenger_id)
+       AND (SELECT COUNT(*)
+              FROM flight AS f
+              JOIN airport AS OrigArprt ON OrigArprt.airport_id = f.origin_airport_id
+              JOIN airport AS DestArprt ON DestArprt.airport_id = f.destination_airport_id
+              JOIN passenger AS p ON p.passenger_id = NEW.passenger_id
+             WHERE f.flight_id = NEW.flight_id
+               AND OrigArprt.country <> DestArprt.country -- international flights only, where a passport is required
+               AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time))) > 0
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Your passport expires before this flight departs.';
+    END IF;
+END$$
+
+DELIMITER ;

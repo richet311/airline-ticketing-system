@@ -97,6 +97,8 @@ export async function changeFlight(previousState: TripActionState, formData: For
     });
   } catch (error) {
     if (error instanceof Refused) return { error: error.message };
+    // the passport triggers reject a change to a flight the traveler's passport doesn't cover
+    if ((error as { sqlState?: string }).sqlState === "45000") return { error: (error as Error).message };
     throw error;
   }
 
