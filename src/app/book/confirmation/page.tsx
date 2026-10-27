@@ -118,7 +118,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
           </h1>
           <div className="mt-5 h-[3px] w-14 bg-azure-blue" />
           <p className="mt-5 text-gray-700">
-            Keep this code. With traveler 1&apos;s last name, it opens your trip in My Trips and Check In.
+            Keep this code. You will use it for My Trips and Check In.
           </p>
         </div>
         <div className="shrink-0 rounded-card border border-gray-200 bg-azure-page px-8 py-6 text-center">
