@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
+import { grantTripAccess } from "@/lib/tripAccess";
 
 // Sent back to the form when the trip isn't found
 export type FindTripState = { error: string; bookingId: string; lastName: string } | null;
@@ -27,5 +28,6 @@ export async function findTrip(previousState: FindTripState, formData: FormData)
     return { error: "We couldn't find a trip with that confirmation code and last name.", bookingId, lastName };
   }
 
+  await grantTripAccess(bookingId);
   redirect(`/${goTo}/${bookingId}`);
 }

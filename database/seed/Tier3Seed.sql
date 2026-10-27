@@ -363,3 +363,60 @@ SELECT p.user_id, b.booking_id, 'REFUND', -FLOOR(pay.total_amount * 5), -pay.tot
 UPDATE user u
    SET u.loyalty_points = (SELECT COALESCE(SUM(pt.points), 0) FROM points_transaction pt WHERE pt.user_id = u.user_id)
  WHERE u.user_id > 0;
+
+-- inbox messages for the seed data, goes to the traveler or whoever booked it
+
+-- e-tickets for confirmed bookings (already read)
+INSERT INTO notification (user_id, notification_type, booking_id, subject, body, is_read, read_at, created_by, created_at, updated_by, last_updated)
+SELECT bp.user_id, 'ETICKET', b.booking_id,
+       CONCAT('Booking ', b.booking_id, ' is confirmed'),
+       CONCAT('Thanks for flying with Azure Air. Your booking ', b.booking_id, ' is confirmed and paid ($',
+              FORMAT(pay.total_amount, 2), '). Your e-tickets are on your trip page.'),
+       TRUE, pay.payment_time + INTERVAL 1 HOUR, 1, pay.payment_time, 1, pay.payment_time
+  FROM booking b
+  JOIN passenger bp ON bp.passenger_id = b.passenger_id
+  JOIN payment pay  ON pay.booking_id = b.booking_id AND pay.payment_status = 'RECEIVED'
+ WHERE b.booking_status_id = 2
+   AND bp.user_id IS NOT NULL;
+
+-- delay/cancel messages, one per person per flight
+INSERT INTO notification (user_id, notification_type, booking_id, flight_id, subject, body, created_by, created_at, updated_by, last_updated)
+SELECT COALESCE(tp.user_id, bp.user_id), IF(f.flight_status_id = 2, 'DELAYED', 'CANCELLED'), b.booking_id, f.flight_id,
+       IF(f.flight_status_id = 2,
+          CONCAT(f.flight_number, ' is delayed'),
+          CONCAT(f.flight_number, ' has been cancelled')),
+       IF(f.flight_status_id = 2,
+          CONCAT('Your flight ', f.flight_number, ' from ', o.airport_code, ' to ', d.airport_code,
+                 ' is delayed. Check Flight Status for the new departure time. We''re sorry for the wait.'),
+          CONCAT('Your flight ', f.flight_number, ' from ', o.airport_code, ' to ', d.airport_code,
+                 ' has been cancelled. Contact us to rebook or get a refund.')),
+       1, NOW() - INTERVAL IF(f.flight_status_id = 2, 3, 48) HOUR, 1, NOW() - INTERVAL IF(f.flight_status_id = 2, 3, 48) HOUR
+  FROM ticket t
+  JOIN booking b    ON b.booking_id = t.booking_id
+  JOIN passenger tp ON tp.passenger_id = t.passenger_id
+  JOIN passenger bp ON bp.passenger_id = b.passenger_id
+  JOIN flight f     ON f.flight_id = t.flight_id
+  JOIN airport o    ON o.airport_id = f.origin_airport_id
+  JOIN airport d    ON d.airport_id = f.destination_airport_id
+ WHERE f.flight_status_id IN (2, 6)
+   AND b.booking_status_id = 2
+   AND COALESCE(tp.user_id, bp.user_id) IS NOT NULL
+ GROUP BY COALESCE(tp.user_id, bp.user_id), b.booking_id, f.flight_id;
+
+-- boarding passes for checked in tickets that havent left
+INSERT INTO notification (user_id, notification_type, booking_id, flight_id, e_ticket_number, subject, body, created_by, created_at, updated_by, last_updated)
+SELECT COALESCE(tp.user_id, bp.user_id), 'BOARDING_PASS', b.booking_id, f.flight_id, t.e_ticket_number,
+       CONCAT('Your boarding pass for ', f.flight_number),
+       CONCAT('You''re checked in, ', tp.first_name, '. Show this boarding pass at the gate for ',
+              f.flight_number, ' from ', o.airport_code, ' to ', d.airport_code, '.'),
+       1, NOW() - INTERVAL 30 MINUTE, 1, NOW() - INTERVAL 30 MINUTE
+  FROM ticket t
+  JOIN booking b    ON b.booking_id = t.booking_id
+  JOIN passenger tp ON tp.passenger_id = t.passenger_id
+  JOIN passenger bp ON bp.passenger_id = b.passenger_id
+  JOIN flight f     ON f.flight_id = t.flight_id
+  JOIN airport o    ON o.airport_id = f.origin_airport_id
+  JOIN airport d    ON d.airport_id = f.destination_airport_id
+ WHERE t.checked_in = TRUE
+   AND f.flight_status_id IN (1, 2, 3)
+   AND COALESCE(tp.user_id, bp.user_id) IS NOT NULL;

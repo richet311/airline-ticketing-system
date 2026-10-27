@@ -380,6 +380,34 @@ export interface ConfirmationTicket extends RowDataPacket {
     bag_fees: number;
 }
 
+// /check-in/[bookingId]: one ticket with its traveler, flight, gate and bags
+export interface CheckInTicket extends RowDataPacket {
+    e_ticket_number: string;
+    seat_number: string | null;
+    checked_in: 0 | 1 | null;
+    booking_status_id: number;
+    first_name: string | null;
+    last_name: string | null;
+    passport_number: string | null;
+    passport_expiry_date: string | null;
+    flight_id: number;
+    flight_number: string;
+    departure_time: string;
+    flight_status_id: number;
+    minutes_to_departure: number;
+    origin: string;
+    origin_city: string;
+    origin_country: string;
+    origin_timezone: string;
+    destination: string;
+    destination_city: string;
+    destination_country: string;
+    gate_number: string | null;
+    terminal_name: string | null;
+    cabin_class_name: string;
+    bag_count: number;
+}
+
 // session.ts getCurrentUser()
 export interface CurrentUser extends RowDataPacket {
     user_id: number;
@@ -409,6 +437,19 @@ export interface PointsActivity extends RowDataPacket {
     transaction_type: string;
     points: number;
     description: string | null;
+    created_at: string;
+}
+
+// /account/notifications inbox
+export interface InboxMessage extends RowDataPacket {
+    notification_id: number;
+    notification_type: "ETICKET" | "BOARDING_PASS" | "DELAYED" | "CANCELLED";
+    booking_id: string | null;
+    flight_id: number | null;
+    e_ticket_number: string | null;
+    subject: string;
+    body: string;
+    is_read: 0 | 1;
     created_at: string;
 }
 

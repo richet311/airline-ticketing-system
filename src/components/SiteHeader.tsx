@@ -4,6 +4,8 @@ import { Suspense } from "react";
 
 import { signOut } from "@/app/login/actions";
 import { DawnCrest } from "@/components/Logo";
+import { MailIcon } from "@/components/icons";
+import { countUnread } from "@/lib/inbox";
 import { canUse, OPERATIONS_MANAGER } from "@/lib/roles";
 import { getCurrentUser, getSignedInEmployee } from "@/lib/session";
 
@@ -93,9 +95,11 @@ async function Account() {
   const first = employee?.first_name ?? user.first_name;
   const last = employee?.last_name ?? user.last_name;
   const name = first || last ? `${first ?? ""} ${last ?? ""}`.trim() : user.email;
+  const unread = await countUnread(user.user_id);
 
   return (
     <>
+      <InboxLink unread={unread} />
       <span className="tracking-normal normal-case">{name}</span>
       {employee && canUse(employee.job_role_name, [OPERATIONS_MANAGER]) && (
         <Link href="/employee/admin/reports" className="rounded-control bg-azure-blue px-4 py-2 hover:bg-azure-blue-dark">
@@ -108,5 +112,23 @@ async function Account() {
         </button>
       </form>
     </>
+  );
+}
+
+// inbox icon w/ unread count
+function InboxLink({ unread }: { unread: number }) {
+  return (
+    <Link
+      href="/account/notifications"
+      aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"}
+      className="relative text-white/80 hover:text-white"
+    >
+      <MailIcon className="h-6 w-6" />
+      {unread > 0 && (
+        <span className="absolute -top-1.5 -right-2.5 rounded-full bg-azure-blue px-1.5 text-[11px] leading-[18px] font-semibold tracking-normal text-white">
+          {unread}
+        </span>
+      )}
+    </Link>
   );
 }

@@ -1,5 +1,5 @@
 -- airline_db schema. Run this first, then the seed files (Tier0 to Tier3) in order.
--- WARNING: drops and recreates all 27 tables.
+-- WARNING: drops and recreates all 28 tables.
 -- If you change a table, update the seed files in the same commit.
 -- All times are stored in UTC.
 
@@ -40,6 +40,7 @@ DROP TABLE IF EXISTS baggage;
 DROP TABLE IF EXISTS payment;
 DROP TABLE IF EXISTS loyalty_tier;
 DROP TABLE IF EXISTS points_transaction;
+DROP TABLE IF EXISTS notification;
 -- old name of upgrade_type
 DROP TABLE IF EXISTS comfort_upgrade_type;
 
@@ -502,6 +503,29 @@ CREATE TABLE points_transaction(
 )   AUTO_INCREMENT = 80001;
 
 
+-- inbox messages. booking/flight/ticket can be null
+CREATE TABLE notification(
+    notification_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    notification_type VARCHAR(20) NOT NULL,
+    booking_id CHAR(6) NULL,
+    flight_id INT NULL,
+    e_ticket_number VARCHAR(20) NULL,
+    subject VARCHAR(150) NOT NULL,
+    body VARCHAR(1000) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP NULL,
+
+    created_at TIMESTAMP NOT NULL,
+    last_updated TIMESTAMP NOT NULL,
+    created_by INT NOT NULL,
+    updated_by INT NOT NULL,
+
+    CONSTRAINT check_notification_type CHECK (notification_type IN ('ETICKET', 'BOARDING_PASS', 'DELAYED', 'CANCELLED')),
+    CONSTRAINT check_notification_read CHECK (is_read = TRUE OR read_at IS NULL)
+)   AUTO_INCREMENT = 90001;
+
+
 ALTER TABLE user
     ADD CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_user_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
@@ -669,3 +693,12 @@ ALTER TABLE points_transaction
     ADD CONSTRAINT fk_points_transaction_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_points_transaction_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_points_transaction_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
+
+
+ALTER TABLE notification
+    ADD CONSTRAINT fk_notification_user FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_notification_booking FOREIGN KEY (booking_id) REFERENCES booking(booking_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_notification_flight FOREIGN KEY (flight_id) REFERENCES flight(flight_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_notification_ticket FOREIGN KEY (e_ticket_number) REFERENCES ticket(e_ticket_number) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_notification_created_by FOREIGN KEY (created_by) REFERENCES user(user_id) ON DELETE RESTRICT,
+    ADD CONSTRAINT fk_notification_updated_by FOREIGN KEY (updated_by) REFERENCES user(user_id) ON DELETE RESTRICT;
