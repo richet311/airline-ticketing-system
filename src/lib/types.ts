@@ -497,7 +497,6 @@ export interface TicketBagRow extends RowDataPacket {
     weightage: number; // pounds
 }
 
-// /employee Gate tile: the flight being boarded, with both gates and their statuses.
 export interface GateFlightRow extends RowDataPacket {
     flight_id: number;
     flight_number: string;
@@ -516,7 +515,6 @@ export interface GateFlightRow extends RowDataPacket {
     arrival_gate_status: string | null;
 }
 
-// /employee Gate tile: one passenger on the flight (confirmed bookings only).
 export interface GatePassengerRow extends RowDataPacket {
     e_ticket_number: string;
     seat_number: string | null;
@@ -528,7 +526,6 @@ export interface GatePassengerRow extends RowDataPacket {
     boarded: 0 | 1;
 }
 
-// /employee/admin/reports
 export interface RouteRevenueRow extends RowDataPacket {
     route: string;
     distance: number;
@@ -553,4 +550,13 @@ export interface DailyRevenueRow extends RowDataPacket {
     refunded: number;
     net: number;
     running_total: number;
+}
+
+export interface PopularTripRow extends RowDataPacket {
+    fare_class_id: number;
+    flight_number: string;
+    departure_time: string;
+    destination: string;
+    city: string;
+    base_price: number;
 }

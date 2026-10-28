@@ -42,7 +42,9 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
 
         <div className="py-16">
           <div className="mx-auto max-w-6xl px-4">
-            <PopularDestinations from={HOME_AIRPORT} />
+            <Suspense fallback={<p className="text-gray-500">Loading trips...</p>}>
+              <PopularDestinations from={HOME_AIRPORT} />
+            </Suspense>
           </div>
         </div>
       </main>
