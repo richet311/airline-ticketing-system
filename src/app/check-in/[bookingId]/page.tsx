@@ -99,10 +99,7 @@ function LegCheckIn({ bookingId, leg, label }: { bookingId: string; leg: TripLeg
               </ul>
               <label className="flex items-start gap-2 text-sm text-gray-700">
                 <input type="checkbox" required className="mt-1" />
-                <span>
-                  I confirm these travelers aren&apos;t carrying dangerous goods, and that the passport details are
-                  theirs.
-                </span>
+                <span>I confirm no one here is carrying dangerous goods.</span>
               </label>
             </TripActionForm>
           )}

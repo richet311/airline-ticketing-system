@@ -50,7 +50,7 @@ function Card({ card, className, artClassName }: { card: (typeof cards)[number];
   return (
     <Link
       href={card.href}
-      className={`group overflow-hidden rounded-card border border-gray-200 bg-white shadow-card hover:border-azure-blue ${className}`}
+      className={`group overflow-hidden rounded-card border border-gray-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-azure-blue hover:shadow-xl ${className}`}
     >
       <CardArt icon={card.icon} gradient={card.gradient} className={artClassName} />
       <div className="flex flex-1 flex-col justify-center p-7">
@@ -67,7 +67,7 @@ function Card({ card, className, artClassName }: { card: (typeof cards)[number];
 
 function CardArt({ icon, gradient, className }: { icon: ReactNode; gradient: string; className: string }) {
   return (
-    <div className={`relative flex items-center justify-center overflow-hidden bg-linear-to-br ${gradient} ${className}`}>
+    <div className={`relative flex items-center justify-center overflow-hidden bg-linear-to-br transition duration-500 group-hover:scale-105 ${gradient} ${className}`}>
       <svg
         viewBox="0 0 400 200"
         preserveAspectRatio="none"

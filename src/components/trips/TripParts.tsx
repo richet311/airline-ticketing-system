@@ -20,7 +20,7 @@ const BOOKING_STATUS_CLASSES: Record<string, string> = {
 export function BookingStatusPill({ status }: { status: string }) {
   return (
     <span
-      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
+      className={`inline-block rounded-control px-2 py-0.5 text-xs font-semibold ring-1 ring-inset ${
         BOOKING_STATUS_CLASSES[status] ?? "bg-gray-50 text-gray-700 ring-gray-500/20"
       }`}
     >
