@@ -250,12 +250,12 @@ function checkPayment(formData: FormData, method: string): string | null {
   if (method === "PAYPAL") return null;
 
   const name = String(formData.get("card_name") ?? "").trim();
-  const number = String(formData.get("card_number") ?? "").replace(/[\s-]/g, "");
+  const number = String(formData.get("card_number") ?? "").trim();
   const expiry = String(formData.get("card_expiry") ?? "").trim();
   const cvc = String(formData.get("card_cvc") ?? "").trim();
 
   if (name === "") return "Enter the name on the card.";
-  if (!/^\d{12,19}$/.test(number)) return "Enter a card number of 12 to 19 digits.";
+  if (!/^\d{16}$/.test(number)) return "Enter a 16-digit card number using numbers only.";
   const match = /^(\d{2})\/(\d{2})$/.exec(expiry);
   if (!match || Number(match[1]) < 1 || Number(match[1]) > 12) return "Enter the card's expiry as MM/YY.";
   const now = new Date();

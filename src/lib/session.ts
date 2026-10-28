@@ -11,7 +11,7 @@ import type { CurrentUser, SignedInEmployee } from "@/lib/types";
 //Login helpers include the passwords, the session cookie, and who is signed in.
 //The cookie is SESSION_SECRET from .env.local.
 
-const COOKIE_NAME = "session";
+export const SESSION_COOKIE = "session";
 const SESSION_DAYS = 7;
 
 //Passwords are stored as plain text in user.password_hash, but in case we wanted to store hashes
@@ -41,7 +41,7 @@ export async function startSession(userId: number, keepLoggedIn = true): Promise
   const payload = `${userId}.${expires}`;
 
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, `${payload}.${sign(payload)}`, {
+  cookieStore.set(SESSION_COOKIE, `${payload}.${sign(payload)}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -52,7 +52,7 @@ export async function startSession(userId: number, keepLoggedIn = true): Promise
 
 export async function endSession(): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.delete(COOKIE_NAME);
+  cookieStore.delete(SESSION_COOKIE);
 }
 
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
@@ -70,7 +70,12 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 });
 
 export const getSignedInEmployee = cache(async (): Promise<SignedInEmployee | null> => {
-  const userId = await readSessionUserId();
+  const cookieStore = await cookies();
+  return employeeFromSessionCookie(cookieStore.get(SESSION_COOKIE)?.value);
+});
+
+export async function employeeFromSessionCookie(value: string | undefined): Promise<SignedInEmployee | null> {
+  const userId = userIdFromCookie(value);
   if (userId === null) return null;
 
   const [employees] = await db.query<SignedInEmployee[]>(
@@ -82,11 +87,14 @@ export const getSignedInEmployee = cache(async (): Promise<SignedInEmployee | nu
     [userId],
   );
   return employees[0] ?? null;
-});
+}
 
 async function readSessionUserId(): Promise<number | null> {
   const cookieStore = await cookies();
-  const value = cookieStore.get(COOKIE_NAME)?.value;
+  return userIdFromCookie(cookieStore.get(SESSION_COOKIE)?.value);
+}
+
+function userIdFromCookie(value: string | undefined): number | null {
   if (!value) return null;
 
   const [userId, expires, signature] = value.split(".");

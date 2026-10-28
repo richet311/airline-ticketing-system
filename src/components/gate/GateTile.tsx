@@ -15,7 +15,7 @@ export function gateFlightFromUrl(params: { [key: string]: string | string[] | u
 export async function GateTile({ flightNumber, basePath }: { flightNumber: string; basePath: string }) {
   return (
     <AdminTile overline="Gate" title="Boarding">
-      <Form action={basePath} className="flex max-w-md items-end gap-2">
+      <Form action={basePath} scroll={false} className="flex max-w-md items-end gap-2">
         <label className="flex-1">
           <span className={adminLabelClass}>Flight number</span>
           <input
