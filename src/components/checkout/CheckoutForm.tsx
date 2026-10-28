@@ -156,8 +156,8 @@ export function CheckoutForm({
 
         <Section number={5} title="Payment">
           <p className="mb-4 rounded-control border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-            Test payment: no money is charged and card details are never saved. Any card number of 12 to 19
-            digits works, for example 4242 4242 4242 4242.
+            Test payment: no money is charged and card details are never saved. Any 16-digit card number works,
+            for example 4242424242424242.
           </p>
 
           <div className="mb-4 flex gap-3">
@@ -198,8 +198,14 @@ export function CheckoutForm({
                   required
                   inputMode="numeric"
                   autoComplete="cc-number"
-                  placeholder="4242 4242 4242 4242"
-                  pattern="[0-9 \-]{12,23}"
+                  placeholder="4242424242424242"
+                  pattern="\d{16}"
+                  minLength={16}
+                  maxLength={16}
+                  title="16 digits, numbers only"
+                  onChange={(event) => {
+                    event.target.value = event.target.value.replace(/\D/g, "");
+                  }}
                   className={inputClass}
                 />
               </Field>

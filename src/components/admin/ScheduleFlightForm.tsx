@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { scheduleFlight } from "@/app/employee/admin/flights/new/actions";
+import { formatDuration } from "@/lib/format";
 import { SEATS_PER_ROW } from "@/lib/planeRows";
 import type { AdminFormState, AirportOption } from "@/lib/types";
 
@@ -21,12 +22,28 @@ const CABINS = [
 // no rows in any cabin yet
 const NO_ROWS = { first: "0", business: "0", premium: "0", economy: "0" };
 
+const NO_TIMES = { departure_date: "", departure_time: "", arrival_date: "", arrival_time: "" };
+
+const TIME_FIELDS = [
+  { label: "Departure date (UTC)", field: "departure_date", type: "date" },
+  { label: "Departure time (UTC)", field: "departure_time", type: "time" },
+  { label: "Arrival date (UTC)", field: "arrival_date", type: "date" },
+  { label: "Arrival time (UTC)", field: "arrival_time", type: "time" },
+] as const;
+
+function minutesBetween(times: typeof NO_TIMES): number | null {
+  const departs = Date.parse(`${times.departure_date}T${times.departure_time}:00Z`);
+  const arrives = Date.parse(`${times.arrival_date}T${times.arrival_time}:00Z`);
+  return Number.isNaN(departs) || Number.isNaN(arrives) ? null : (arrives - departs) / 60000;
+}
+
 // tile to add a flight to the db. row counts update in real time
 export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOption[]; aircraft: AircraftOption[] }) {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [aircraftNumber, setAircraftNumber] = useState("");
   const [rows, setRows] = useState<Record<string, string>>(NO_ROWS);
+  const [times, setTimes] = useState(NO_TIMES);
 
   const [state, formAction, pending] = useActionState(async (previous: AdminFormState, formData: FormData) => {
     const result = await scheduleFlight(previous, formData);
@@ -35,6 +52,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
       setDestination("");
       setAircraftNumber("");
       setRows(NO_ROWS);
+      setTimes(NO_TIMES);
     }
     return result;
   }, null);
@@ -43,6 +61,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
   const capacity = aircraft.find((plane) => plane.aircraft_number === aircraftNumber)?.capacity;
   const planeRows = capacity === undefined ? undefined : capacity / SEATS_PER_ROW;
   const rowTotal = CABINS.reduce((sum, cabin) => sum + (Number(rows[cabin.field]) || 0), 0);
+  const duration = minutesBetween(times);
 
   function changeOrigin(code: string) {
     setOrigin(code);
@@ -51,7 +70,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
 
   return (
     <form action={formAction} className="space-y-3">
-      <div className="grid grid-cols-[7rem_1fr_1fr_1.3fr_1fr_1fr_6rem] items-end gap-2">
+      <div className="grid grid-cols-[7rem_1fr_1fr_1.3fr_6rem] items-end gap-2">
         <label>
           <span className={adminLabelClass}>Flight</span>
           <input name="flight_number" defaultValue={typed.flight_number} placeholder="AZ500" required maxLength={10} className={`${adminInputClass} uppercase`} />
@@ -92,17 +111,31 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
           </select>
         </label>
         <label>
-          <span className={adminLabelClass}>Departs (UTC)</span>
-          <input name="departure" type="datetime-local" defaultValue={typed.departure} required className={adminInputClass} />
-        </label>
-        <label>
-          <span className={adminLabelClass}>Arrives (UTC)</span>
-          <input name="arrival" type="datetime-local" defaultValue={typed.arrival} required className={adminInputClass} />
-        </label>
-        <label>
           <span className={adminLabelClass}>Miles</span>
           <input name="distance" type="number" min={1} defaultValue={typed.distance} placeholder="925" required className={adminInputClass} />
         </label>
+      </div>
+
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1.2fr] items-end gap-2">
+        {TIME_FIELDS.map((input) => (
+          <label key={input.field}>
+            <span className={adminLabelClass}>{input.label}</span>
+            <input
+              name={input.field}
+              type={input.type}
+              value={times[input.field]}
+              onChange={(event) => setTimes({ ...times, [input.field]: event.target.value })}
+              required
+              className={adminInputClass}
+            />
+          </label>
+        ))}
+        <div>
+          <span className={adminLabelClass}>Duration</span>
+          <output className={`${adminInputClass} flex items-center bg-gray-50 ${duration !== null && duration <= 0 ? "text-amber-700" : ""}`}>
+            {duration === null ? "Enter both times" : duration > 0 ? formatDuration(duration) : "Arrives before it departs"}
+          </output>
+        </div>
       </div>
 
       <div className="grid grid-cols-[repeat(4,1fr)_auto] items-end gap-2">

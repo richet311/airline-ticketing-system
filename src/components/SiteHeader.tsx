@@ -6,8 +6,7 @@ import { signOut } from "@/app/login/actions";
 import { DawnCrest } from "@/components/Logo";
 import { MailIcon } from "@/components/icons";
 import { countUnread } from "@/lib/inbox";
-import { canUse, OPERATIONS_MANAGER } from "@/lib/roles";
-import { getCurrentUser, getSignedInEmployee } from "@/lib/session";
+import { getCurrentUser } from "@/lib/session";
 
 type Section = "book" | "check-in" | "my-trips" | "flight-status";
 
@@ -77,7 +76,7 @@ function MainLinks({ active }: { active?: Section }) {
 
 async function Account() {
   await connection();
-  const [user, employee] = await Promise.all([getCurrentUser(), getSignedInEmployee()]);
+  const user = await getCurrentUser();
 
   if (!user) {
     return (
@@ -92,20 +91,14 @@ async function Account() {
     );
   }
 
-  const first = employee?.first_name ?? user.first_name;
-  const last = employee?.last_name ?? user.last_name;
-  const name = first || last ? `${first ?? ""} ${last ?? ""}`.trim() : user.email;
+  const name =
+    user.first_name || user.last_name ? `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim() : user.email;
   const unread = await countUnread(user.user_id);
 
   return (
     <>
       <InboxLink unread={unread} />
       <span className="tracking-normal normal-case">{name}</span>
-      {employee && canUse(employee.job_role_name, [OPERATIONS_MANAGER]) && (
-        <Link href="/employee/admin/reports" className="rounded-control bg-azure-blue px-4 py-2 hover:bg-azure-blue-dark">
-          Reports
-        </Link>
-      )}
       <form action={signOut}>
         <button type="submit" className="rounded-control border border-white/40 px-4 py-2 uppercase hover:bg-white/10">
           Sign out

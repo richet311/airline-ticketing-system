@@ -18,6 +18,8 @@ const CABINS = [
   { name: "ECONOMY", field: "economy", changeFee: 50 },
 ];
 
+const MAX_FLIGHT_MINUTES = 24 * 60;
+
 //schedule flight form for sys admins and operations managers
 export async function scheduleFlight(previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
   const values: Record<string, string> = {};
@@ -28,15 +30,17 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
   if (!admin) return fail("Only a System Administrator can schedule flights.");
 
   const flightNumber = (values.flight_number ?? "").toUpperCase().replace(/\s/g, "");
-  const departure = toDatabaseTime(values.departure);
-  const arrival = toDatabaseTime(values.arrival);
+  const departure = toDatabaseTime(values.departure_date, values.departure_time);
+  const arrival = toDatabaseTime(values.arrival_date, values.arrival_time);
   const distance = Number(values.distance);
 
   if (flightNumber === "" || flightNumber.length > 10) return fail("Flight number is at most 10 characters, like AZ500.");
   if (!values.origin || !values.destination) return fail("Choose both airports.");
   if (values.origin === values.destination) return fail("From and To must be different airports.");
-  if (!departure || !arrival) return fail("Enter both departure and arrival time.");
-  if (arrival <= departure) return fail("Arrival must be after departure.");
+  if (!departure || !arrival) return fail("Enter the departure and arrival dates and times.");
+  const durationMinutes = (Date.parse(`${arrival.replace(" ", "T")}Z`) - Date.parse(`${departure.replace(" ", "T")}Z`)) / 60000;
+  if (durationMinutes <= 0) return fail("Arrival must be after departure.");
+  if (durationMinutes > MAX_FLIGHT_MINUTES) return fail("A flight can't be longer than 24 hours. Check the dates.");
   if (!Number.isInteger(distance) || distance <= 0) return fail("Distance is in miles and is greater than 0.");
 
   const cabins = CABINS.map((cabin) => ({
@@ -117,6 +121,7 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
   return { ok: true };
 }
 
-function toDatabaseTime(value: string | undefined): string | null {
-  return value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value) ? `${value.replace("T", " ")}:00` : null;
+function toDatabaseTime(date: string | undefined, time: string | undefined): string | null {
+  if (!date || !time || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+  return Number.isNaN(Date.parse(`${date}T${time}:00Z`)) ? null : `${date} ${time}:00`;
 }
