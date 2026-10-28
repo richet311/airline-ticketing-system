@@ -16,8 +16,10 @@ const CABIN_ORDER = ["FIRST", "BUSINESS", "PREMIUM", "ECONOMY"];
 const LEFT_SEATS = ["A", "B", "C"];
 const RIGHT_SEATS = ["D", "E", "F"];
 
-// emergency exits come right before these rows
-const EXIT_ROWS = [6, 11];
+function exitRows(lastRow: number): number[] {
+  if (lastRow < 10) return [Math.round(lastRow / 2) + 1];
+  return [Math.round(lastRow / 3) + 1, Math.round((lastRow * 2) / 3) + 1];
+}
 
 // TODO: use the signed-in user's name
 const TEMP_TRAVELER_NAME = "Guest Traveler";
@@ -270,6 +272,7 @@ function SeatMap({
   onSeatClick: (seatNumber: string) => void;
 }) {
   const cabins = CABIN_ORDER.filter((name) => seats.some((seat) => seat.cabin_class_name === name));
+  const exits = exitRows(Math.max(...seats.map((seat) => parseInt(seat.seat_number))));
 
   // one SeatButton per letter, so a missing seat still leaves its gap
   function seatGroup(cabinSeats: SeatMapRow[], row: number, letters: string[]) {
@@ -309,7 +312,7 @@ function SeatMap({
             </div>
             {rows.map((row) => (
               <div key={row}>
-                {EXIT_ROWS.includes(row) && <ExitRow />}
+                {exits.includes(row) && <ExitRow />}
                 <div className="mb-1.5 flex items-center justify-center gap-1.5">
                   {seatGroup(cabinSeats, row, LEFT_SEATS)}
                   <span className="w-7 text-center text-[11px] text-gray-400">{row}</span>
