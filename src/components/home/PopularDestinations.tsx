@@ -10,20 +10,13 @@ import type { PopularTripRow } from "@/lib/types";
 
 const TRIP_COUNT = 4;
 
-// photos for destinations we have pictures for; others fall back to a gradient
+// only destinations with a photo are shown, so every card has an image
 const destinationImages: Record<string, string> = {
   MIA: "/destinations/miami.webp",
   ORD: "/destinations/chicago.webp",
   LAX: "/destinations/los-angeles.webp",
   JFK: "/destinations/new-york.webp",
 };
-
-const pictureColors = [
-  "from-azure-navy to-azure-blue",
-  "from-azure-hero to-sky-500",
-  "from-azure-blue to-azure-hero",
-  "from-azure-navy via-azure-hero to-sky-600",
-];
 
 export async function PopularDestinations({ from }: { from: { code: string; city: string } }) {
   await connection();
@@ -44,7 +37,8 @@ export async function PopularDestinations({ from }: { from: { code: string; city
   );
 
   const trips = fares
-    .filter((fare, index) => fares.findIndex((other) => other.destination === fare.destination) === index)
+    .filter((fare) => fare.destination in destinationImages)
+    .filter((fare, index, withImages) => withImages.findIndex((other) => other.destination === fare.destination) === index)
     .slice(0, TRIP_COUNT);
 
   return (
@@ -55,33 +49,21 @@ export async function PopularDestinations({ from }: { from: { code: string; city
         <p className="mt-10 text-gray-600">There are no upcoming flights from {from.city} right now.</p>
       ) : (
         <ul className="mt-10 grid grid-cols-4 gap-6">
-          {trips.map((trip, index) => (
+          {trips.map((trip) => (
             <li key={trip.destination}>
               <Link
                 href={`/book/seats?${new URLSearchParams({ outbound: String(trip.fare_class_id), passengers: "1" })}`}
                 className="group block overflow-hidden rounded-card border border-gray-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-azure-blue hover:shadow-xl"
               >
-                <div
-                  className={`relative flex h-40 flex-col justify-end overflow-hidden bg-linear-to-br p-5 text-white transition duration-500 group-hover:scale-105 ${
-                    pictureColors[index % pictureColors.length]
-                  }`}
-                >
-                  {destinationImages[trip.destination] ? (
-                    <>
-                      <Image
-                        src={destinationImages[trip.destination]}
-                        alt=""
-                        fill
-                        sizes="(min-width: 1152px) 270px, 25vw"
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-linear-to-t from-azure-navy/85 via-azure-navy/30 to-transparent" />
-                    </>
-                  ) : (
-                    <svg viewBox="0 0 200 160" aria-hidden="true" className="absolute inset-0 h-full w-full text-white/20">
-                      <path d="M-10 140 C 50 30, 150 20, 210 70" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 6" />
-                    </svg>
-                  )}
+                <div className="relative flex h-40 flex-col justify-end overflow-hidden bg-azure-navy p-5 text-white">
+                  <Image
+                    src={destinationImages[trip.destination]}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1152px) 270px, 25vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-azure-navy/85 via-azure-navy/30 to-transparent" />
                   <p className="relative text-5xl font-light tracking-wider">{trip.destination}</p>
                   <p className="relative text-sm text-white/80">{trip.city}</p>
                 </div>
