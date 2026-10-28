@@ -554,3 +554,93 @@ export interface DailyRevenueRow extends RowDataPacket {
     net: number;
     running_total: number;
 }
+
+// /my-trips/[bookingId] and /check-in/[bookingId]: the booking with who booked it and what they paid
+export interface TripBookingRow extends RowDataPacket {
+    booking_id: string;
+    booking_status_name: string;
+    total_amount: number;
+    currency: string;
+    created_at: string;
+    booker_first_name: string | null;
+    booker_last_name: string | null;
+    paid_amount: number; // RECEIVED payments minus REFUNDED ones
+}
+
+// /my-trips/[bookingId] and /check-in/[bookingId]: one ticket with its traveler, flight, fare and bags
+export interface TripTicketRow extends RowDataPacket {
+    e_ticket_number: string;
+    passenger_id: number;
+    first_name: string | null;
+    last_name: string | null;
+    passport_number: string | null;
+    passport_expiry_date: string | null;
+    nationality: string | null;
+    seat_number: string | null;
+    flight_fare: number;
+    checked_in: 0 | 1 | null;
+    boarded: 0 | 1;
+    flight_id: number;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    duration_min: number; // TIMESTAMPDIFF(MINUTE, departure_time, arrival_time)
+    minutes_to_departure: number; // TIMESTAMPDIFF(MINUTE, NOW(), departure_time), negative once it has left
+    boarding_time: string; // departure_time - BOARDING_STARTS_MINUTES
+    origin_airport_id: number;
+    origin: string;
+    origin_city: string;
+    origin_timezone: string;
+    destination_airport_id: number;
+    destination: string;
+    destination_city: string;
+    destination_timezone: string;
+    flight_status_name: string;
+    departure_gate: string | null; // "Terminal 1 · A26"
+    fare_class_id: number;
+    cabin_class_id: number;
+    cabin_class_name: string;
+    change_fee: number;
+    bag_count: number;
+    bag_fees: number;
+}
+
+// /my-trips for a signed-in customer: one ticket on one of their bookings
+export interface MyTripRow extends RowDataPacket {
+    booking_id: string;
+    booking_status_name: string;
+    passenger_id: number;
+    flight_id: number;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    minutes_to_departure: number;
+    origin: string;
+    origin_city: string;
+    origin_timezone: string;
+    destination: string;
+    destination_city: string;
+    flight_status_name: string;
+}
+
+// /my-trips/[bookingId]/change: a flight on the same route the travelers could move to
+export interface ReplacementFlightRow extends RowDataPacket {
+    flight_id: number;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    duration_min: number;
+    flight_status_name: string;
+}
+
+// /my-trips/[bookingId]/change: a fare on a replacement flight and how many AVAILABLE seats its cabin has
+export interface ReplacementFareRow extends RowDataPacket {
+    fare_class_id: number;
+    flight_id: number;
+    cabin_class_id: number;
+    base_price: number;
+    open_seats: number;
+}
+
+// What a My Trips or Check In form's action sends back: an error, or null when it worked.
+export type TripActionState = { error: string } | null;

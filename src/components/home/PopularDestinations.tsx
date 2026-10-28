@@ -29,10 +29,10 @@ export function PopularDestinations({ from }: { from: { code: string; city: stri
           <li key={trip.code}>
             <Link
               href={`/?from=${from.code}&to=${trip.code}`}
-              className="group block overflow-hidden rounded-card border border-gray-200 bg-white shadow-card hover:border-azure-blue"
+              className="group block overflow-hidden rounded-card border border-gray-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-azure-blue hover:shadow-xl"
             >
               <div
-                className={`relative flex h-40 flex-col justify-end overflow-hidden bg-linear-to-br p-5 text-white ${
+                className={`relative flex h-40 flex-col justify-end overflow-hidden bg-linear-to-br p-5 text-white transition duration-500 group-hover:scale-105 ${
                   pictureColors[index % pictureColors.length]
                 }`}
               >
