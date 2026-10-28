@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { scheduleFlight } from "@/app/employee/admin/flights/new/actions";
+import { SEATS_PER_ROW } from "@/lib/planeRows";
 import type { AdminFormState, AirportOption } from "@/lib/types";
 
 import { adminButtonClass, adminInputClass, adminLabelClass, FormError } from "./AdminTile";
@@ -17,15 +18,15 @@ const CABINS = [
   { name: "Economy", field: "economy" },
 ];
 
-//condition for no available seats in any class
-const NO_SEATS = { first: "0", business: "0", premium: "0", economy: "0" };
+// no rows in any cabin yet
+const NO_ROWS = { first: "0", business: "0", premium: "0", economy: "0" };
 
-// tile to add a flight to the db. seat counts update in real time
+// tile to add a flight to the db. row counts update in real time
 export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOption[]; aircraft: AircraftOption[] }) {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [aircraftNumber, setAircraftNumber] = useState("");
-  const [seats, setSeats] = useState<Record<string, string>>(NO_SEATS);
+  const [rows, setRows] = useState<Record<string, string>>(NO_ROWS);
 
   const [state, formAction, pending] = useActionState(async (previous: AdminFormState, formData: FormData) => {
     const result = await scheduleFlight(previous, formData);
@@ -33,14 +34,15 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
       setOrigin("");
       setDestination("");
       setAircraftNumber("");
-      setSeats(NO_SEATS);
+      setRows(NO_ROWS);
     }
     return result;
   }, null);
   const typed = state && "error" in state ? state.values : {};
 
   const capacity = aircraft.find((plane) => plane.aircraft_number === aircraftNumber)?.capacity;
-  const seatTotal = CABINS.reduce((sum, cabin) => sum + (Number(seats[cabin.field]) || 0), 0);
+  const planeRows = capacity === undefined ? undefined : capacity / SEATS_PER_ROW;
+  const rowTotal = CABINS.reduce((sum, cabin) => sum + (Number(rows[cabin.field]) || 0), 0);
 
   function changeOrigin(code: string) {
     setOrigin(code);
@@ -84,7 +86,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
             <option value="">Choose</option>
             {aircraft.map((plane) => (
               <option key={plane.aircraft_number} value={plane.aircraft_number}>
-                {plane.aircraft_number} · {plane.capacity} seats
+                {plane.aircraft_number} · {plane.capacity / SEATS_PER_ROW} rows
               </option>
             ))}
           </select>
@@ -107,14 +109,13 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
         {CABINS.map((cabin) => (
           <div key={cabin.field} className="grid grid-cols-2 gap-1">
             <label>
-              <span className={adminLabelClass}>{cabin.name} seats</span>
+              <span className={adminLabelClass}>{cabin.name} rows</span>
               <input
-                name={`${cabin.field}_seats`}
+                name={`${cabin.field}_rows`}
                 type="number"
                 min={0}
-                step={2}
-                value={seats[cabin.field]}
-                onChange={(event) => setSeats({ ...seats, [cabin.field]: event.target.value })}
+                value={rows[cabin.field]}
+                onChange={(event) => setRows({ ...rows, [cabin.field]: event.target.value })}
                 className={adminInputClass}
               />
             </label>
@@ -126,7 +127,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
                 min={0}
                 step="0.01"
                 defaultValue={typed[`${cabin.field}_price`]}
-                disabled={Number(seats[cabin.field]) === 0}
+                disabled={Number(rows[cabin.field]) === 0}
                 className={`${adminInputClass} disabled:bg-gray-50`}
               />
             </label>
@@ -137,9 +138,9 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
         </button>
       </div>
 
-      <p className={`text-xs ${capacity !== undefined && seatTotal !== capacity ? "text-amber-700" : "text-gray-500"}`}>
-        Seats assigned: {seatTotal}
-        {capacity !== undefined && ` of ${capacity}`}
+      <p className={`text-xs ${planeRows !== undefined && rowTotal !== planeRows ? "text-amber-700" : "text-gray-500"}`}>
+        Rows assigned: {rowTotal}
+        {planeRows !== undefined && ` of ${planeRows}`} ({rowTotal * SEATS_PER_ROW} seats)
       </p>
       <FormError message={state && "error" in state ? state.error : undefined} />
     </form>

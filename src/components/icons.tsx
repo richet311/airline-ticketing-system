@@ -82,6 +82,24 @@ export function ArrowRightIcon({ className }: IconProps) {
   );
 }
 
+export function MailIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <rect x="3" y="5" width="18" height="14" rx="1.5" />
+      <path d="m3.5 6 8.5 7 8.5-7" />
+    </Icon>
+  );
+}
+
+export function XCircleIcon({ className }: IconProps) {
+  return (
+    <Icon className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m9 9 6 6M15 9l-6 6" />
+    </Icon>
+  );
+}
+
 export function CheckCircleIcon({ className }: IconProps) {
   return (
     <Icon className={className}>

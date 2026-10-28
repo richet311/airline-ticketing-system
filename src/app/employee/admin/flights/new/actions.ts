@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { db } from "@/lib/db";
+import { SEATS_PER_ROW } from "@/lib/planeRows";
 import { withTransaction } from "@/lib/transaction";
 import type { AdminFormState } from "@/lib/types";
 
@@ -40,16 +41,14 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
 
   const cabins = CABINS.map((cabin) => ({
     ...cabin,
-    seats: Number(values[`${cabin.field}_seats`] || 0),
+    rows: Number(values[`${cabin.field}_rows`] || 0),
     price: Number(values[`${cabin.field}_price`] || 0),
   }));
   for (const cabin of cabins) {
-    if (!Number.isInteger(cabin.seats) || cabin.seats < 0 || cabin.seats % 2 !== 0) {
-      return fail(`${cabin.name} seats must be an even number (rows of 2).`);
-    }
-    if (cabin.seats > 0 && !(cabin.price > 0)) return fail(`Enter a price for ${cabin.name}.`);
+    if (!Number.isInteger(cabin.rows) || cabin.rows < 0) return fail(`${cabin.name} rows must be a whole number.`);
+    if (cabin.rows > 0 && !(cabin.price > 0)) return fail(`Enter a price for ${cabin.name}.`);
   }
-  const offered = cabins.filter((cabin) => cabin.seats > 0);
+  const offered = cabins.filter((cabin) => cabin.rows > 0);
   if (offered.length === 0) return fail("Offer at least one cabin.");
 
   // The aircraft has to be OPERATIONAL and all seats should be assigned to a specific cabin.
@@ -61,9 +60,10 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
     [values.aircraft],
   );
   if (aircraft.length === 0) return fail("Choose an operational aircraft.");
-  const seatTotal = offered.reduce((sum, cabin) => sum + cabin.seats, 0);
-  if (seatTotal !== aircraft[0].capacity) {
-    return fail(`The cabins add up to ${seatTotal} seats, but ${values.aircraft} has ${aircraft[0].capacity}.`);
+  const planeRows = aircraft[0].capacity / SEATS_PER_ROW;
+  const rowTotal = offered.reduce((sum, cabin) => sum + cabin.rows, 0);
+  if (rowTotal !== planeRows) {
+    return fail(`The cabins add up to ${rowTotal} rows, but ${values.aircraft} has ${planeRows}.`);
   }
 
   try {
@@ -80,26 +80,32 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
       );
       const flightId = flight.insertId;
 
-      let row = 1;
+      let firstRow = 1;
       for (const cabin of offered) {
+        const seats = cabin.rows * SEATS_PER_ROW;
+        const lastRow = firstRow + cabin.rows - 1;
         await conn.query(
           `INSERT INTO fare_class (flight_id, cabin_class_id, base_price, seats_total, seats_available,
                                    is_refundable, change_fee, created_by, created_at, updated_by, last_updated)
            VALUES (?, (SELECT cabin_class_id FROM cabin_class WHERE cabin_class_name = ?), ?, ?, ?, 1, ?, ?, NOW(), ?, NOW())`,
-          [flightId, cabin.name, cabin.price, cabin.seats, cabin.seats, cabin.changeFee, admin.user_id, admin.user_id],
+          [flightId, cabin.name, cabin.price, seats, seats, cabin.changeFee, admin.user_id, admin.user_id],
         );
-        for (let i = 0; i < cabin.seats / 2; i++, row++) {
-          for (const letter of ["A", "B"]) {
-            await conn.query(
-              `INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until,
-                                 created_by, created_at, updated_by, last_updated)
-               VALUES (?, ?, (SELECT cabin_class_id FROM cabin_class WHERE cabin_class_name = ?),
-                       (SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'AVAILABLE'), NULL,
-                       ?, NOW(), ?, NOW())`,
-              [flightId, `${row}${letter}`, cabin.name, admin.user_id, admin.user_id],
-            );
-          }
-        }
+        await conn.query(
+          `INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until,
+                             created_by, created_at, updated_by, last_updated)
+           WITH RECURSIVE seat_row (n) AS (
+               SELECT ? UNION ALL SELECT n + 1 FROM seat_row WHERE n < ?
+           ),
+           letter (l) AS (
+               SELECT 'A' UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E' UNION ALL SELECT 'F'
+           )
+           SELECT ?, CONCAT(seat_row.n, letter.l), (SELECT cabin_class_id FROM cabin_class WHERE cabin_class_name = ?),
+                  (SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'AVAILABLE'), NULL,
+                  ?, NOW(), ?, NOW()
+             FROM seat_row CROSS JOIN letter`,
+          [firstRow, lastRow, flightId, cabin.name, admin.user_id, admin.user_id],
+        );
+        firstRow = lastRow + 1;
       }
     });
   } catch (error) {

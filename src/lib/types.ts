@@ -412,6 +412,18 @@ export interface PointsActivity extends RowDataPacket {
     created_at: string;
 }
 
+export interface InboxMessage extends RowDataPacket {
+    notification_id: number;
+    notification_type: string;
+    booking_id: string | null;
+    flight_id: number | null;
+    e_ticket_number: string | null;
+    subject: string;
+    body: string;
+    is_read: 0 | 1;
+    created_at: string;
+}
+
 // session.ts getSignedInEmployee() (active employees only)
 export interface SignedInEmployee extends RowDataPacket {
     employee_id: number;
