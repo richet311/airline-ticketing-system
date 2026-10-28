@@ -1,7 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
 
-import { ArrowRightIcon, ClockIcon, SuitcaseIcon, TicketIcon } from "@/components/icons";
+import { ArrowRightIcon } from "@/components/icons";
 
 const cards = [
   {
@@ -9,24 +9,21 @@ const cards = [
     text: "Check in starting 24 hours before your flight.",
     linkText: "Check in",
     href: "/check-in",
-    icon: <TicketIcon className="h-10 w-10" />,
-    gradient: "from-azure-hero to-azure-blue",
+    image: "/home/check-in.webp",
   },
   {
     title: "Manage your trip",
     text: "Look up a booking to see your flights, seats and payments.",
     linkText: "Go to My Trips",
     href: "/my-trips",
-    icon: <SuitcaseIcon className="h-9 w-9" />,
-    gradient: "from-azure-navy to-azure-hero",
+    image: "/home/manage-trip.webp",
   },
   {
     title: "Track a flight",
     text: "See if a flight is on time.",
     linkText: "Check flight status",
     href: "/flight-status",
-    icon: <ClockIcon className="h-9 w-9" />,
-    gradient: "from-azure-blue to-sky-500",
+    image: "/home/track-flight.webp",
   },
 ];
 
@@ -52,7 +49,15 @@ function Card({ card, className, artClassName }: { card: (typeof cards)[number];
       href={card.href}
       className={`group overflow-hidden rounded-card border border-gray-200 bg-white shadow-card hover:border-azure-blue ${className}`}
     >
-      <CardArt icon={card.icon} gradient={card.gradient} className={artClassName} />
+      <div className={`relative overflow-hidden bg-azure-navy ${artClassName}`}>
+        <Image
+          src={card.image}
+          alt=""
+          fill
+          sizes="(min-width: 1152px) 560px, 50vw"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+      </div>
       <div className="flex flex-1 flex-col justify-center p-7">
         <h3 className="text-xl font-semibold text-azure-navy">{card.title}</h3>
         <p className="mt-2 flex-1 text-[15px] leading-relaxed text-gray-600">{card.text}</p>
@@ -62,24 +67,5 @@ function Card({ card, className, artClassName }: { card: (typeof cards)[number];
         </span>
       </div>
     </Link>
-  );
-}
-
-function CardArt({ icon, gradient, className }: { icon: ReactNode; gradient: string; className: string }) {
-  return (
-    <div className={`relative flex items-center justify-center overflow-hidden bg-linear-to-br ${gradient} ${className}`}>
-      <svg
-        viewBox="0 0 400 200"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full text-white/25"
-      >
-        <path d="M-10 175 C 110 35, 290 35, 410 125" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="6 9" />
-        <circle cx="318" cy="64" r="4" fill="currentColor" />
-      </svg>
-      <span className="relative flex h-20 w-20 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30">
-        {icon}
-      </span>
-    </div>
   );
 }
