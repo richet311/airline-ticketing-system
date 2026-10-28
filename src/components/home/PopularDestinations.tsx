@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 
@@ -8,6 +9,14 @@ import { formatMoney, formatMonthDay } from "@/lib/format";
 import type { PopularTripRow } from "@/lib/types";
 
 const TRIP_COUNT = 4;
+
+// photos for destinations we have pictures for; others fall back to a gradient
+const destinationImages: Record<string, string> = {
+  MIA: "/destinations/miami.webp",
+  ORD: "/destinations/chicago.webp",
+  LAX: "/destinations/los-angeles.webp",
+  JFK: "/destinations/new-york.webp",
+};
 
 const pictureColors = [
   "from-azure-navy to-azure-blue",
@@ -57,9 +66,22 @@ export async function PopularDestinations({ from }: { from: { code: string; city
                     pictureColors[index % pictureColors.length]
                   }`}
                 >
-                  <svg viewBox="0 0 200 160" aria-hidden="true" className="absolute inset-0 h-full w-full text-white/20">
-                    <path d="M-10 140 C 50 30, 150 20, 210 70" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 6" />
-                  </svg>
+                  {destinationImages[trip.destination] ? (
+                    <>
+                      <Image
+                        src={destinationImages[trip.destination]}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1152px) 270px, 25vw"
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-azure-navy/85 via-azure-navy/30 to-transparent" />
+                    </>
+                  ) : (
+                    <svg viewBox="0 0 200 160" aria-hidden="true" className="absolute inset-0 h-full w-full text-white/20">
+                      <path d="M-10 140 C 50 30, 150 20, 210 70" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 6" />
+                    </svg>
+                  )}
                   <p className="relative text-5xl font-light tracking-wider">{trip.destination}</p>
                   <p className="relative text-sm text-white/80">{trip.city}</p>
                 </div>
