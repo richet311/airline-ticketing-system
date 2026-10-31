@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { signOut } from "@/app/employee/actions";
-import { canUse, employeeHome, OPERATIONS_MANAGER, REPORTS_PAGE } from "@/lib/roles";
+import { REPORTS_PAGE } from "@/lib/reports";
+import { canUse, employeeHome, OPERATIONS_MANAGER } from "@/lib/roles";
 import type { SignedInEmployee } from "@/lib/types";
 
 export function EmployeeHeader({ employee }: { employee: SignedInEmployee }) {

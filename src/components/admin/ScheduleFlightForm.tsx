@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 
 import { scheduleFlight } from "@/app/employee/admin/flights/new/actions";
 import { formatDuration } from "@/lib/format";
-import { SEATS_PER_ROW } from "@/lib/planeRows";
+import { PLANE_ROWS, SEATS_PER_ROW } from "@/lib/planeRows";
 import type { AdminFormState, AirportOption } from "@/lib/types";
 
 import { adminButtonClass, adminInputClass, adminLabelClass, FormError } from "./AdminTile";
@@ -147,6 +147,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
                 name={`${cabin.field}_rows`}
                 type="number"
                 min={0}
+                max={PLANE_ROWS}
                 value={rows[cabin.field]}
                 onChange={(event) => setRows({ ...rows, [cabin.field]: event.target.value })}
                 className={adminInputClass}

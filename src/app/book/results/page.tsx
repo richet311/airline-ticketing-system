@@ -230,6 +230,7 @@ async function FlightList({
         AND DATE(f.departure_time) = ?
         AND f.departure_time > NOW()
         AND fs.flight_status_name IN ('SCHEDULED', 'DELAYED')
+        AND EXISTS (SELECT 1 FROM fare_class fc WHERE fc.flight_id = f.flight_id AND fc.seats_available > 0)
       ORDER BY f.departure_time`,
     [from, to, day],
   );

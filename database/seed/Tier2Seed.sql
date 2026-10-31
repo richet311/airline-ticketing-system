@@ -43,16 +43,16 @@ INSERT INTO terminal (terminal_id, terminal_name, airport_id, created_by, create
 (30029, 'Central Terminal', 10010, 1, NOW(), 1, NOW()),
 (30030, 'South Terminal', 10010, 1, NOW(), 1, NOW());
 
--- 15 rows of A-F, so capacity is 90
+-- 10 rows of A-F, so capacity is 60
 INSERT INTO aircraft (aircraft_id, aircraft_number, aircraft_type, capacity, maintenance_status_id, created_by, created_at, updated_by, last_updated) VALUES
-(20001, 'N123DL', 'Boeing 737', 90, 1, 1, NOW(), 1, NOW()),
-(20002, 'N456DL', 'Boeing 787', 90, 1, 1, NOW(), 1, NOW()),
-(20003, 'N789DL', 'Boeing 777', 90, 1, 1, NOW(), 1, NOW()),
-(20004, 'N234DL', 'Boeing 747', 90, 1, 1, NOW(), 1, NOW()),
-(20005, 'N567DL', 'Boeing 777', 90, 1, 1, NOW(), 1, NOW()),
-(20006, 'N890DL', 'Boeing 787', 90, 1, 1, NOW(), 1, NOW()),
-(20007, 'N345DL', 'Boeing 737', 90, 1, 1, NOW(), 1, NOW()),
-(20008, 'N678DL', 'Boeing 747', 90, 3, 1, NOW(), 1, NOW()); -- grounded
+(20001, 'N123DL', 'Boeing 737', 60, 1, 1, NOW(), 1, NOW()),
+(20002, 'N456DL', 'Boeing 787', 60, 1, 1, NOW(), 1, NOW()),
+(20003, 'N789DL', 'Boeing 777', 60, 1, 1, NOW(), 1, NOW()),
+(20004, 'N234DL', 'Boeing 747', 60, 1, 1, NOW(), 1, NOW()),
+(20005, 'N567DL', 'Boeing 777', 60, 1, 1, NOW(), 1, NOW()),
+(20006, 'N890DL', 'Boeing 787', 60, 1, 1, NOW(), 1, NOW()),
+(20007, 'N345DL', 'Boeing 737', 60, 1, 1, NOW(), 1, NOW()),
+(20008, 'N678DL', 'Boeing 747', 60, 3, 1, NOW(), 1, NOW()); -- grounded
 
 INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by, created_at, updated_by, last_updated) VALUES
 (40001, '23A', 1, 30001, 1 , NOW(), 1, NOW()),

@@ -548,20 +548,33 @@ export interface RouteRevenueRow extends RowDataPacket {
     revenue_per_100_miles: number;
 }
 
-export interface CabinRevenueRow extends RowDataPacket {
-    cabin: string;
-    tickets: number;
-    revenue: number;
-    average_fare: number;
-    revenue_share: number;
+export interface RouteOptionRow extends RowDataPacket {
+    origin: string;
+    destination: string;
 }
 
-export interface DailyRevenueRow extends RowDataPacket {
-    day: string;
-    received: number;
-    refunded: number;
-    net: number;
-    running_total: number;
+export interface FlightLoadRow extends RowDataPacket {
+    flight_id: number;
+    flight_number: string;
+    departure_time: string;
+    route: string;
+    aircraft_number: string;
+    capacity: number;
+    flight_status_name: string;
+    seats_sold: number;
+    load_factor: number;
+}
+
+export interface CustomerValueRow extends RowDataPacket {
+    passenger_id: number;
+    first_name: string | null;
+    last_name: string | null;
+    user_id: number | null;
+    email: string | null;
+    loyalty_points: number | null;
+    bookings: number;
+    cancelled: number;
+    spend: number;
 }
 
 // /my-trips/[bookingId] and /check-in/[bookingId]: the booking with who booked it and what they paid

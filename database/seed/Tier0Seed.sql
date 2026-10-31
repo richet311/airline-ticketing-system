@@ -85,3 +85,31 @@ INSERT INTO passenger (passenger_id, user_id, passenger_parent_id, first_name, l
 (1013, 14, NULL, 'Olivia', 'Keller', '1998-09-14', '095688282', '2033-09-14', 'US', 1, NOW(), 1, NOW()),
 (1014, 15, NULL, 'Omar', 'Smith', '1982-07-07', '020201010', '2031-07-07', 'AE', 1, NOW(), 1, NOW()),
 (1015, 16, NULL, 'Chloe', 'Kishimoto', '1996-05-21', '828282288', '2030-05-21', 'FR', 1, NOW(), 1, NOW());
+
+CREATE TEMPORARY TABLE new_customer (n INT PRIMARY KEY, first_name VARCHAR(50), last_name VARCHAR(50));
+INSERT INTO new_customer VALUES
+(1, 'Emily', 'Carter'), (2, 'Daniel', 'Nguyen'), (3, 'Isabella', 'Martinez'), (4, 'James', 'Wilson'), (5, 'Ava', 'Thompson'),
+(6, 'Ethan', 'Brooks'), (7, 'Grace', 'Kim'), (8, 'Lucas', 'Rivera'), (9, 'Hannah', 'Lee'), (10, 'Benjamin', 'Clark'),
+(11, 'Zoe', 'Adams'), (12, 'Samuel', 'Okafor'), (13, 'Natalie', 'Hughes'), (14, 'David', 'Cohen'), (15, 'Leah', 'Fischer'),
+(16, 'Ryan', 'Murphy'), (17, 'Aisha', 'Rahman'), (18, 'Matthew', 'Turner'), (19, 'Camila', 'Lopez'), (20, 'Andrew', 'Park'),
+(21, 'Fatima', 'Ali'), (22, 'Jacob', 'Bennett'), (23, 'Ella', 'Schmidt'), (24, 'Nathan', 'Price'), (25, 'Maya', 'Gupta'),
+(26, 'Christopher', 'Hall'), (27, 'Lily', 'Chen'), (28, 'Jonathan', 'Reyes'), (29, 'Sarah', 'Mitchell'), (30, 'Kevin', 'Tran'),
+(31, 'Rachel', 'Morris'), (32, 'Tyler', 'Scott'), (33, 'Amelia', 'Ross'), (34, 'Diego', 'Herrera'), (35, 'Victoria', 'Evans'),
+(36, 'Brandon', 'Cooper'), (37, 'Nora', 'Sullivan'), (38, 'Adrian', 'Popescu'), (39, 'Julia', 'Novak'), (40, 'Marcus', 'Bell'),
+(41, 'Elena', 'Rossi'), (42, 'Patrick', 'Doyle'), (43, 'Yuki', 'Tanaka'), (44, 'Caleb', 'Foster'), (45, 'Ingrid', 'Larsen');
+
+INSERT INTO user (user_id, email, phone_number, password_hash, loyalty_points, created_by, created_at, updated_by, last_updated)
+SELECT 17 + n, CONCAT(first_name, last_name, '@gmail.com'), CONCAT(FLOOR(200 + RAND() * 800), LPAD(n, 7, '0')),
+       CONCAT(LEFT(first_name, 1), last_name, '123'), FLOOR(RAND() * 40) * 100, 1, NOW(), 1, NOW()
+  FROM new_customer;
+
+INSERT INTO passenger (passenger_id, user_id, passenger_parent_id, first_name, last_name, date_of_birth, passport_number, passport_expiry_date, nationality, created_by, created_at, updated_by, last_updated)
+SELECT 1015 + n, 17 + n, NULL, first_name, last_name,
+       '1960-01-01' + INTERVAL FLOOR(RAND() * 16000) DAY,
+       CONCAT(FLOOR(100 + RAND() * 900), LPAD(n, 6, '0')),
+       '2028-01-01' + INTERVAL FLOOR(RAND() * 2500) DAY,
+       ELT(1 + FLOOR(RAND() * 6), 'US', 'US', 'US', 'GB', 'DE', 'CA'),
+       1, NOW(), 1, NOW()
+  FROM new_customer;
+
+DROP TEMPORARY TABLE new_customer;

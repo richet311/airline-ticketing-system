@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { MAX_ROWS, MIN_ROWS, SEATS_PER_ROW } from "@/lib/planeRows";
+import { PLANE_ROWS, SEATS_PER_ROW } from "@/lib/planeRows";
 import type { AdminFormState } from "@/lib/types";
 
 import { getSignedInAdmin } from "../requireAdmin";
@@ -12,7 +12,6 @@ export async function addAircraft(previousState: AdminFormState, formData: FormD
   const values = {
     aircraft_number: String(formData.get("aircraft_number") ?? "").trim().toUpperCase(),
     aircraft_type: String(formData.get("aircraft_type") ?? "").trim(),
-    rows: String(formData.get("rows") ?? "").trim(),
     status: String(formData.get("status") ?? ""),
   };
   const fail = (error: string): AdminFormState => ({ error, values });
@@ -22,8 +21,6 @@ export async function addAircraft(previousState: AdminFormState, formData: FormD
 
   if (values.aircraft_number === "" || values.aircraft_number.length > 10) return fail("Number: 1 to 10 characters.");
   if (values.aircraft_type === "" || values.aircraft_type.length > 50) return fail("Type: 1 to 50 characters.");
-  const rows = Number(values.rows);
-  if (!Number.isInteger(rows) || rows < MIN_ROWS || rows > MAX_ROWS) return fail(`Rows: ${MIN_ROWS} to ${MAX_ROWS}.`);
 
   try {
     await db.query(
@@ -31,7 +28,7 @@ export async function addAircraft(previousState: AdminFormState, formData: FormD
                              created_by, created_at, updated_by, last_updated)
        VALUES (?, ?, ?, (SELECT maintenance_status_id FROM maintenance_status WHERE maintenance_status_name = ?),
                ?, NOW(), ?, NOW())`,
-      [values.aircraft_number, values.aircraft_type, rows * SEATS_PER_ROW, values.status, admin.user_id, admin.user_id],
+      [values.aircraft_number, values.aircraft_type, PLANE_ROWS * SEATS_PER_ROW, values.status, admin.user_id, admin.user_id],
     );
   } catch (error) {
     if ((error as { code?: string }).code === "ER_DUP_ENTRY") return fail(`Aircraft ${values.aircraft_number} already exists.`);
