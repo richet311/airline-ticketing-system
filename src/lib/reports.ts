@@ -25,7 +25,16 @@ export const REPORTS = {
 
 export type Report = (typeof REPORTS)[keyof typeof REPORTS];
 
-export type ReportFilters = { from: string; to: string; route: string; cabin: string; tier: string; minTickets: string };
+export type ReportFilters = {
+  from: string;
+  to: string;
+  route: string;
+  origin: string;
+  destination: string;
+  cabin: string;
+  tier: string;
+  minTickets: string;
+};
 
 export function readReportFilters(params: SearchParams): ReportFilters {
   function text(name: string): string {
@@ -38,6 +47,8 @@ export function readReportFilters(params: SearchParams): ReportFilters {
     from: date("from"),
     to: date("to"),
     route: text("route").toUpperCase(),
+    origin: text("origin").toUpperCase(),
+    destination: text("destination").toUpperCase(),
     cabin: text("cabin").toUpperCase(),
     tier: text("tier").toUpperCase(),
     minTickets: text("min_tickets"),

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { db } from "@/lib/db";
+import { MAX_FLIGHT_HOURS } from "@/lib/flightRules";
 import { SEATS_PER_ROW } from "@/lib/planeRows";
 import { withTransaction } from "@/lib/transaction";
 import type { AdminFormState } from "@/lib/types";
@@ -18,7 +19,6 @@ const CABINS = [
   { name: "ECONOMY", field: "economy", changeFee: 50 },
 ];
 
-const MAX_FLIGHT_MINUTES = 24 * 60;
 
 //schedule flight form for sys admins and operations managers
 export async function scheduleFlight(previousState: AdminFormState, formData: FormData): Promise<AdminFormState> {
@@ -40,7 +40,7 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
   if (!departure || !arrival) return fail("Enter the departure and arrival dates and times.");
   const durationMinutes = (Date.parse(`${arrival.replace(" ", "T")}Z`) - Date.parse(`${departure.replace(" ", "T")}Z`)) / 60000;
   if (durationMinutes <= 0) return fail("Arrival must be after departure.");
-  if (durationMinutes > MAX_FLIGHT_MINUTES) return fail("A flight can't be longer than 24 hours. Check the dates.");
+  if (durationMinutes > MAX_FLIGHT_HOURS * 60) return fail(`A flight can't be longer than ${MAX_FLIGHT_HOURS} hours. Check the dates.`);
   if (!Number.isInteger(distance) || distance <= 0) return fail("Distance is in miles and is greater than 0.");
 
   const cabins = CABINS.map((cabin) => ({

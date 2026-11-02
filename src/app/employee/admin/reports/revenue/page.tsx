@@ -7,7 +7,7 @@ import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
 import { addDateRange, readReportFilters, REPORTS } from "@/lib/reports";
-import type { CabinClass, RouteRevenueRow } from "@/lib/types";
+import type { CabinClass, RouteAirportsRow, RouteRevenueRow } from "@/lib/types";
 
 const DEFAULT_MIN_TICKETS = 5;
 const cell = "py-2 pr-4";
@@ -34,8 +34,24 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
     where.push("cc.cabin_class_name = ?");
     values.push(filters.cabin);
   }
+  if (filters.origin) {
+    where.push("o.airport_code = ?");
+    values.push(filters.origin);
+  }
+  if (filters.destination) {
+    where.push("d.airport_code = ?");
+    values.push(filters.destination);
+  }
 
   const [cabins] = await db.query<CabinClass[]>("SELECT * FROM cabin_class ORDER BY cabin_class_id");
+  const [routes] = await db.query<RouteAirportsRow[]>(
+    `SELECT DISTINCT o.airport_code AS origin, o.city AS origin_city, d.airport_code AS destination, d.city AS destination_city
+       FROM flight f
+       JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
+       JOIN airport o        ON o.airport_id = f.origin_airport_id
+       JOIN airport d        ON d.airport_id = f.destination_airport_id
+      WHERE fs.flight_status_name <> 'CANCELLED'`,
+  );
   const [rows] = await db.query<RouteRevenueRow[]>(
     `SELECT CONCAT(o.airport_code, ' → ', d.airport_code) AS route, f.distance,
             COUNT(DISTINCT f.flight_id) AS flights, COUNT(*) AS tickets,
@@ -63,6 +79,12 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
       <ReportFilterForm
         action={REPORTS.revenue.href}
         filters={filters}
+        routePairs={routes.map((route) => ({
+          origin: route.origin,
+          originCity: route.origin_city,
+          destination: route.destination,
+          destinationCity: route.destination_city,
+        }))}
         cabins={cabins.map(({ cabin_class_name: name }) => ({ value: name, label: name.charAt(0) + name.slice(1).toLowerCase() }))}
         minTickets={minTickets}
       />

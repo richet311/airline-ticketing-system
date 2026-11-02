@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import { BookingsTile } from "@/components/agent/BookingsTile";
+import { bookingFilterParams, BookingsTile } from "@/components/agent/BookingsTile";
 import { EmployeeHeader } from "@/components/employee/EmployeeHeader";
 import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT } from "@/lib/roles";
@@ -21,11 +21,14 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
   const employee = await getSignedInEmployee();
   if (!employee) redirect("/login/employee");
   const role = employee.job_role_name;
-  const gateFlight = gateFlightFromUrl(await searchParams);
+  const params = await searchParams;
+  const gateFlight = gateFlightFromUrl(params);
 
   const tiles = [
-    canUse(role, [GATE_AGENT]) && <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/agent" />,
-    canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" />,
+    canUse(role, [GATE_AGENT]) && (
+      <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/agent" keep={bookingFilterParams(params)} />
+    ),
+    canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" params={params} basePath="/employee/agent" />,
   ].filter(Boolean);
 
   return (

@@ -5,9 +5,11 @@ import { Suspense } from "react";
 import { AddAircraftForm } from "@/components/admin/AddAircraftForm";
 import { AddAirportForm } from "@/components/admin/AddAirportForm";
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
+import { AircraftRow } from "@/components/admin/AircraftRow";
+import { AirportRow } from "@/components/admin/AirportRow";
 import { FlightOpsRow } from "@/components/admin/FlightOpsRow";
 import { ScheduleFlightForm } from "@/components/admin/ScheduleFlightForm";
-import { BookingsTile } from "@/components/agent/BookingsTile";
+import { bookingFilterParams, BookingsTile } from "@/components/agent/BookingsTile";
 import { EmployeeHeader } from "@/components/employee/EmployeeHeader";
 import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
 import { db } from "@/lib/db";
@@ -30,15 +32,18 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
   const employee = await getSignedInEmployee();
   if (!employee) redirect("/login/employee");
   const role = employee.job_role_name;
-  const gateFlight = gateFlightFromUrl(await searchParams);
+  const params = await searchParams;
+  const gateFlight = gateFlightFromUrl(params);
 
   const tiles = [
     canUse(role, []) && <AircraftTile key="aircraft" />,
     canUse(role, []) && <AirportsTile key="airports" />,
     canUse(role, []) && <FlightsTile key="flights" />,
     canUse(role, [OPERATIONS_MANAGER]) && <ScheduledFlightsTile key="scheduled-flights" />,
-    canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" />,
-    canUse(role, [GATE_AGENT]) && <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/admin" />,
+    canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" params={params} basePath="/employee/admin" />,
+    canUse(role, [GATE_AGENT]) && (
+      <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/admin" keep={bookingFilterParams(params)} />
+    ),
   ].filter(Boolean);
 
   return (
@@ -73,14 +78,9 @@ async function AircraftTile() {
   return (
     <AdminTile overline="Fleet" title="Aircraft">
       <AddAircraftForm statuses={statuses.map((status) => status.maintenance_status_name)} />
-      <AdminTable headings={["Number", "Type", "Capacity", "Status"]}>
+      <AdminTable headings={["Number", "Type", "Capacity", "Status", ""]}>
         {aircraft.map((plane) => (
-          <tr key={plane.aircraft_id}>
-            <td className="py-2 pr-4 font-semibold">{plane.aircraft_number}</td>
-            <td className="py-2 pr-4">{plane.aircraft_type}</td>
-            <td className="py-2 pr-4">{plane.capacity}</td>
-            <td className="py-2 pr-4">{plane.maintenance_status_name}</td>
-          </tr>
+          <AircraftRow key={plane.aircraft_id} plane={plane} />
         ))}
       </AdminTable>
     </AdminTile>
@@ -93,15 +93,9 @@ async function AirportsTile() {
   return (
     <AdminTile overline="Network" title="Airports">
       <AddAirportForm />
-      <AdminTable headings={["Code", "Name", "City", "Country", "Time zone"]}>
+      <AdminTable headings={["Code", "Name", "City", "Country", "Time zone", ""]}>
         {airports.map((airport) => (
-          <tr key={airport.airport_id}>
-            <td className="py-2 pr-4 font-semibold">{airport.airport_code}</td>
-            <td className="py-2 pr-4">{airport.airport_name}</td>
-            <td className="py-2 pr-4">{airport.city}</td>
-            <td className="py-2 pr-4">{airport.country}</td>
-            <td className="py-2 pr-4">{airport.timezone}</td>
-          </tr>
+          <AirportRow key={airport.airport_id} airport={airport} />
         ))}
       </AdminTable>
     </AdminTile>

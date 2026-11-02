@@ -14,7 +14,7 @@ import {
   roundCents,
   statusChangeProblem,
 } from "@/lib/bookingRules";
-import { formatMoney, formatMonthDay, formatTime } from "@/lib/format";
+import { formatDate, formatMoney, formatTime } from "@/lib/format";
 import type { AgentFareRow, BookingTicketRow } from "@/lib/types";
 
 //Logic for booking tile confirmation
@@ -242,7 +242,7 @@ export function BookingsEditor({
                   {ticket.first_name} {ticket.last_name}
                 </td>
                 <td className={`${readOnly} whitespace-nowrap`}>
-                  {formatMonthDay(ticket.departure_time, ticket.origin_timezone)},{" "}
+                  {formatDate(ticket.departure_time, ticket.origin_timezone)},{" "}
                   {formatTime(ticket.departure_time, ticket.origin_timezone)}
                 </td>
                 <td className="py-2 pr-4">

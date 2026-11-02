@@ -553,6 +553,13 @@ export interface RouteOptionRow extends RowDataPacket {
     destination: string;
 }
 
+export interface RouteAirportsRow extends RowDataPacket {
+    origin: string;
+    origin_city: string;
+    destination: string;
+    destination_city: string;
+}
+
 export interface FlightLoadRow extends RowDataPacket {
     flight_id: number;
     flight_number: string;
@@ -671,6 +678,7 @@ export interface PopularTripRow extends RowDataPacket {
     fare_class_id: number;
     flight_number: string;
     departure_time: string;
+    destination_id: number;
     destination: string;
     city: string;
     base_price: number;

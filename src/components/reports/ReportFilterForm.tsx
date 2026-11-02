@@ -4,12 +4,15 @@ import Link from "next/link";
 import { adminButtonClass, adminInputClass, adminLabelClass } from "@/components/admin/AdminTile";
 import type { ReportFilters } from "@/lib/reports";
 
+import { type RoutePair, RoutePicker } from "./RoutePicker";
+
 type Option = { value: string; label: string };
 
 export function ReportFilterForm({
   action,
   filters,
   routes,
+  routePairs,
   cabins,
   tiers,
   minTickets,
@@ -17,6 +20,7 @@ export function ReportFilterForm({
   action: string;
   filters: ReportFilters;
   routes?: Option[];
+  routePairs?: RoutePair[];
   cabins?: Option[];
   tiers?: Option[];
   minTickets?: number;
@@ -38,6 +42,7 @@ export function ReportFilterForm({
           <input name="to" type="date" defaultValue={filters.to} className={adminInputClass} />
         </label>
         {routes && <Choice name="route" label="Route" value={filters.route} options={routes} allLabel="All routes" />}
+        {routePairs && <RoutePicker routes={routePairs} origin={filters.origin} destination={filters.destination} />}
         {cabins && <Choice name="cabin" label="Cabin" value={filters.cabin} options={cabins} allLabel="All cabins" />}
         {tiers && <Choice name="tier" label="Rewards tier" value={filters.tier} options={tiers} allLabel="All tiers" />}
         {minTickets !== undefined && (

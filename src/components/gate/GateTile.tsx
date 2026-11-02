@@ -12,10 +12,21 @@ export function gateFlightFromUrl(params: { [key: string]: string | string[] | u
   return (Array.isArray(value) ? value[0] : (value ?? "")).trim().toUpperCase().replace(/\s/g, "");
 }
 
-export async function GateTile({ flightNumber, basePath }: { flightNumber: string; basePath: string }) {
+export async function GateTile({
+  flightNumber,
+  basePath,
+  keep = {},
+}: {
+  flightNumber: string;
+  basePath: string;
+  keep?: Record<string, string>;
+}) {
   return (
     <AdminTile overline="Gate" title="Boarding">
       <Form action={basePath} scroll={false} className="flex max-w-md items-end gap-2">
+        {Object.entries(keep).map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
         <label className="flex-1">
           <span className={adminLabelClass}>Flight number</span>
           <input

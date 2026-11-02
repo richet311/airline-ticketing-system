@@ -272,6 +272,7 @@ CREATE TABLE flight(
     updated_by INT NOT NULL,
 
     CONSTRAINT check_flight_times CHECK (arrival_time > departure_time),
+    CONSTRAINT check_flight_duration CHECK (arrival_time <= departure_time + INTERVAL 36 HOUR),
     CONSTRAINT unique_flight_number_departure UNIQUE (flight_number, departure_time)
 )   AUTO_INCREMENT = 50001;
 
@@ -745,6 +746,30 @@ BEGIN
     THEN SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Your passport expires before this flight departs.';
     END IF;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE EVENT advance_flight_statuses
+ON SCHEDULE EVERY 1 MINUTE
+DO
+BEGIN
+    UPDATE flight
+       SET flight_status_id = (SELECT flight_status_id FROM flight_status WHERE flight_status_name = 'ARRIVED'),
+           updated_by = 1, last_updated = NOW()
+     WHERE flight_status_id IN (SELECT flight_status_id FROM flight_status WHERE flight_status_name IN ('SCHEDULED', 'BOARDING', 'DEPARTED'))
+       AND arrival_time <= UTC_TIMESTAMP()
+       AND departure_gate_id IS NOT NULL
+       AND arrival_gate_id IS NOT NULL;
+
+    UPDATE flight
+       SET flight_status_id = (SELECT flight_status_id FROM flight_status WHERE flight_status_name = 'DEPARTED'),
+           updated_by = 1, last_updated = NOW()
+     WHERE flight_status_id IN (SELECT flight_status_id FROM flight_status WHERE flight_status_name IN ('SCHEDULED', 'BOARDING'))
+       AND departure_time <= UTC_TIMESTAMP()
+       AND departure_gate_id IS NOT NULL;
 END$$
 
 DELIMITER ;
