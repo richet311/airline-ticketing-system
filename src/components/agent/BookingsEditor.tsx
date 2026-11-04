@@ -203,7 +203,7 @@ export function BookingsEditor({
 
   return (
     <>
-      <AdminTable headings={["Booking", "Flight", "Route", "Passenger", "Departs", "Fare class", "Seat", "Bags", "Total", "Status"]}>
+      <AdminTable headings={["Booking", "Flight", "Route", "Passenger", "Departs (UTC)", "Fare class", "Seat", "Bags", "Total", "Status"]}>
         {[...bookings.values()].map((bookingTickets) => {
           const first = bookingTickets[0];
           const after = preview(bookingTickets);
@@ -242,8 +242,7 @@ export function BookingsEditor({
                   {ticket.first_name} {ticket.last_name}
                 </td>
                 <td className={`${readOnly} whitespace-nowrap`}>
-                  {formatDate(ticket.departure_time, ticket.origin_timezone)},{" "}
-                  {formatTime(ticket.departure_time, ticket.origin_timezone)}
+                  {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
                 </td>
                 <td className="py-2 pr-4">
                   <select

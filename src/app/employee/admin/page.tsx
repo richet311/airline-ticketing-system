@@ -13,6 +13,7 @@ import { bookingFilterParams, BookingsTile } from "@/components/agent/BookingsTi
 import { EmployeeHeader } from "@/components/employee/EmployeeHeader";
 import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
 import { db } from "@/lib/db";
+import { attentionReason } from "@/lib/flightRules";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT, OPERATIONS_MANAGER } from "@/lib/roles";
 import { getSignedInEmployee } from "@/lib/session";
 import type { Airport, AircraftListRow, FlightStatus, GateOption, MaintenanceStatus, OpsFlightRow } from "@/lib/types";
@@ -129,7 +130,8 @@ async function ScheduledFlightsTile() {
             TIMESTAMPDIFF(MINUTE, f.departure_time, f.arrival_time) AS duration_min,
             o.airport_code AS origin, d.airport_code AS destination,
             fs.flight_status_name, a.aircraft_number,
-            f.origin_airport_id, f.destination_airport_id, f.departure_gate_id, f.arrival_gate_id
+            f.origin_airport_id, f.destination_airport_id, f.departure_gate_id, f.arrival_gate_id,
+            f.departure_time <= UTC_TIMESTAMP() AS past_departure, f.arrival_time <= UTC_TIMESTAMP() AS past_arrival
        FROM flight f
        JOIN airport o        ON o.airport_id = f.origin_airport_id
        JOIN airport d        ON d.airport_id = f.destination_airport_id
@@ -151,9 +153,27 @@ async function ScheduledFlightsTile() {
     gates
       .filter((gate) => gate.airport_id === airportId)
       .map((gate) => ({ gate_id: gate.gate_id, label: `${gate.terminal_name} · ${gate.gate_number}`, status: gate.gate_status_name }));
+  const needAttention = flights.filter(
+    (flight) =>
+      attentionReason({
+        status: flight.flight_status_name,
+        hasDepartureGate: flight.departure_gate_id !== null,
+        hasArrivalGate: flight.arrival_gate_id !== null,
+        pastDeparture: flight.past_departure === 1,
+        pastArrival: flight.past_arrival === 1,
+      }) !== null,
+  ).length;
 
   return (
     <AdminTile overline="Flight operations" title="Scheduled flights">
+      <p className="text-sm text-gray-600">
+        Statuses move to Departed and Arrived on their own.{" "}
+        {needAttention > 0 && (
+          <span className="text-amber-700">
+            {needAttention} {needAttention === 1 ? "flight needs" : "flights need"} attention below.
+          </span>
+        )}
+      </p>
       <AdminTable headings={["Flight", "Route", "Departs (UTC)", "Aircraft", "Departure gate", "Arrival gate", "Status"]}>
         {flights.map((flight) => (
           <FlightOpsRow

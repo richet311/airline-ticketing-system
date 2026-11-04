@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 
 import { signOut } from "@/app/login/actions";
+import { SignOutButton } from "@/components/SignOutButton";
 import { DawnCrest } from "@/components/Logo";
 import { MailIcon } from "@/components/icons";
 import { countUnread } from "@/lib/inbox";
@@ -99,11 +100,11 @@ async function Account() {
     <>
       <InboxLink unread={unread} />
       <span className="tracking-normal normal-case">{name}</span>
-      <form action={signOut}>
-        <button type="submit" className="rounded-control border border-white/40 px-4 py-2 uppercase hover:bg-white/10">
-          Sign out
-        </button>
-      </form>
+      <SignOutButton
+        action={signOut}
+        to="/"
+        className="rounded-control border border-white/40 px-4 py-2 uppercase hover:bg-white/10"
+      />
     </>
   );
 }

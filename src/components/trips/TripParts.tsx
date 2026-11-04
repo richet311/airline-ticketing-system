@@ -38,16 +38,16 @@ export function FlightStatusBadge({ status }: { status: string }) {
   );
 }
 
-// One flight: when it leaves and lands (local times at each airport), its number, cabin and gate
+// One flight: when it leaves and lands (UTC), its number, cabin and gate
 export function LegSummary({ label, flight }: { label: string; flight: TripTicketRow }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div>
         <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
-          {label} · {formatDate(flight.departure_time, flight.origin_timezone)}
+          {label} · {formatDate(flight.departure_time)}
         </p>
         <div className="mt-1 flex items-center gap-6">
-          <Endpoint code={flight.origin} city={flight.origin_city} time={formatTime(flight.departure_time, flight.origin_timezone)} />
+          <Endpoint code={flight.origin} city={flight.origin_city} time={`${formatTime(flight.departure_time)} UTC`} />
           <div className="text-center text-xs text-gray-500">
             <p>{formatDuration(flight.duration_min)}</p>
             <div className="my-1 h-px w-16 bg-gray-300" />
@@ -56,7 +56,7 @@ export function LegSummary({ label, flight }: { label: string; flight: TripTicke
           <Endpoint
             code={flight.destination}
             city={flight.destination_city}
-            time={formatTime(flight.arrival_time, flight.destination_timezone)}
+            time={`${formatTime(flight.arrival_time)} UTC`}
           />
         </div>
       </div>

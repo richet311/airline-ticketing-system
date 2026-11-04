@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { updateFlightGate, updateFlightStatus, type FlightUpdateResult } from "@/app/employee/admin/flights/[flightId]/actions";
+import { attentionReason } from "@/lib/flightRules";
 import { formatDate, formatTime } from "@/lib/format";
 import { ASSIGNABLE_GATE_STATUS, gateRequired, missingGateMessage } from "@/lib/gateRules";
 import type { OpsFlightRow } from "@/lib/types";
@@ -60,9 +61,20 @@ export function FlightOpsRow({
     );
   }
 
+  const attention = attentionReason({
+    status,
+    hasDepartureGate: departureGate !== "",
+    hasArrivalGate: arrivalGate !== "",
+    pastDeparture: flight.past_departure === 1,
+    pastArrival: flight.past_arrival === 1,
+  });
+
   return (
     <tr className="align-top">
-      <td className="py-2 pr-4 font-semibold">{flight.flight_number}</td>
+      <td className="py-2 pr-4 font-semibold">
+        {flight.flight_number}
+        {attention && <p className="mt-1 w-40 text-xs font-normal text-amber-700">{attention}</p>}
+      </td>
       <td className="py-2 pr-4">
         {flight.origin} → {flight.destination}
       </td>

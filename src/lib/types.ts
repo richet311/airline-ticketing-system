@@ -458,6 +458,8 @@ export interface OpsFlightRow extends AdminFlightRow {
     destination_airport_id: number;
     departure_gate_id: number | null;
     arrival_gate_id: number | null;
+    past_departure: 0 | 1;
+    past_arrival: 0 | 1;
 }
 
 // A gate for the dropdowns: gate joined to terminal (which gives its airport) and gate_status.
