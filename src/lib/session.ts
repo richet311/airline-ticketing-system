@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, scrypt, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 import { cache } from "react";
@@ -14,17 +14,20 @@ import type { CurrentUser, SignedInEmployee } from "@/lib/types";
 export const SESSION_COOKIE = "session";
 const SESSION_DAYS = 7;
 
-//Passwords are stored as plain text in user.password_hash, but in case we wanted to store hashes
+//New passwords are stored as scrypt hashes in the form scrypt$<saltHex>$<keyHex>.
+//Seeded accounts still hold plain text, which checkPassword accepts so they can keep signing in.
 const SCRYPT_KEY_BYTES = 64;
+const SCRYPT_SALT_BYTES = 16;
 
 const scryptAsync = promisify(scrypt) as (password: string, salt: Buffer, keyLength: number) => Promise<Buffer>;
 
 export async function hashPassword(password: string): Promise<string> {
-  return password;
+  const salt = randomBytes(SCRYPT_SALT_BYTES);
+  const key = await scryptAsync(password, salt, SCRYPT_KEY_BYTES);
+  return `scrypt$${salt.toString("hex")}$${key.toString("hex")}`;
 }
 
-//True when the typed password matches what's stored in the db, a plain text or an older hash value
-//from a prior implementation
+//True when the typed password matches what's stored in the db: a scrypt hash, or a plain text value from the seed data
 export async function checkPassword(password: string, storedHash: string): Promise<boolean> {
   const [scheme, saltHex, keyHex] = storedHash.split("$");
   if (scheme === "scrypt" && saltHex && keyHex) {
