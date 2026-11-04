@@ -19,7 +19,11 @@ import type { Airport, AircraftListRow, FlightStatus, GateOption, MaintenanceSta
 
 //This is the main employee portal page where signed in staff members can view their functions
 //It's segmented into tiles that each role can see
-export default function AdminPage({ searchParams }: PageProps<"/employee/admin">) {
+export default async function AdminPage({ searchParams }: PageProps<"/employee/admin">) {
+  // check before streaming starts, so a signed-out visitor gets a redirect instead of a blank page
+  await connection();
+  if (!(await getSignedInEmployee())) redirect("/login/employee");
+
   return (
     <Suspense fallback={<p className="p-6 text-gray-500">Loading...</p>}>
       <Dashboard searchParams={searchParams} />
