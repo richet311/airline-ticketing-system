@@ -91,6 +91,7 @@ export async function updateFlightStatus(input: { flightId: number; status: stri
     if (result.affectedRows !== 1) return { ok: false, error: "That flight no longer exists." };
   } catch (error) {
     if ((error as { code?: string }).code === "ER_BAD_NULL_ERROR") return { ok: false, error: "Unknown status." };
+    if ((error as { sqlState?: string }).sqlState === "45000") return { ok: false, error: (error as Error).message };
     throw error;
   }
 

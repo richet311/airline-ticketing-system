@@ -2,8 +2,9 @@ import { Suspense } from "react";
 import Link from "next/link";
 
 import { SiteHeader } from "@/components/SiteHeader";
+import { RefundButton, RefundedPopup } from "@/components/trips/RefundButton";
 import { BookingStatusPill, Card, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
-import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInProblem, legChangeProblem } from "@/lib/bookingRules";
+import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInProblem, flightHasDeparted, legChangeProblem } from "@/lib/bookingRules";
 import { formatDate, formatMoney } from "@/lib/format";
 import { getTrip, legLabel } from "@/lib/trips";
 
@@ -15,9 +16,8 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   PAYPAL: "PayPal",
 };
 
-// shown after the cancel and change pages send the customer back here
+// shown after the change page sends the customer back here
 const NOTICES: Record<string, string> = {
-  cancelled: "Your trip is cancelled. Your refund is on its way to your original payment method.",
   changed: "Your flight is changed. Your new flight and seats are below.",
 };
 
@@ -66,12 +66,17 @@ async function TripDetails({
   const checkInLater = confirmed && !canCheckIn && legs.some((leg) => leg.flight.minutes_to_departure > CHECK_IN_OPENS_MINUTES);
   const changeable = confirmed && legs.some((leg) => legChangeProblem(leg.tickets) === null);
   const cancelBlocked = cancelProblem(booking.booking_status_name, legs.map((leg) => leg.tickets));
+  const departed = legs.some((leg) => flightHasDeparted(leg.flight));
+  let refundBlocked = cancelBlocked;
+  if (departed) refundBlocked = "This flight has already departed and can no longer be refunded.";
+  if (booking.booking_status_name === "PENDING") refundBlocked = "This trip is still pending, so there's nothing to refund yet.";
 
   const first = legs[0]?.flight;
   const tripKind = legs.length === 1 ? "One way" : legLabel(legs, 1) === "Return" ? "Round trip" : `${legs.length} flights`;
 
   return (
     <>
+      {done === "cancelled" && booking.booking_status_name === "CANCELLED" && <RefundedPopup bookingId={booking.booking_id} />}
       {notice && (
         <p role="status" className="rounded-card border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           {notice}
@@ -190,17 +195,9 @@ async function TripDetails({
                 Change flight
               </Link>
             )}
-            {!cancelBlocked && (
-              <Link
-                href={`/my-trips/${booking.booking_id}/cancel`}
-                className="rounded-control border border-red-600 px-6 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-600 hover:text-white"
-              >
-                Cancel trip
-              </Link>
-            )}
+            <RefundButton bookingId={booking.booking_id} blockedReason={refundBlocked} />
           </div>
           {checkInLater && <p className="mt-3 text-sm text-gray-500">Check-in opens 24 hours before departure.</p>}
-          {cancelBlocked && <p className="mt-3 text-sm text-gray-500">{cancelBlocked}</p>}
         </Card>
       )}
     </>
