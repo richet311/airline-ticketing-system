@@ -8,7 +8,11 @@ import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT } from "@/lib/roles";
 import { getSignedInEmployee } from "@/lib/session";
 
-export default function AgentPage({ searchParams }: PageProps<"/employee/agent">) {
+export default async function AgentPage({ searchParams }: PageProps<"/employee/agent">) {
+  // check before streaming starts, so a signed-out visitor gets a redirect instead of a blank page
+  await connection();
+  if (!(await getSignedInEmployee())) redirect("/login/employee");
+
   return (
     <Suspense fallback={<p className="p-6 text-gray-500">Loading...</p>}>
       <Dashboard searchParams={searchParams} />

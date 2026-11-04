@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { PageHeading } from "@/components/PageHeading";
 import { ArrowRightIcon } from "@/components/icons";
+import { getCurrentUser } from "@/lib/session";
 
 export function RewardsBanner() {
   return (
@@ -11,21 +13,46 @@ export function RewardsBanner() {
           Earn points when you fly and use them on future trips.
         </PageHeading>
         <div className="mt-8 flex items-center gap-6">
-          <Link
-            href="/register"
-            className="rounded-control bg-azure-blue px-7 py-3.5 text-sm font-semibold tracking-wide text-white hover:bg-azure-blue-dark"
-          >
-            Join for free
-          </Link>
-          <Link
-            href="/login"
-            className="flex items-center gap-1.5 text-sm font-semibold text-azure-blue hover:text-azure-blue-dark hover:underline"
-          >
-            Already a member? Log in
-            <ArrowRightIcon className="h-4 w-4" />
-          </Link>
+          <Suspense fallback={<GuestActions />}>
+            <MemberActions />
+          </Suspense>
         </div>
       </div>
     </section>
+  );
+}
+
+async function MemberActions() {
+  const user = await getCurrentUser();
+  if (!user) return <GuestActions />;
+
+  return (
+    <Link
+      href="/loyalty"
+      className="flex items-center gap-1.5 text-sm font-semibold text-azure-blue hover:text-azure-blue-dark hover:underline"
+    >
+      See your points
+      <ArrowRightIcon className="h-4 w-4" />
+    </Link>
+  );
+}
+
+function GuestActions() {
+  return (
+    <>
+      <Link
+        href="/register"
+        className="rounded-control bg-azure-blue px-7 py-3.5 text-sm font-semibold tracking-wide text-white hover:bg-azure-blue-dark"
+      >
+        Join for free
+      </Link>
+      <Link
+        href="/login"
+        className="flex items-center gap-1.5 text-sm font-semibold text-azure-blue hover:text-azure-blue-dark hover:underline"
+      >
+        Already a member? Log in
+        <ArrowRightIcon className="h-4 w-4" />
+      </Link>
+    </>
   );
 }
