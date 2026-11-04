@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { TripActionForm } from "@/components/trips/TripActionForm";
 import { Card, cabinLabel, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
 import { checkInProblem, documentProblem } from "@/lib/bookingRules";
-import { formatDate, formatTime } from "@/lib/format";
+import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { getTrip, legLabel, type TripLeg } from "@/lib/trips";
 import type { TripTicketRow } from "@/lib/types";
 
@@ -173,10 +173,13 @@ function BoardingPass({ ticket }: { ticket: TripTicketRow }) {
           </div>
           <div className="grid grid-cols-4 gap-4 text-sm">
             <PassField label="Flight" value={ticket.flight_number} />
-            <PassField label="Date (UTC)" value={formatDate(ticket.departure_time)} />
-            <PassField label="Boards (UTC)" value={formatTime(ticket.boarding_time)} />
-            <PassField label="Departs (UTC)" value={formatTime(ticket.departure_time)} />
+            <PassField label="Date" value={formatDate(ticket.departure_time, ticket.origin_timezone)} />
+            <PassField label="Boards" value={formatLocalTime(ticket.boarding_time, ticket.origin_timezone)} />
+            <PassField label="Departs" value={formatLocalTime(ticket.departure_time, ticket.origin_timezone)} />
           </div>
+          <p className="text-xs text-gray-500">
+            UTC: boards {formatTime(ticket.boarding_time)}, departs {formatTime(ticket.departure_time)}
+          </p>
         </div>
         <div className="grid grid-cols-2 content-start gap-4 border-l border-dashed border-gray-300 pl-6 text-sm">
           <PassField label="Seat" value={ticket.seat_number ?? "—"} large />

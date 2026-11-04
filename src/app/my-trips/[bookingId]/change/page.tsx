@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { TripActionForm } from "@/components/trips/TripActionForm";
 import { Card, FlightStatusBadge, LegSummary, TripNotFound } from "@/components/trips/TripParts";
 import { legChangeProblem } from "@/lib/bookingRules";
-import { formatDate, formatDuration, formatMoney, formatTime } from "@/lib/format";
+import { formatDate, formatDuration, formatLocalTime, formatMoney, formatTime } from "@/lib/format";
 import { findReplacementFlights, getTrip, legLabel, type Trip, type TripLeg } from "@/lib/trips";
 
 import { changeFlight } from "./actions";
@@ -86,12 +86,15 @@ async function LegOptions({ trip, leg, label }: { trip: Trip; leg: TripLeg; labe
                 <li key={option.flight.flight_id} className="flex flex-wrap items-center justify-between gap-4 py-3">
                   <div>
                     <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
-                      {formatDate(option.flight.departure_time)} · {option.flight.flight_number}
+                      {formatDate(option.flight.departure_time, flight.origin_timezone)} · {option.flight.flight_number}
                     </p>
                     <p className="text-lg font-semibold text-azure-navy">
-                      {formatTime(option.flight.departure_time)} → {formatTime(option.flight.arrival_time)}{" "}
-                      <span className="text-sm font-normal text-gray-500">UTC</span>{" "}
+                      {formatLocalTime(option.flight.departure_time, flight.origin_timezone)} →{" "}
+                      {formatLocalTime(option.flight.arrival_time, flight.destination_timezone)}{" "}
                       <span className="text-sm font-normal text-gray-500">{formatDuration(option.flight.duration_min)}</span>
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatTime(option.flight.departure_time)} → {formatTime(option.flight.arrival_time)} UTC
                     </p>
                     <FlightStatusBadge status={option.flight.flight_status_name} />
                   </div>
@@ -118,7 +121,7 @@ async function LegOptions({ trip, leg, label }: { trip: Trip; leg: TripLeg; labe
               ))}
             </ul>
             <p className="mt-3 text-xs text-gray-500">
-              Times are local to each airport. New seats are picked for you, next to each other where possible. Checked
+              Times are local to each airport, with UTC underneath. New seats are picked for you, next to each other where possible. Checked
               bags move with you.
             </p>
           </>

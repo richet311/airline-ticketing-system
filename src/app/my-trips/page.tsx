@@ -62,8 +62,8 @@ async function SignedInTrips() {
        JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
        JOIN airport o        ON o.airport_id = f.origin_airport_id
        JOIN airport d        ON d.airport_id = f.destination_airport_id
-      WHERE b.passenger_id = ?
-         OR t.booking_id IN (SELECT booking_id FROM ticket WHERE passenger_id = ?)
+      WHERE (b.passenger_id = ? OR t.booking_id IN (SELECT booking_id FROM ticket WHERE passenger_id = ?))
+        AND bs.booking_status_name <> 'PENDING'
       ORDER BY f.departure_time, t.e_ticket_number`,
     [user.passenger_id, user.passenger_id],
   );
@@ -151,8 +151,8 @@ function TripCard({ trip }: { trip: TripCardData }) {
         <div>
           <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
             {roundTrip ? "Round trip" : trip.flights.length === 1 ? "One way" : `${trip.flights.length} flights`} ·{" "}
-            {formatMonthDay(first.departure_time)}
-            {trip.flights.length > 1 && ` – ${formatMonthDay(last.departure_time)}`}
+            {formatMonthDay(first.departure_time, first.origin_timezone)}
+            {trip.flights.length > 1 && ` – ${formatMonthDay(last.departure_time, last.origin_timezone)}`}
           </p>
           <h3 className="mt-1 text-xl font-semibold text-azure-navy">
             {first.origin_city} {roundTrip ? "⇄" : "→"} {first.destination_city}

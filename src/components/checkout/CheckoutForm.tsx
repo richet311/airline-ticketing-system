@@ -4,6 +4,7 @@ import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 
 import { purchase } from "@/app/book/checkout/actions";
 import { PointsBox, type CheckoutRewards } from "@/components/rewards/PointsBox";
+import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import type { FareOption, FlightStatusRow, UpgradeType } from "@/lib/types";
 
@@ -241,11 +242,14 @@ export function CheckoutForm({
           {legs.map(({ label, flight, fare, seats }) => (
             <div key={flight.flight_id} className="mb-3 last:mb-0">
               <p className="text-sm font-semibold text-gray-900">
-                {label} · {flight.departure_time.slice(0, 10)}
+                {label} · {formatDate(flight.departure_time, flight.origin_timezone)}
               </p>
               <p className="text-xs text-gray-500">
-                {flight.origin} {flight.departure_time.slice(11, 16)} → {flight.destination}{" "}
-                {flight.arrival_time.slice(11, 16)} UTC · {flight.flight_number}
+                {flight.origin} {formatLocalTime(flight.departure_time, flight.origin_timezone)} → {flight.destination}{" "}
+                {formatLocalTime(flight.arrival_time, flight.destination_timezone)} · {flight.flight_number}
+              </p>
+              <p className="text-xs text-gray-500">
+                {formatTime(flight.departure_time)} → {formatTime(flight.arrival_time)} UTC
               </p>
               <p className="text-xs text-gray-500">
                 {cabinLabel(fare.cabin_class_name)} · Seats {seats.join(", ")}
