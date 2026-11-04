@@ -88,7 +88,6 @@ export function cancelProblem(bookingStatus: string, legs: LegForRules[][]): str
   return null;
 }
 
-// A flight we cancelled or delayed hasn't left, whatever its departure time says
 export function flightHasDeparted(flight: Pick<LegForRules, "flight_status_name" | "minutes_to_departure">): boolean {
   if (["CANCELLED", "DELAYED"].includes(flight.flight_status_name)) return false;
   return ["DEPARTED", "ARRIVED"].includes(flight.flight_status_name) || flight.minutes_to_departure <= 0;

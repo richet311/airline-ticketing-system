@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 
 import { SiteHeader } from "@/components/SiteHeader";
+import { ChangeFlightButton } from "@/components/trips/ChangeFlightButton";
 import { RefundButton, RefundedPopup } from "@/components/trips/RefundButton";
 import { BookingStatusPill, Card, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
 import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInProblem, flightHasDeparted, legChangeProblem } from "@/lib/bookingRules";
@@ -70,6 +71,13 @@ async function TripDetails({
   let refundBlocked = cancelBlocked;
   if (departed) refundBlocked = "This flight has already departed and can no longer be refunded.";
   if (booking.booking_status_name === "PENDING") refundBlocked = "This trip is still pending, so there's nothing to refund yet.";
+
+  let changeBlocked: string | null = null;
+  if (!changeable) {
+    changeBlocked = legs.map((leg) => legChangeProblem(leg.tickets)).find((problem) => problem !== null) ?? null;
+    if (departed) changeBlocked = "This flight has already departed and can no longer be changed.";
+    if (booking.booking_status_name === "PENDING") changeBlocked = "This trip is still pending, so it can't be changed yet.";
+  }
 
   const first = legs[0]?.flight;
   const tripKind = legs.length === 1 ? "One way" : legLabel(legs, 1) === "Return" ? "Round trip" : `${legs.length} flights`;
@@ -187,14 +195,7 @@ async function TripDetails({
                 Check in
               </Link>
             )}
-            {changeable && (
-              <Link
-                href={`/my-trips/${booking.booking_id}/change`}
-                className="rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white"
-              >
-                Change flight
-              </Link>
-            )}
+            <ChangeFlightButton bookingId={booking.booking_id} blockedReason={changeBlocked} />
             <RefundButton bookingId={booking.booking_id} blockedReason={refundBlocked} />
           </div>
           {checkInLater && <p className="mt-3 text-sm text-gray-500">Check-in opens 24 hours before departure.</p>}

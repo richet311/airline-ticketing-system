@@ -6,7 +6,6 @@ import { useState } from "react";
 import { cancelTrip } from "@/app/my-trips/[bookingId]/cancel/actions";
 import { TripActionForm } from "@/components/trips/TripActionForm";
 
-// Shown once after a refund goes through. OK clears ?done=cancelled so a reload doesn't show it again
 export function RefundedPopup({ bookingId }: { bookingId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
@@ -35,7 +34,6 @@ export function RefundedPopup({ bookingId }: { bookingId: string }) {
   );
 }
 
-// blockedReason is why this trip can't be refunded, or null when it can
 export function RefundButton({ bookingId, blockedReason }: { bookingId: string; blockedReason: string | null }) {
   const [asking, setAsking] = useState(false);
   const [refused, setRefused] = useState(false);
