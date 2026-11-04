@@ -86,11 +86,11 @@ async function LegOptions({ trip, leg, label }: { trip: Trip; leg: TripLeg; labe
                 <li key={option.flight.flight_id} className="flex flex-wrap items-center justify-between gap-4 py-3">
                   <div>
                     <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
-                      {formatDate(option.flight.departure_time, flight.origin_timezone)} · {option.flight.flight_number}
+                      {formatDate(option.flight.departure_time)} · {option.flight.flight_number}
                     </p>
                     <p className="text-lg font-semibold text-azure-navy">
-                      {formatTime(option.flight.departure_time, flight.origin_timezone)} →{" "}
-                      {formatTime(option.flight.arrival_time, flight.destination_timezone)}{" "}
+                      {formatTime(option.flight.departure_time)} → {formatTime(option.flight.arrival_time)}{" "}
+                      <span className="text-sm font-normal text-gray-500">UTC</span>{" "}
                       <span className="text-sm font-normal text-gray-500">{formatDuration(option.flight.duration_min)}</span>
                     </p>
                     <FlightStatusBadge status={option.flight.flight_status_name} />

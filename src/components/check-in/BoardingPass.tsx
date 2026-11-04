@@ -11,7 +11,6 @@ export type BoardingPassData = {
   destinationCity: string;
   departureTime: string;
   boardingTime: string;
-  timeZone: string;
   gate: string | null;
   seat: string | null;
   cabin: string;
@@ -50,9 +49,9 @@ export function BoardingPass({ pass, preview = false }: { pass: BoardingPassData
         <dl className="grid grid-cols-3 gap-x-4 gap-y-4">
           <Detail label="Passenger" value={pass.passengerName} />
           <Detail label="Flight" value={pass.flightNumber.replace(/^([A-Z]+)/, "$1 ")} />
-          <Detail label="Date" value={formatDate(pass.departureTime, pass.timeZone).replace(/, \d{4}$/, "")} />
+          <Detail label="Date (UTC)" value={formatDate(pass.departureTime).replace(/, \d{4}$/, "")} />
           <Detail label="Gate" value={pass.gate ?? "TBA"} />
-          <Detail label="Boards" value={formatTime(pass.boardingTime, pass.timeZone)} />
+          <Detail label="Boards (UTC)" value={formatTime(pass.boardingTime)} />
           <Detail label="Seat" value={pass.seat ?? "None"} />
         </dl>
       </div>

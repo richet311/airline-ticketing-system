@@ -1,10 +1,10 @@
+import { REPORTS, REPORTS_PAGE } from "@/lib/reports";
+
 //what roles can see what
 export const SYSTEM_ADMIN = "System Administrator";
 export const OPERATIONS_MANAGER = "Operations Manager";
 export const CUSTOMER_SERVICE_AGENT = "Customer Service Agent";
 export const GATE_AGENT = "Gate Agent";
-
-export const REPORTS_PAGE = "/employee/admin/reports";
 
 export function canUse(roleName: string, allowedRoles: string[]): boolean {
   return roleName === SYSTEM_ADMIN || allowedRoles.includes(roleName);
@@ -15,5 +15,6 @@ export function employeeHome(roleName: string): string {
 }
 
 export function employeePages(roleName: string): string[] {
-  return canUse(roleName, [OPERATIONS_MANAGER]) ? [employeeHome(roleName), REPORTS_PAGE] : [employeeHome(roleName)];
+  if (!canUse(roleName, [OPERATIONS_MANAGER])) return [employeeHome(roleName)];
+  return [employeeHome(roleName), REPORTS_PAGE, ...Object.values(REPORTS).map((report) => report.href)];
 }

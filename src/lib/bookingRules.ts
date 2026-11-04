@@ -88,6 +88,11 @@ export function cancelProblem(bookingStatus: string, legs: LegForRules[][]): str
   return null;
 }
 
+export function flightHasDeparted(flight: Pick<LegForRules, "flight_status_name" | "minutes_to_departure">): boolean {
+  if (["CANCELLED", "DELAYED"].includes(flight.flight_status_name)) return false;
+  return ["DEPARTED", "ARRIVED"].includes(flight.flight_status_name) || flight.minutes_to_departure <= 0;
+}
+
 // Why online check-in isn't open for this flight, or null when it is
 export function checkInProblem(flight: Omit<LegForRules, "checked_in">): string | null {
   if (flight.flight_status_name === "CANCELLED") return "This flight is cancelled.";

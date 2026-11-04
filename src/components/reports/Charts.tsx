@@ -4,13 +4,20 @@ export const PIE_COLORS = ["#0b2e6b", "#1a66da", "#6fa8f0", "#c9ddfa"];
 const AXIS = "#d1d5db";
 const TEXT = "#4b5563";
 
-export function BarChart({ data, format }: { data: { label: string; value: number }[]; format: (value: number) => string }) {
+export function BarChart({
+  data,
+  format,
+  max = Math.max(...data.map((d) => d.value), 1),
+}: {
+  data: { label: string; value: number }[];
+  format: (value: number) => string;
+  max?: number;
+}) {
   const width = 640;
-  const labelWidth = 110;
+  const labelWidth = 130;
   const valueWidth = 70;
   const rowHeight = 28;
   const barSpace = width - labelWidth - valueWidth;
-  const max = Math.max(...data.map((d) => d.value), 1);
   const height = data.length * rowHeight;
 
   return (
@@ -81,61 +88,5 @@ export function PieChart({ data, format }: { data: { label: string; value: numbe
         ))}
       </ul>
     </div>
-  );
-}
-
-export function LineChart({ data, format }: { data: { label: string; value: number }[]; format: (value: number) => string }) {
-  const width = 640;
-  const height = 260;
-  const left = 70;
-  const right = 20;
-  const top = 15;
-  const bottom = 40;
-  const plotWidth = width - left - right;
-  const plotHeight = height - top - bottom;
-  const highest = Math.max(...data.map((d) => d.value), 1);
-  const lowest = Math.min(...data.map((d) => d.value), 0);
-  const rough = (highest - lowest) / 4;
-  const magnitude = 10 ** Math.floor(Math.log10(rough));
-  const step = ([1, 2, 5, 10].find((m) => m * magnitude >= rough) ?? 10) * magnitude;
-  const min = Math.floor(lowest / step) * step;
-  const max = Math.ceil(highest / step) * step;
-  const x = (i: number) => left + (data.length === 1 ? plotWidth / 2 : (i / (data.length - 1)) * plotWidth);
-  const y = (value: number) => top + plotHeight - ((value - min) / (max - min)) * plotHeight;
-  const ticks = Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => min + i * step);
-  const tickLabel = (value: number) => `$${Math.round(value).toLocaleString("en-US")}`;
-  const points = data.map((d, i) => `${x(i)},${y(d.value)}`).join(" ");
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full max-w-2xl" role="img" aria-label="Line chart">
-      {ticks.map((tick) => (
-        <g key={tick}>
-          <line x1={left} x2={width - right} y1={y(tick)} y2={y(tick)} stroke={AXIS} strokeDasharray="3 3" />
-          <text x={left - 8} y={y(tick)} textAnchor="end" dominantBaseline="middle" fontSize="11" fill={TEXT}>
-            {tickLabel(tick)}
-          </text>
-        </g>
-      ))}
-      <polyline points={points} fill="none" stroke={CHART_BLUE} strokeWidth={2} />
-      {data.map((d, i) => (
-        <circle key={d.label} cx={x(i)} cy={y(d.value)} r={4} fill={CHART_BLUE} stroke="#ffffff" strokeWidth={2}>
-          <title>{`${d.label}: ${format(d.value)}`}</title>
-        </circle>
-      ))}
-      {data.map((d, i) =>
-        i === 0 || i === data.length - 1 || i === Math.floor(data.length / 2) ? (
-          <text
-            key={d.label}
-            x={x(i)}
-            y={height - 15}
-            textAnchor={i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"}
-            fontSize="11"
-            fill={TEXT}
-          >
-            {d.label}
-          </text>
-        ) : null,
-      )}
-    </svg>
   );
 }

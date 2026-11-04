@@ -6,39 +6,44 @@ import { PageHeading } from "@/components/PageHeading";
 import { ArrowRightIcon } from "@/components/icons";
 import { db } from "@/lib/db";
 import { formatMoney, formatMonthDay } from "@/lib/format";
-import type { PopularTripRow } from "@/lib/types";
+import type { AirportCity, PopularTripRow } from "@/lib/types";
 
 const TRIP_COUNT = 4;
 
 // only destinations with a photo are shown, so every card has an image
-const destinationImages: Record<string, string> = {
-  MIA: "/destinations/miami.webp",
-  ORD: "/destinations/chicago.webp",
-  LAX: "/destinations/los-angeles.webp",
-  JFK: "/destinations/new-york.webp",
+const destinationImages: Record<number, string> = {
+  10010: "/destinations/miami.webp",
+  10007: "/destinations/chicago.webp",
+  10006: "/destinations/los-angeles.webp",
+  10004: "/destinations/new-york.webp",
 };
 
-export async function PopularDestinations({ from }: { from: { code: string; city: string } }) {
+export async function PopularDestinations({ airportId }: { airportId: number }) {
   await connection();
+  const [homes] = await db.query<AirportCity[]>("SELECT airport_code, city, country FROM airport WHERE airport_id = ?", [
+    airportId,
+  ]);
+  if (homes.length === 0) return null;
+  const from = { code: homes[0].airport_code, city: homes[0].city };
+
   const [fares] = await db.query<PopularTripRow[]>(
     `SELECT fc.fare_class_id, f.flight_number, f.departure_time,
-            d.airport_code AS destination, d.city, fc.base_price
+            d.airport_id AS destination_id, d.airport_code AS destination, d.city, fc.base_price
        FROM flight f
-       JOIN airport o        ON o.airport_id = f.origin_airport_id
        JOIN airport d        ON d.airport_id = f.destination_airport_id
        JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
        JOIN fare_class fc    ON fc.flight_id = f.flight_id
-      WHERE o.airport_code = ?
+      WHERE f.origin_airport_id = ?
         AND f.departure_time > NOW()
         AND fs.flight_status_name IN ('SCHEDULED', 'DELAYED')
         AND fc.seats_available > 0
       ORDER BY f.departure_time, fc.base_price`,
-    [from.code],
+    [airportId],
   );
 
   const trips = fares
-    .filter((fare) => fare.destination in destinationImages)
-    .filter((fare, index, withImages) => withImages.findIndex((other) => other.destination === fare.destination) === index)
+    .filter((fare) => fare.destination_id in destinationImages)
+    .filter((fare, index, withImages) => withImages.findIndex((other) => other.destination_id === fare.destination_id) === index)
     .slice(0, TRIP_COUNT);
 
   return (
@@ -50,14 +55,14 @@ export async function PopularDestinations({ from }: { from: { code: string; city
       ) : (
         <ul className="mt-10 grid grid-cols-4 gap-6">
           {trips.map((trip) => (
-            <li key={trip.destination}>
+            <li key={trip.destination_id}>
               <Link
                 href={`/book/seats?${new URLSearchParams({ outbound: String(trip.fare_class_id), passengers: "1" })}`}
                 className="group block overflow-hidden rounded-card border border-gray-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-azure-blue hover:shadow-xl"
               >
                 <div className="relative flex h-40 flex-col justify-end overflow-hidden bg-azure-navy p-5 text-white">
                   <Image
-                    src={destinationImages[trip.destination]}
+                    src={destinationImages[trip.destination_id]}
                     alt=""
                     fill
                     sizes="(min-width: 1152px) 270px, 25vw"

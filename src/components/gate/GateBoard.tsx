@@ -84,7 +84,7 @@ export function GateBoard({
     <div className="mt-6 space-y-5">
       <p className="text-sm text-gray-700">
         <span className="font-semibold text-gray-900">{flight.flight_number}</span> · {flight.origin} → {flight.destination} ·{" "}
-        {formatMonthDay(flight.departure_time, flight.origin_timezone)}, {formatTime(flight.departure_time, flight.origin_timezone)} ·{" "}
+        {formatMonthDay(flight.departure_time)}, {formatTime(flight.departure_time)} UTC ·{" "}
         {flight.flight_status_name}
       </p>
 

@@ -83,10 +83,12 @@ async function SignedInTrips() {
   }
 
   const all = [...trips.values()];
-  const upcoming = all.filter((trip) => trip.status !== "CANCELLED" && trip.upcoming);
+  const isCancelled = (trip: TripCardData) =>
+    trip.status === "CANCELLED" || trip.flights.every((flight) => flight.flight_status_name === "CANCELLED");
+  const upcoming = all.filter((trip) => !isCancelled(trip) && trip.upcoming);
   // most recent first
-  const past = all.filter((trip) => trip.status !== "CANCELLED" && !trip.upcoming).reverse();
-  const cancelled = all.filter((trip) => trip.status === "CANCELLED").reverse();
+  const past = all.filter((trip) => !isCancelled(trip) && !trip.upcoming).reverse();
+  const cancelled = all.filter(isCancelled).reverse();
 
   return (
     <section className="py-12">
@@ -149,8 +151,8 @@ function TripCard({ trip }: { trip: TripCardData }) {
         <div>
           <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
             {roundTrip ? "Round trip" : trip.flights.length === 1 ? "One way" : `${trip.flights.length} flights`} ·{" "}
-            {formatMonthDay(first.departure_time, first.origin_timezone)}
-            {trip.flights.length > 1 && ` – ${formatMonthDay(last.departure_time, last.origin_timezone)}`}
+            {formatMonthDay(first.departure_time)}
+            {trip.flights.length > 1 && ` – ${formatMonthDay(last.departure_time)}`}
           </p>
           <h3 className="mt-1 text-xl font-semibold text-azure-navy">
             {first.origin_city} {roundTrip ? "⇄" : "→"} {first.destination_city}

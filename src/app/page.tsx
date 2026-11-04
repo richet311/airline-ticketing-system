@@ -10,7 +10,7 @@ import { RewardsBanner } from "@/components/home/RewardsBanner";
 import { db } from "@/lib/db";
 import type { AirportCity } from "@/lib/types";
 
-const HOME_AIRPORT = { code: "IAH", city: "Houston" };
+const HOME_AIRPORT_ID = 10001;
 
 export default function HomePage({ searchParams }: PageProps<"/">) {
   return (
@@ -43,7 +43,7 @@ export default function HomePage({ searchParams }: PageProps<"/">) {
         <div className="py-16">
           <div className="mx-auto max-w-6xl px-4">
             <Suspense fallback={<p className="text-gray-500">Loading trips...</p>}>
-              <PopularDestinations from={HOME_AIRPORT} />
+              <PopularDestinations airportId={HOME_AIRPORT_ID} />
             </Suspense>
           </div>
         </div>
@@ -57,6 +57,9 @@ async function BookingCardWithAirports({ searchParams }: { searchParams: PagePro
   // only query at request time (mysql2 calls Date.now(), which breaks prerendering)
   await connection();
   const [airports] = await db.query<AirportCity[]>("SELECT airport_code, city, country FROM airport ORDER BY city");
+  const [homes] = await db.query<AirportCity[]>("SELECT airport_code, city, country FROM airport WHERE airport_id = ?", [
+    HOME_AIRPORT_ID,
+  ]);
 
   function airportInUrl(name: string): string | undefined {
     const value = params[name];
@@ -64,7 +67,7 @@ async function BookingCardWithAirports({ searchParams }: { searchParams: PagePro
     return airports.find((airport) => airport.airport_code === code)?.airport_code;
   }
 
-  const from = airportInUrl("from") ?? HOME_AIRPORT.code;
+  const from = airportInUrl("from") ?? homes[0]?.airport_code ?? "";
   const urlTo = airportInUrl("to");
   const to = urlTo !== undefined && urlTo !== from ? urlTo : "";
 

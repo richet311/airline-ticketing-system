@@ -212,11 +212,9 @@ INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_u
 (50017, '3B', 1, 1, NULL, 1, NOW(), 1, NOW());
 
 -- New code to expand the number of rows and seats per row to A-F. Our previous method of seeding data is still intact
--- Part of the code randomly books seats to make the seat selector more realistic. However, these seats are "hard coded" and don't actually have an associated ticket
--- Made it a point that flight AZ640 remains sold out
 INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated)
 WITH RECURSIVE seat_row (n) AS (
-    SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 15
+    SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 10
 ),
 seat_letter (letter) AS (
     SELECT 'A' UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E' UNION ALL SELECT 'F'
@@ -227,21 +225,11 @@ SELECT f.flight_id,
            (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, 'A')),
            (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id ORDER BY CAST(REGEXP_SUBSTR(s.seat_number, '^[0-9]+') AS UNSIGNED) DESC LIMIT 1)
        ),
-       IF(f.flight_id = 50003 OR RAND() < 0.4, 3, 1),
-       NULL, 1, NOW(), 1, NOW()
+       1, NULL, 1, NOW(), 1, NOW()
 FROM flight f
 CROSS JOIN seat_row r
 CROSS JOIN seat_letter l
 WHERE NOT EXISTS (SELECT 1 FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, l.letter));
-
--- seat counts per fare now come from the seat table
-UPDATE fare_class fc
-   SET fc.seats_total = (SELECT COUNT(*) FROM seat s
-                          WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id),
-       fc.seats_available = (SELECT COUNT(*) FROM seat s
-                              WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id
-                                AND s.seat_status_id = 1)
- WHERE fc.fare_class_id > 0;
 
 
 -- booking total = (base price x number of tickets) + the price of each booking upgrade
@@ -320,6 +308,67 @@ INSERT INTO payment (payment_id, booking_id, payment_status, total_amount, payme
 (70012, 'AZ43AK', 'RECEIVED', 289.00, 'CREDIT', '98990a0c-ddff-5d44-8cc2-babc69ad3ca6', '2026-10-05 20:00:00', 1, NOW(), 1, NOW()),
 (70013, 'AZ42KQ', 'RECEIVED', 2593.00, 'CREDIT', '9b1deb4d-3b7d-4bad-9b1d-bd7b7d7b7d01', '2026-10-10 22:00:00', 1, NOW(), 1, NOW()),
 (70014, 'AZ43AL', 'RECEIVED', 3300.00, 'CREDIT', 'a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f601', '2026-10-08 11:30:00', 1, NOW(), 1, NOW());
+
+CREATE TEMPORARY TABLE flight_target (flight_id INT PRIMARY KEY, seats_sold INT);
+INSERT INTO flight_target VALUES
+(50001, 48), (50002, 51), (50003, 60), (50004, 42), (50005, 39), (50006, 30), (50007, 27), (50008, 18),
+(50010, 21), (50011, 12), (50012, 33), (50013, 24), (50014, 36), (50015, 21), (50016, 27), (50017, 15);
+
+CREATE TEMPORARY TABLE planned_ticket AS
+WITH open_seat AS (
+    SELECT s.flight_id, s.seat_number, s.cabin_class_id,
+           ROW_NUMBER() OVER (PARTITION BY s.flight_id ORDER BY CRC32(CONCAT(s.flight_id, s.seat_number))) AS k
+      FROM seat s
+     WHERE s.seat_status_id = 1
+       AND NOT EXISTS (SELECT 1 FROM ticket t WHERE t.flight_id = s.flight_id AND t.seat_number = s.seat_number)
+),
+traveler AS (
+    SELECT f.flight_id, p.passenger_id, COALESCE(p.passenger_parent_id, p.passenger_id) AS booker_id,
+           ROW_NUMBER() OVER (PARTITION BY f.flight_id ORDER BY CRC32(CONCAT(p.passenger_id, f.flight_id))) AS k
+      FROM flight f
+     CROSS JOIN passenger p
+     WHERE NOT EXISTS (SELECT 1 FROM ticket t WHERE t.flight_id = f.flight_id AND t.passenger_id = p.passenger_id)
+)
+SELECT os.flight_id, os.seat_number, os.k, tr.passenger_id, tr.booker_id, fc.fare_class_id, fc.base_price, f.flight_status_id,
+       CONCAT('S', LPAD(os.flight_id - 50000, 2, '0'), LPAD(os.seat_number, 3, '0')) AS booking_id,
+       LEAST(NOW(), f.departure_time - INTERVAL 1 DAY) - INTERVAL (os.k % 45) DAY AS booked_at
+  FROM flight_target ft
+  JOIN flight f      ON f.flight_id = ft.flight_id
+  JOIN open_seat os  ON os.flight_id = ft.flight_id
+  JOIN traveler tr   ON tr.flight_id = os.flight_id AND tr.k = os.k
+  JOIN fare_class fc ON fc.flight_id = os.flight_id AND fc.cabin_class_id = os.cabin_class_id
+ WHERE os.k <= ft.seats_sold - (SELECT COUNT(*) FROM ticket t WHERE t.flight_id = ft.flight_id AND t.seat_number IS NOT NULL);
+
+INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, currency, expires_at, created_by, created_at, updated_by, last_updated)
+SELECT booking_id, booker_id, 2, base_price, 'USD', NULL, 1, booked_at, 1, booked_at
+  FROM planned_ticket;
+
+INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id, seat_number, flight_fare, checked_in, boarded, created_by, created_at, updated_by, last_updated)
+SELECT CONCAT(booking_id, '-01'), booking_id, passenger_id, flight_id, fare_class_id, seat_number, base_price,
+       flight_status_id IN (3, 4, 5), flight_status_id IN (4, 5) OR (flight_status_id = 3 AND k % 3 = 0),
+       1, booked_at, 1, booked_at
+  FROM planned_ticket;
+
+INSERT INTO payment (booking_id, payment_status, total_amount, payment_method, idempotency_key, payment_time, created_by, created_at, updated_by, last_updated)
+SELECT booking_id, 'RECEIVED', base_price, ELT(1 + k % 3, 'CREDIT', 'DEBIT', 'PAYPAL'), UUID(), booked_at, 1, booked_at, 1, booked_at
+  FROM planned_ticket;
+
+UPDATE seat s
+  JOIN planned_ticket pt ON pt.flight_id = s.flight_id AND pt.seat_number = s.seat_number
+   SET s.seat_status_id = 3
+ WHERE s.flight_id > 0;
+
+DROP TEMPORARY TABLE planned_ticket;
+DROP TEMPORARY TABLE flight_target;
+
+-- seat counts per fare now come from the seat table
+UPDATE fare_class fc
+   SET fc.seats_total = (SELECT COUNT(*) FROM seat s
+                          WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id),
+       fc.seats_available = (SELECT COUNT(*) FROM seat s
+                              WHERE s.flight_id = fc.flight_id AND s.cabin_class_id = fc.cabin_class_id
+                                AND s.seat_status_id = 1)
+ WHERE fc.fare_class_id > 0;
 
 
 INSERT INTO baggage (tag_number, e_ticket_number, weightage, baggage_status_id, fee, created_by, created_at, updated_by, last_updated) VALUES

@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import { signOut } from "@/app/employee/actions";
-import { canUse, employeeHome, OPERATIONS_MANAGER, REPORTS_PAGE } from "@/lib/roles";
+import { SignOutButton } from "@/components/SignOutButton";
+import { REPORTS_PAGE } from "@/lib/reports";
+import { canUse, employeeHome, OPERATIONS_MANAGER } from "@/lib/roles";
 import type { SignedInEmployee } from "@/lib/types";
 
 export function EmployeeHeader({ employee }: { employee: SignedInEmployee }) {
@@ -22,11 +24,11 @@ export function EmployeeHeader({ employee }: { employee: SignedInEmployee }) {
               Reports
             </Link>
           )}
-          <form action={signOut}>
-            <button type="submit" className="font-semibold underline underline-offset-4 hover:text-white/80">
-              Sign out
-            </button>
-          </form>
+          <SignOutButton
+            action={signOut}
+            to="/login/employee"
+            className="font-semibold underline underline-offset-4 hover:text-white/80"
+          />
         </div>
       </div>
     </header>

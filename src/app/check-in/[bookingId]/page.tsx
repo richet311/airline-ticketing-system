@@ -173,9 +173,9 @@ function BoardingPass({ ticket }: { ticket: TripTicketRow }) {
           </div>
           <div className="grid grid-cols-4 gap-4 text-sm">
             <PassField label="Flight" value={ticket.flight_number} />
-            <PassField label="Date" value={formatDate(ticket.departure_time, ticket.origin_timezone)} />
-            <PassField label="Boards" value={formatTime(ticket.boarding_time, ticket.origin_timezone)} />
-            <PassField label="Departs" value={formatTime(ticket.departure_time, ticket.origin_timezone)} />
+            <PassField label="Date (UTC)" value={formatDate(ticket.departure_time)} />
+            <PassField label="Boards (UTC)" value={formatTime(ticket.boarding_time)} />
+            <PassField label="Departs (UTC)" value={formatTime(ticket.departure_time)} />
           </div>
         </div>
         <div className="grid grid-cols-2 content-start gap-4 border-l border-dashed border-gray-300 pl-6 text-sm">

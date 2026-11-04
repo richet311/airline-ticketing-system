@@ -8,10 +8,10 @@ export const adminButtonClass =
 
 export const adminLabelClass = "mb-1 block text-[11px] font-semibold tracking-wider text-gray-500 uppercase";
 
-export function AdminTile({ overline, title, children }: { overline: string; title: string; children: ReactNode }) {
+export function AdminTile({ overline, title, children }: { overline?: string; title: string; children: ReactNode }) {
   return (
     <section className="rounded-card border border-gray-200 bg-white p-6">
-      <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase">{overline}</p>
+      {overline && <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase">{overline}</p>}
       <h2 className="mb-4 text-xl font-semibold text-azure-navy">{title}</h2>
       {children}
     </section>

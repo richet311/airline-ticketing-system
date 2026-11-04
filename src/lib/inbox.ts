@@ -95,7 +95,6 @@ export async function getBoardingPass(eTicketNumber: string): Promise<BoardingPa
     destinationCity: ticket.destination_city,
     departureTime: ticket.departure_time,
     boardingTime: ticket.boarding_time,
-    timeZone: ticket.origin_timezone,
     gate: ticket.gate_number,
     seat: ticket.seat_number,
     cabin: ticket.cabin_class_name,

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import { scheduleFlight } from "@/app/employee/admin/flights/new/actions";
+import { MAX_FLIGHT_HOURS } from "@/lib/flightRules";
 import { formatDuration } from "@/lib/format";
 import { SEATS_PER_ROW } from "@/lib/planeRows";
 import type { AdminFormState, AirportOption } from "@/lib/types";
@@ -62,6 +63,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
   const planeRows = capacity === undefined ? undefined : capacity / SEATS_PER_ROW;
   const rowTotal = CABINS.reduce((sum, cabin) => sum + (Number(rows[cabin.field]) || 0), 0);
   const duration = minutesBetween(times);
+  const tooLong = duration !== null && duration > MAX_FLIGHT_HOURS * 60;
 
   function changeOrigin(code: string) {
     setOrigin(code);
@@ -132,8 +134,14 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
         ))}
         <div>
           <span className={adminLabelClass}>Duration</span>
-          <output className={`${adminInputClass} flex items-center bg-gray-50 ${duration !== null && duration <= 0 ? "text-amber-700" : ""}`}>
-            {duration === null ? "Enter both times" : duration > 0 ? formatDuration(duration) : "Arrives before it departs"}
+          <output className={`${adminInputClass} flex items-center bg-gray-50 ${tooLong || (duration !== null && duration <= 0) ? "text-amber-700" : ""}`}>
+            {duration === null
+              ? "Enter both times"
+              : duration <= 0
+                ? "Arrives before it departs"
+                : tooLong
+                  ? `Over ${MAX_FLIGHT_HOURS} hours`
+                  : formatDuration(duration)}
           </output>
         </div>
       </div>
@@ -147,6 +155,7 @@ export function ScheduleFlightForm({ airports, aircraft }: { airports: AirportOp
                 name={`${cabin.field}_rows`}
                 type="number"
                 min={0}
+                max={planeRows}
                 value={rows[cabin.field]}
                 onChange={(event) => setRows({ ...rows, [cabin.field]: event.target.value })}
                 className={adminInputClass}

@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
@@ -32,5 +31,4 @@ export async function customerLogin(
 
 export async function signOut() {
   await endSession();
-  redirect("/");
 }
