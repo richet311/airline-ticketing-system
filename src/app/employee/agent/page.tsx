@@ -8,6 +8,8 @@ import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT } from "@/lib/roles";
 import { getSignedInEmployee } from "@/lib/session";
 
+export const instant = false;
+
 export default async function AgentPage({ searchParams }: PageProps<"/employee/agent">) {
   // check before streaming starts, so a signed-out visitor gets a redirect instead of a blank page
   await connection();
