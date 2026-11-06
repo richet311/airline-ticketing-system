@@ -1,8 +1,9 @@
 import "server-only";
 
-import { createHmac, scrypt, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { cache } from "react";
 
 import { db } from "@/lib/db";
@@ -14,17 +15,35 @@ import type { CurrentUser, SignedInEmployee } from "@/lib/types";
 export const SESSION_COOKIE = "session";
 const SESSION_DAYS = 7;
 
-//Passwords are stored as plain text in user.password_hash, but in case we wanted to store hashes
+//Passwords are stored as scrypt hashes in user.password_hash, in the form scrypt$<saltHex>$<keyHex>.
+//Seeded accounts start as plain text: checkPassword still accepts them, and the login actions
+//replace them with a hash the first time they sign in.
 const SCRYPT_KEY_BYTES = 64;
+const SCRYPT_SALT_BYTES = 16;
 
 const scryptAsync = promisify(scrypt) as (password: string, salt: Buffer, keyLength: number) => Promise<Buffer>;
 
 export async function hashPassword(password: string): Promise<string> {
-  return password;
+  const salt = randomBytes(SCRYPT_SALT_BYTES);
+  const key = await scryptAsync(password, salt, SCRYPT_KEY_BYTES);
+  return `scrypt$${salt.toString("hex")}$${key.toString("hex")}`;
 }
 
-//True when the typed password matches what's stored in the db, a plain text or an older hash value
-//from a prior implementation
+//True when the stored value is still plain text (seed data) and should be replaced with a hash
+export function isPlainTextPassword(storedHash: string): boolean {
+  return !storedHash.startsWith("scrypt$");
+}
+
+//Swaps a plain-text password for its hash after a successful login
+export async function upgradePassword(userId: number, password: string): Promise<void> {
+  await db.query("UPDATE user SET password_hash = ?, updated_by = ?, last_updated = NOW() WHERE user_id = ?", [
+    await hashPassword(password),
+    userId,
+    userId,
+  ]);
+}
+
+//True when the typed password matches what's stored in the db: a scrypt hash, or plain text from the seed data
 export async function checkPassword(password: string, storedHash: string): Promise<boolean> {
   const [scheme, saltHex, keyHex] = storedHash.split("$");
   if (scheme === "scrypt" && saltHex && keyHex) {
@@ -90,6 +109,8 @@ export async function employeeFromSessionCookie(value: string | undefined): Prom
 }
 
 async function readSessionUserId(): Promise<number | null> {
+  // request time only: checking the cookie's expiry reads the clock, which can't happen while prerendering
+  await connection();
   const cookieStore = await cookies();
   return userIdFromCookie(cookieStore.get(SESSION_COOKIE)?.value);
 }
@@ -108,7 +129,8 @@ function userIdFromCookie(value: string | undefined): number | null {
   return Number(userId);
 }
 
-function sign(text: string): string {
+// HMAC of text with SESSION_SECRET, used for the session cookie and the trip lookup cookie
+export function sign(text: string): string {
   const secret = process.env.SESSION_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error(

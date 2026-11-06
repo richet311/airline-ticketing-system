@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
-import { checkPassword, startSession } from "@/lib/session";
+import { checkPassword, isPlainTextPassword, startSession, upgradePassword } from "@/lib/session";
 
 // which job_role_ids go to which dashboard (other roles can't sign in)
 const ADMIN_ROLES = [91, 92]; // System Administrator, Operations Manager
@@ -40,6 +40,7 @@ export async function staffSignIn(previousState: StaffSignInState, formData: For
   if (!dashboard) {
     return { error: "Your role doesn't have a portal dashboard yet.", identifier };
   }
+  if (isPlainTextPassword(staff[0].password_hash)) await upgradePassword(userId, password);
 
   // staff sessions end when the browser closes (shared computers)
   await startSession(userId, false);
