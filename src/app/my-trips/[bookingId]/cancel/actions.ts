@@ -58,6 +58,8 @@ export async function cancelTrip(previousState: TripActionState, formData: FormD
     });
   } catch (error) {
     if (error instanceof Refused) return { error: error.message };
+    // a database rule (trigger) refused it
+    if ((error as { sqlState?: string }).sqlState === "45000") return { error: (error as Error).message };
     throw error;
   }
 

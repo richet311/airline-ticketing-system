@@ -41,6 +41,8 @@ DROP TABLE IF EXISTS payment;
 DROP TABLE IF EXISTS loyalty_tier;
 DROP TABLE IF EXISTS points_transaction;
 DROP TABLE IF EXISTS notification;
+-- events live on the database, not on a table, so dropping tables leaves them behind
+DROP EVENT IF EXISTS advance_flight_statuses;
 -- old name of upgrade_type
 DROP TABLE IF EXISTS comfort_upgrade_type;
 
@@ -950,6 +952,28 @@ BEGIN
         ELSEIF v_old = 'DEPARTED' AND v_new <> 'ARRIVED' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A departed flight can only move to Arrived.';
         END IF;
+    END IF;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE TRIGGER check_no_refund_after_departure
+BEFORE UPDATE ON booking
+FOR EACH ROW
+BEGIN
+    IF NEW.booking_status_id = (SELECT booking_status_id FROM booking_status WHERE booking_status_name = 'CANCELLED')
+       AND NEW.booking_status_id <> OLD.booking_status_id
+       AND (SELECT COUNT(*)
+              FROM ticket AS t
+              JOIN flight AS f ON f.flight_id = t.flight_id
+              JOIN flight_status AS fs ON fs.flight_status_id = f.flight_status_id
+             WHERE t.booking_id = NEW.booking_id
+               AND fs.flight_status_name IN ('DEPARTED', 'ARRIVED')) > 0
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This flight has already departed and can no longer be refunded.';
     END IF;
 END$$
 
