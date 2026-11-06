@@ -1,3 +1,5 @@
+import { isCalendarDate } from "@/lib/format";
+
 type SearchParams = { [key: string]: string | string[] | undefined };
 
 export const REPORTS_PAGE = "/employee/admin/reports";
@@ -41,7 +43,8 @@ export function readReportFilters(params: SearchParams): ReportFilters {
     const value = params[name];
     return (Array.isArray(value) ? value[0] : (value ?? "")).trim();
   }
-  const date = (name: string) => (/^\d{4}-\d{2}-\d{2}$/.test(text(name)) ? text(name) : "");
+  // impossible dates (like 2026-13-45) are ignored instead of reaching the database
+  const date = (name: string) => (isCalendarDate(text(name)) ? text(name) : "");
 
   return {
     from: date("from"),
