@@ -1,4 +1,6 @@
-// TODO: account page
+import { redirect } from "next/navigation";
+
+// TODO: account page. Until it exists, send customers to their trips instead of a blank page.
 export default function AccountPage() {
-  return <h1>My Account</h1>;
+  redirect("/my-trips");
 }
