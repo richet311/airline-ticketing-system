@@ -1,5 +1,3 @@
-// TODO: only show this to the customer who made the booking
-
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 
@@ -7,6 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { CheckCircleIcon } from "@/components/icons";
 import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { db } from "@/lib/db";
+import { canOpenTrip } from "@/lib/tripAccess";
 import type { BookingSummary, ConfirmationTicket, Payment, UpgradeType } from "@/lib/types";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
@@ -38,13 +37,16 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
   const value = params.booking;
   const bookingId = (Array.isArray(value) ? value[0] : (value ?? "")).trim().toUpperCase();
 
-  const [bookings] = await db.query<BookingSummary[]>(
-    `SELECT b.booking_id, bs.booking_status_name, b.total_amount, b.currency, b.created_at
-       FROM booking b
-       JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id
-      WHERE b.booking_id = ?`,
-    [bookingId],
-  );
+  // only the customer who booked it (or flies on it) sees the confirmation
+  const [bookings] = (await canOpenTrip(bookingId))
+    ? await db.query<BookingSummary[]>(
+        `SELECT b.booking_id, bs.booking_status_name, b.total_amount, b.currency, b.created_at
+           FROM booking b
+           JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id
+          WHERE b.booking_id = ?`,
+        [bookingId],
+      )
+    : [[] as BookingSummary[]];
   if (bookings.length === 0) {
     return (
       <Card>

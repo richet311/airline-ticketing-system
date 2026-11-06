@@ -6,6 +6,7 @@ import type { RowDataPacket } from "mysql2/promise";
 import { legChangeProblem, roundCents } from "@/lib/bookingRules";
 import { getCurrentUser } from "@/lib/session";
 import { withTransaction } from "@/lib/transaction";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { addPayment, AVAILABLE, BOOKED, findReplacementFlights, getTrip, lockBooking, recountSeats } from "@/lib/trips";
 import type { TripActionState } from "@/lib/types";
 
@@ -21,6 +22,7 @@ export async function changeFlight(previousState: TripActionState, formData: For
   const bookingId = String(formData.get("booking_id") ?? "").trim().toUpperCase();
   const oldFlightId = Number(formData.get("flight_id"));
   const newFlightId = Number(formData.get("new_flight_id"));
+  if (!(await canOpenTrip(bookingId))) return { error: "We couldn't find this trip." };
   const userId = (await getCurrentUser())?.user_id ?? SYSTEM_USER_ID;
 
   try {

@@ -7,6 +7,7 @@ import { RefundButton, RefundedPopup } from "@/components/trips/RefundButton";
 import { BookingStatusPill, Card, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
 import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInProblem, flightHasDeparted, legChangeProblem } from "@/lib/bookingRules";
 import { formatDate, formatMoney } from "@/lib/format";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, legLabel } from "@/lib/trips";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
@@ -52,7 +53,7 @@ async function TripDetails({
   const done = (await searchParams).done;
   const notice = typeof done === "string" ? NOTICES[done] : undefined;
 
-  const trip = await getTrip(bookingId);
+  const trip = (await canOpenTrip(bookingId)) ? await getTrip(bookingId) : null;
   if (!trip) return <TripNotFound bookingId={bookingId} backHref="/my-trips" />;
   const { booking, legs, payments, upgrades } = trip;
 

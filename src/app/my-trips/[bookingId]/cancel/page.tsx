@@ -7,6 +7,7 @@ import { TripActionForm } from "@/components/trips/TripActionForm";
 import { Card, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
 import { cancellationRefund, cancelProblem } from "@/lib/bookingRules";
 import { formatMoney } from "@/lib/format";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, legLabel } from "@/lib/trips";
 
 import { cancelTrip } from "./actions";
@@ -29,7 +30,7 @@ export default function CancelTripPage({ params }: PageProps<"/my-trips/[booking
 
 async function CancelTrip({ params }: { params: Promise<{ bookingId: string }> }) {
   const bookingId = (await params).bookingId.toUpperCase();
-  const trip = await getTrip(bookingId);
+  const trip = (await canOpenTrip(bookingId)) ? await getTrip(bookingId) : null;
   if (!trip) return <TripNotFound bookingId={bookingId} backHref="/my-trips" />;
 
   const { booking, legs } = trip;

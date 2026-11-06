@@ -7,6 +7,7 @@ import { TripActionForm } from "@/components/trips/TripActionForm";
 import { Card, cabinLabel, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
 import { checkInProblem, documentProblem } from "@/lib/bookingRules";
 import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, legLabel, type TripLeg } from "@/lib/trips";
 import type { TripTicketRow } from "@/lib/types";
 
@@ -33,7 +34,7 @@ export default function CheckInBookingPage({ params }: PageProps<"/check-in/[boo
 
 async function CheckInTrip({ params }: { params: Promise<{ bookingId: string }> }) {
   const bookingId = (await params).bookingId.toUpperCase();
-  const trip = await getTrip(bookingId);
+  const trip = (await canOpenTrip(bookingId)) ? await getTrip(bookingId) : null;
   if (!trip) return <TripNotFound bookingId={bookingId} backHref="/check-in" />;
 
   const { booking, legs } = trip;
