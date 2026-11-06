@@ -87,7 +87,7 @@ async function AircraftTile() {
       <AddAircraftForm statuses={statuses.map((status) => status.maintenance_status_name)} />
       <AdminTable headings={["Number", "Type", "Capacity", "Status", ""]}>
         {aircraft.map((plane) => (
-          <AircraftRow key={plane.aircraft_id} plane={plane} />
+          <AircraftRow key={plane.aircraft_id} plane={plane} statuses={statuses.map((status) => status.maintenance_status_name)} />
         ))}
       </AdminTable>
     </AdminTile>
