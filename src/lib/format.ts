@@ -22,6 +22,12 @@ export function formatTime(value: string, timeZone = "UTC"): string {
   );
 }
 
+export function formatLocalTime(value: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone, timeZoneName: "short" }).format(
+    fromDatabase(value),
+  );
+}
+
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   return hours === 0 ? `${minutes % 60}m` : `${hours}h ${minutes % 60}m`;

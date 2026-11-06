@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
-import { formatDate, formatDuration, formatTime } from "@/lib/format";
+import { formatDate, formatDuration, formatLocalTime, formatTime } from "@/lib/format";
 import type { TripTicketRow } from "@/lib/types";
 
 // Pieces shared by the My Trips and Check In pages
@@ -38,16 +38,21 @@ export function FlightStatusBadge({ status }: { status: string }) {
   );
 }
 
-// One flight: when it leaves and lands (UTC), its number, cabin and gate
+// One flight: when it leaves and lands (local to each airport, then UTC), its number, cabin and gate
 export function LegSummary({ label, flight }: { label: string; flight: TripTicketRow }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div>
         <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
-          {label} · {formatDate(flight.departure_time)}
+          {label} · {formatDate(flight.departure_time, flight.origin_timezone)}
         </p>
         <div className="mt-1 flex items-center gap-6">
-          <Endpoint code={flight.origin} city={flight.origin_city} time={`${formatTime(flight.departure_time)} UTC`} />
+          <Endpoint
+            code={flight.origin}
+            city={flight.origin_city}
+            time={formatLocalTime(flight.departure_time, flight.origin_timezone)}
+            utcTime={`${formatTime(flight.departure_time)} UTC`}
+          />
           <div className="text-center text-xs text-gray-500">
             <p>{formatDuration(flight.duration_min)}</p>
             <div className="my-1 h-px w-16 bg-gray-300" />
@@ -56,7 +61,8 @@ export function LegSummary({ label, flight }: { label: string; flight: TripTicke
           <Endpoint
             code={flight.destination}
             city={flight.destination_city}
-            time={`${formatTime(flight.arrival_time)} UTC`}
+            time={formatLocalTime(flight.arrival_time, flight.destination_timezone)}
+            utcTime={`${formatTime(flight.arrival_time)} UTC`}
           />
         </div>
       </div>
@@ -71,10 +77,11 @@ export function LegSummary({ label, flight }: { label: string; flight: TripTicke
   );
 }
 
-function Endpoint({ code, city, time }: { code: string; city: string; time: string }) {
+function Endpoint({ code, city, time, utcTime }: { code: string; city: string; time: string; utcTime: string }) {
   return (
     <div>
       <p className="text-2xl font-semibold text-azure-navy">{time}</p>
+      <p className="text-xs text-gray-500">{utcTime}</p>
       <p className="text-sm text-gray-600">
         <span className="font-semibold text-gray-900">{code}</span> {city}
       </p>

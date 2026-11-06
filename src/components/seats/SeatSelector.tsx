@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { confirmSeats, holdSeat, releaseSeats } from "@/app/book/seats/actions";
+import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import type { FlightStatusRow, SeatMapRow } from "@/lib/types";
 
 // matches HOLD_MINUTES in actions.ts
@@ -197,11 +198,14 @@ export function SeatSelector({
           {tripFlights.map(({ label, flight }) => (
             <div key={flight.flight_id} className="mb-3">
               <p className="text-sm font-semibold text-gray-900">
-                {label} · {flight.departure_time.slice(0, 10)}
+                {label} · {formatDate(flight.departure_time, flight.origin_timezone)}
               </p>
               <p className="text-xs text-gray-500">
-                {flight.origin} {flight.departure_time.slice(11, 16)} → {flight.destination}{" "}
-                {flight.arrival_time.slice(11, 16)} UTC · {flight.flight_number}
+                {flight.origin} {formatLocalTime(flight.departure_time, flight.origin_timezone)} → {flight.destination}{" "}
+                {formatLocalTime(flight.arrival_time, flight.destination_timezone)} · {flight.flight_number}
+              </p>
+              <p className="text-xs text-gray-500">
+                {formatTime(flight.departure_time)} → {formatTime(flight.arrival_time)} UTC
               </p>
             </div>
           ))}

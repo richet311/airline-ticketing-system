@@ -3,6 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FlightStatusSearch, type StatusSearchValues } from "@/components/flight-status/FlightStatusSearch";
+import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportOption, FlightStatusRow } from "@/lib/types";
@@ -15,6 +16,7 @@ const STATUS_SELECT = `
   SELECT f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
          TIMESTAMPDIFF(MINUTE, f.departure_time, f.arrival_time) AS duration_min,
          o.airport_code AS origin, d.airport_code AS destination,
+         o.timezone AS origin_timezone, d.timezone AS destination_timezone,
          fs.flight_status_name
     FROM flight f
     JOIN airport o        ON o.airport_id = f.origin_airport_id
@@ -132,7 +134,7 @@ function StatusTable({ flights }: { flights: FlightStatusRow[] }) {
         ))}
       </ul>
 
-      <p className="py-2 text-xs text-gray-500">Times and dates are in UTC.</p>
+      <p className="py-2 text-xs text-gray-500">Times are local to each airport, with UTC underneath.</p>
     </div>
   );
 }
@@ -140,8 +142,8 @@ function StatusTable({ flights }: { flights: FlightStatusRow[] }) {
 function StatusRow({ flight }: { flight: FlightStatusRow }) {
   const status = flightStatusDisplay(flight.flight_status_name);
 
-  const departureDay = flight.departure_time.slice(0, 10);
-  const arrivesNextDay = flight.arrival_time.slice(0, 10) !== departureDay;
+  const departureDay = formatDate(flight.departure_time, flight.origin_timezone);
+  const arrivesNextDay = formatDate(flight.arrival_time, flight.destination_timezone) !== departureDay;
 
   return (
     <li className={`${STATUS_TABLE_GRID} items-center py-5`}>
@@ -152,11 +154,15 @@ function StatusRow({ flight }: { flight: FlightStatusRow }) {
 
       <div className="pr-8">
         <div className="flex justify-between text-xl text-gray-900">
-          <span>{flight.departure_time.slice(11, 16)}</span>
+          <span>{formatLocalTime(flight.departure_time, flight.origin_timezone)}</span>
           <span>
-            {flight.arrival_time.slice(11, 16)}
+            {formatLocalTime(flight.arrival_time, flight.destination_timezone)}
             {arrivesNextDay && <sup className="ml-0.5 text-xs text-gray-500">+1</sup>}
           </span>
+        </div>
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>{formatTime(flight.departure_time)} UTC</span>
+          <span>{formatTime(flight.arrival_time)} UTC</span>
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
           <span>{flight.origin}</span>

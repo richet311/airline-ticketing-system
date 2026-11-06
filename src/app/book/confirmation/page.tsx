@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { SiteHeader } from "@/components/SiteHeader";
 import { CheckCircleIcon } from "@/components/icons";
+import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { db } from "@/lib/db";
 import type { BookingSummary, ConfirmationTicket, Payment, UpgradeType } from "@/lib/types";
 
@@ -62,7 +63,8 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
   const [tickets] = await db.query<ConfirmationTicket[]>(
     `SELECT t.e_ticket_number, t.passenger_id, p.first_name, p.last_name, t.seat_number, t.flight_fare,
             f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
-            o.airport_code AS origin, d.airport_code AS destination, cc.cabin_class_name,
+            o.airport_code AS origin, d.airport_code AS destination,
+            o.timezone AS origin_timezone, d.timezone AS destination_timezone, cc.cabin_class_name,
             COALESCE(bg.bag_count, 0) AS bag_count, COALESCE(bg.bag_fees, 0) AS bag_fees
        FROM ticket t
        JOIN passenger p    ON p.passenger_id = t.passenger_id
@@ -134,12 +136,15 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
             <div className="mb-4 flex items-baseline justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">
-                  {flights.length === 1 ? "Flight" : i === 0 ? "Depart" : "Return"} · {flight.departure_time.slice(0, 10)}
+                  {flights.length === 1 ? "Flight" : i === 0 ? "Depart" : "Return"} · {formatDate(flight.departure_time, flight.origin_timezone)}
                 </p>
                 <h2 className="text-xl font-semibold text-azure-navy">
-                  {flight.origin} {flight.departure_time.slice(11, 16)} → {flight.destination}{" "}
-                  {flight.arrival_time.slice(11, 16)} <span className="text-xs font-normal text-gray-500">UTC</span>
+                  {flight.origin} {formatLocalTime(flight.departure_time, flight.origin_timezone)} → {flight.destination}{" "}
+                  {formatLocalTime(flight.arrival_time, flight.destination_timezone)}
                 </h2>
+                <p className="text-xs text-gray-500">
+                  {formatTime(flight.departure_time)} → {formatTime(flight.arrival_time)} UTC
+                </p>
               </div>
               <p className="text-sm text-gray-500">
                 {flight.flight_number} · {cabinLabel(flight.cabin_class_name)}

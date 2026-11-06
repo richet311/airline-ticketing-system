@@ -1,5 +1,5 @@
 import { DawnCrest } from "@/components/Logo";
-import { formatDate, formatTime } from "@/lib/format";
+import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 
 export type BoardingPassData = {
   eTicketNumber: string;
@@ -11,6 +11,7 @@ export type BoardingPassData = {
   destinationCity: string;
   departureTime: string;
   boardingTime: string;
+  timeZone: string;
   gate: string | null;
   seat: string | null;
   cabin: string;
@@ -49,11 +50,12 @@ export function BoardingPass({ pass, preview = false }: { pass: BoardingPassData
         <dl className="grid grid-cols-3 gap-x-4 gap-y-4">
           <Detail label="Passenger" value={pass.passengerName} />
           <Detail label="Flight" value={pass.flightNumber.replace(/^([A-Z]+)/, "$1 ")} />
-          <Detail label="Date (UTC)" value={formatDate(pass.departureTime).replace(/, \d{4}$/, "")} />
+          <Detail label="Date" value={formatDate(pass.departureTime, pass.timeZone).replace(/, \d{4}$/, "")} />
           <Detail label="Gate" value={pass.gate ?? "TBA"} />
-          <Detail label="Boards (UTC)" value={formatTime(pass.boardingTime)} />
+          <Detail label="Boards" value={formatLocalTime(pass.boardingTime, pass.timeZone)} />
           <Detail label="Seat" value={pass.seat ?? "None"} />
         </dl>
+        <p className="mt-3 text-xs text-gray-500">Boards {formatTime(pass.boardingTime)} UTC</p>
       </div>
 
       <div className="mx-6 border-t-2 border-dashed border-gray-300" />

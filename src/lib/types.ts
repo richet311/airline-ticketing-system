@@ -321,6 +321,8 @@ export interface FlightSearchResult extends RowDataPacket {
     duration_min: number; // TIMESTAMPDIFF(MINUTE, departure_time, arrival_time)
     aircraft_type: string;
     flight_status_name: string;
+    origin_timezone: string;
+    destination_timezone: string;
 }
 
 // /book/results: one cabin's fare on a flight
@@ -339,6 +341,8 @@ export interface FlightStatusRow extends RowDataPacket {
     flight_number: string;
     origin: string;
     destination: string;
+    origin_timezone: string;
+    destination_timezone: string;
     departure_time: string;
     arrival_time: string;
     duration_min: number; // TIMESTAMPDIFF(MINUTE, departure_time, arrival_time)
@@ -375,6 +379,8 @@ export interface ConfirmationTicket extends RowDataPacket {
     arrival_time: string;
     origin: string;
     destination: string;
+    origin_timezone: string;
+    destination_timezone: string;
     cabin_class_name: string;
     bag_count: number;
     bag_fees: number;

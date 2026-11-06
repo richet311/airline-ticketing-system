@@ -18,6 +18,8 @@ import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT, OPERATIONS_MANAGER } from "
 import { getSignedInEmployee } from "@/lib/session";
 import type { Airport, AircraftListRow, FlightStatus, GateOption, MaintenanceStatus, OpsFlightRow } from "@/lib/types";
 
+export const instant = false;
+
 //This is the main employee portal page where signed in staff members can view their functions
 //It's segmented into tiles that each role can see
 export default async function AdminPage({ searchParams }: PageProps<"/employee/admin">) {

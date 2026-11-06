@@ -101,6 +101,7 @@ async function Checkout({ searchParams }: { searchParams: Promise<SearchParams> 
     `SELECT f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
             TIMESTAMPDIFF(MINUTE, f.departure_time, f.arrival_time) AS duration_min,
             o.airport_code AS origin, d.airport_code AS destination,
+            o.timezone AS origin_timezone, d.timezone AS destination_timezone,
             fs.flight_status_name
        FROM flight f
        JOIN airport o        ON o.airport_id = f.origin_airport_id

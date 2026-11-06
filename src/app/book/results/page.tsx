@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
+import { formatLocalTime, formatTime } from "@/lib/format";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportCity, FareOption, FlightSearchResult } from "@/lib/types";
@@ -219,7 +220,8 @@ async function FlightList({
   const [flights] = await db.query<FlightSearchResult[]>(
     `SELECT f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
             TIMESTAMPDIFF(MINUTE, f.departure_time, f.arrival_time) AS duration_min,
-            ac.aircraft_type, fs.flight_status_name
+            ac.aircraft_type, fs.flight_status_name,
+            o.timezone AS origin_timezone, d.timezone AS destination_timezone
        FROM flight f
        JOIN airport o        ON o.airport_id = f.origin_airport_id
        JOIN airport d        ON d.airport_id = f.destination_airport_id
@@ -299,8 +301,11 @@ function FlightInfo({ flight }: { flight: FlightSearchResult }) {
   return (
     <div>
       <p className="text-lg font-semibold text-azure-navy">
-        {flight.departure_time.slice(11, 16)} → {flight.arrival_time.slice(11, 16)}{" "}
-        <span className="text-xs font-normal text-gray-500">UTC</span>
+        {formatLocalTime(flight.departure_time, flight.origin_timezone)} →{" "}
+        {formatLocalTime(flight.arrival_time, flight.destination_timezone)}
+      </p>
+      <p className="text-xs text-gray-500">
+        {formatTime(flight.departure_time)} → {formatTime(flight.arrival_time)} UTC
       </p>
       <p className="text-xs text-gray-500">
         {Math.floor(flight.duration_min / 60)}h {flight.duration_min % 60}m · Nonstop · {flight.flight_number} ·{" "}
