@@ -7,6 +7,7 @@ import { TripActionForm } from "@/components/trips/TripActionForm";
 import { Card, FlightStatusBadge, LegSummary, TripNotFound } from "@/components/trips/TripParts";
 import { legChangeProblem } from "@/lib/bookingRules";
 import { formatDate, formatDuration, formatLocalTime, formatMoney, formatTime } from "@/lib/format";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { findReplacementFlights, getTrip, legLabel, type Trip, type TripLeg } from "@/lib/trips";
 
 import { changeFlight } from "./actions";
@@ -29,7 +30,7 @@ export default function ChangeFlightPage({ params }: PageProps<"/my-trips/[booki
 
 async function ChangeFlight({ params }: { params: Promise<{ bookingId: string }> }) {
   const bookingId = (await params).bookingId.toUpperCase();
-  const trip = await getTrip(bookingId);
+  const trip = (await canOpenTrip(bookingId)) ? await getTrip(bookingId) : null;
   if (!trip) return <TripNotFound bookingId={bookingId} backHref="/my-trips" />;
 
   const confirmed = trip.booking.booking_status_name === "CONFIRMED";

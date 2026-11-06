@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { checkInProblem, documentProblem } from "@/lib/bookingRules";
 import { getCurrentUser } from "@/lib/session";
 import { withTransaction } from "@/lib/transaction";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, lockBooking } from "@/lib/trips";
 import type { TripActionState } from "@/lib/types";
 
@@ -20,6 +21,7 @@ export async function checkIn(previousState: TripActionState, formData: FormData
   const flightId = Number(formData.get("flight_id"));
   const chosen = formData.getAll("e_ticket_number").map(String);
   if (chosen.length === 0) return { error: "Choose at least one traveler to check in." };
+  if (!(await canOpenTrip(bookingId))) return { error: "We couldn't find this trip." };
   const userId = (await getCurrentUser())?.user_id ?? SYSTEM_USER_ID;
 
   try {
@@ -57,6 +59,8 @@ export async function checkIn(previousState: TripActionState, formData: FormData
     });
   } catch (error) {
     if (error instanceof Refused) return { error: error.message };
+    // a database rule (trigger) refused it
+    if ((error as { sqlState?: string }).sqlState === "45000") return { error: (error as Error).message };
     throw error;
   }
 

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
-import { formatLocalTime, formatTime } from "@/lib/format";
+import { formatLocalTime, formatTime, isCalendarDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportCity, FareOption, FlightSearchResult } from "@/lib/types";
@@ -217,7 +217,10 @@ async function FlightList({
   hrefFor: (fareClassId: number) => string;
 }) {
   // Known issue: DATE() is the UTC day, so late-evening flights show under the next day.
-  const [flights] = await db.query<FlightSearchResult[]>(
+  // An impossible date typed into the URL finds nothing instead of reaching the database.
+  const [flights] = !isCalendarDate(day)
+    ? [[] as FlightSearchResult[]]
+    : await db.query<FlightSearchResult[]>(
     `SELECT f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
             TIMESTAMPDIFF(MINUTE, f.departure_time, f.arrival_time) AS duration_min,
             ac.aircraft_type, fs.flight_status_name,

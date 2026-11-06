@@ -49,7 +49,8 @@ ALTER TABLE notification AUTO_INCREMENT = 90001;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- password_hash holds each user's password as plain text (the class doesn't need real hashes).
+-- password_hash starts as each user's demo password in plain text, so these logins are easy to look up.
+-- The app replaces it with a scrypt hash the first time that account signs in. New accounts are hashed from the start.
 INSERT INTO user (user_id, email, phone_number, password_hash, loyalty_points, created_by, created_at, updated_by, last_updated) VALUES
 (1, 'SysAdmin@AzureAir.net', '1234567890', 'TestAdminLogin123', 1500, 1, NOW(), 1, NOW()),
 (2, 'TestPassenger@AzureAir.net', '1111111111', 'TestPassengerPW123', 0, 1, NOW(), 1, NOW()),

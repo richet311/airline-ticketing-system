@@ -12,9 +12,11 @@ import {
   cabinChangeCost,
   CHANGEABLE_FLIGHT_STATUSES,
   cancellationRefund,
+  flightHasDeparted,
   roundCents,
   statusChangeProblem,
 } from "@/lib/bookingRules";
+import { refundPoints } from "@/lib/rewards";
 import { CUSTOMER_SERVICE_AGENT } from "@/lib/roles";
 import { withTransaction } from "@/lib/transaction";
 
@@ -56,6 +58,8 @@ export async function confirmBookingChanges(changes: BookingChange[]): Promise<C
     });
   } catch (error) {
     if (error instanceof Refused) return { ok: false, error: error.message };
+    // a database rule (trigger) refused it
+    if ((error as { sqlState?: string }).sqlState === "45000") return { ok: false, error: (error as Error).message };
     throw error;
   }
 
@@ -88,7 +92,7 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
 
   const [tickets] = await conn.query<RowDataPacket[]>(
     `SELECT t.e_ticket_number, t.flight_id, t.fare_class_id, t.seat_number, t.flight_fare, fc.change_fee,
-            fs.flight_status_name
+            fs.flight_status_name, f.flight_number, TIMESTAMPDIFF(MINUTE, NOW(), f.departure_time) AS minutes_to_departure
        FROM ticket t
        JOIN fare_class fc    ON fc.fare_class_id = t.fare_class_id
        JOIN flight f         ON f.flight_id = t.flight_id
@@ -99,8 +103,13 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
   );
   for (const ticket of tickets) flightsTouched.add(ticket.flight_id);
 
-  //In the event of cancelling, free the seat(s) and refund everything paid
+  //In the event of cancelling, free the seat(s), refund everything paid and take back the points it earned.
+  //A booking with a flight that already left can't be cancelled, so a flown trip is never refunded.
   if (newStatus === "CANCELLED") {
+    const flown = tickets.find((ticket) =>
+      flightHasDeparted({ flight_status_name: ticket.flight_status_name, minutes_to_departure: Number(ticket.minutes_to_departure) }),
+    );
+    if (flown) throw new Refused(`${flown.flight_number} has already left, so this booking can't be cancelled or refunded.`);
     const refund = cancellationRefund(paid);
     await conn.query(
       `UPDATE seat s JOIN ticket t ON t.flight_id = s.flight_id AND t.seat_number = s.seat_number
@@ -114,6 +123,7 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
     ]);
     await saveBooking(conn, change.bookingId, "CANCELLED", roundCents(paid - refund), userId);
     if (refund > 0) await addPayment(conn, change.bookingId, "REFUNDED", refund, userId);
+    await refundPoints(conn, change.bookingId, userId);
     return;
   }
 

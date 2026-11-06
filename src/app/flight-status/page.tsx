@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FlightStatusSearch, type StatusSearchValues } from "@/components/flight-status/FlightStatusSearch";
-import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
+import { formatDate, formatLocalTime, formatTime, isCalendarDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportOption, FlightStatusRow } from "@/lib/types";
@@ -65,6 +65,7 @@ async function StatusResults({ searchParams }: { searchParams: Promise<SearchPar
 
   // search by flight number and date (same UTC day issue as /book/results)
   if (search.flightNumber !== "") {
+    if (!isCalendarDate(search.date)) return <MessageBox>Choose a departure date to look up {search.flightNumber}.</MessageBox>;
     const [flights] = await db.query<FlightStatusRow[]>(
       `${STATUS_SELECT}
         WHERE f.flight_number = ? AND DATE(f.departure_time) = ?
@@ -140,7 +141,7 @@ function StatusTable({ flights }: { flights: FlightStatusRow[] }) {
 }
 
 function StatusRow({ flight }: { flight: FlightStatusRow }) {
-  const status = flightStatusDisplay(flight.flight_status_name);
+  const status = flightStatusDisplay(flight.flight_status_name, flight.departure_time);
 
   const departureDay = formatDate(flight.departure_time, flight.origin_timezone);
   const arrivesNextDay = formatDate(flight.arrival_time, flight.destination_timezone) !== departureDay;

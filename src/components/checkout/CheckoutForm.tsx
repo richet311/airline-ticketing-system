@@ -301,6 +301,9 @@ export function CheckoutForm({
           {pending ? "Processing..." : `Purchase · ${formatPrice(total)}`}
         </button>
         <p className="text-xs text-gray-500">
+          Your seats are held for 15 minutes while you check out. If you leave before paying, they&apos;re released.
+        </p>
+        <p className="text-xs text-gray-500">
           All fares are fully refundable. Changing cabins costs the cabin&apos;s change fee. See Travel info for the full policy.
         </p>
       </aside>

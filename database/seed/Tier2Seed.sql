@@ -71,7 +71,7 @@ INSERT INTO gate (gate_id, gate_number, gate_status_id, terminal_id, created_by,
 (40008, 'B12', 1, 30008, 1, NOW(), 1, NOW()),
 (40009, '63', 1, 30009, 1, NOW(), 1, NOW()),
 (40010, 'K12', 1, 30010, 1, NOW(), 1, NOW()),
-(40011, 'A26', 2, 30011, 1, NOW(), 1, NOW()), -- AZ640 boarding here
+(40011, 'A26', 1, 30011, 1, NOW(), 1, NOW()), -- AZ640 boarding here (AVAILABLE so the gate agent can board it)
 (40012, 'B14', 1, 30012, 1, NOW(), 1, NOW()),
 (40013, 'D24', 1, 30013, 1, NOW(), 1, NOW()),
 (40014, 'A10', 1, 30001, 1, NOW(), 1, NOW()),

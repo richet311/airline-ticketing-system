@@ -4,7 +4,7 @@ import type { RowDataPacket } from "mysql2";
 
 import { db } from "@/lib/db";
 import { bookingPath } from "@/lib/loginRedirect";
-import { checkPassword, endSession, startSession } from "@/lib/session";
+import { checkPassword, endSession, isPlainTextPassword, startSession, upgradePassword } from "@/lib/session";
 
 // same message for both, so it doesn't reveal which emails have accounts
 const WRONG_LOGIN = "That email and password don't match an account.";
@@ -24,6 +24,7 @@ export async function customerLogin(
   if (users.length === 0 || !(await checkPassword(password, users[0].password_hash))) {
     return { error: WRONG_LOGIN, email };
   }
+  if (isPlainTextPassword(users[0].password_hash)) await upgradePassword(users[0].user_id, password);
 
   await startSession(users[0].user_id, keepLoggedIn);
   return { error: "", email, redirectTo: bookingPath(formData.get("next")) ?? "/my-trips" };

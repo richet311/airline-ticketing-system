@@ -6,6 +6,7 @@ import { cancellationRefund, cancelProblem, roundCents } from "@/lib/bookingRule
 import { refundPoints } from "@/lib/rewards";
 import { getCurrentUser } from "@/lib/session";
 import { withTransaction } from "@/lib/transaction";
+import { canOpenTrip } from "@/lib/tripAccess";
 import { addPayment, AVAILABLE, getTrip, lockBooking, recountSeats } from "@/lib/trips";
 import type { TripActionState } from "@/lib/types";
 
@@ -18,6 +19,7 @@ class Refused extends Error {}
 // payment row, and the points it earned are taken back. Rows are never deleted.
 export async function cancelTrip(previousState: TripActionState, formData: FormData): Promise<TripActionState> {
   const bookingId = String(formData.get("booking_id") ?? "").trim().toUpperCase();
+  if (!(await canOpenTrip(bookingId))) return { error: "We couldn't find this trip." };
   const userId = (await getCurrentUser())?.user_id ?? SYSTEM_USER_ID;
 
   try {

@@ -29,8 +29,8 @@ export function BookingStatusPill({ status }: { status: string }) {
   );
 }
 
-export function FlightStatusBadge({ status }: { status: string }) {
-  const display = flightStatusDisplay(status);
+export function FlightStatusBadge({ status, departureTime }: { status: string; departureTime?: string }) {
+  const display = flightStatusDisplay(status, departureTime);
   return (
     <span className={`inline-block rounded-control px-2 py-0.5 text-xs font-semibold ${display.badgeClass}`}>
       {display.label}
@@ -67,7 +67,7 @@ export function LegSummary({ label, flight }: { label: string; flight: TripTicke
         </div>
       </div>
       <div className="space-y-1 text-right text-sm text-gray-600">
-        <FlightStatusBadge status={flight.flight_status_name} />
+        <FlightStatusBadge status={flight.flight_status_name} departureTime={flight.departure_time} />
         <p>
           {flight.flight_number} · {cabinLabel(flight.cabin_class_name)}
         </p>
