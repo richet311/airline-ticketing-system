@@ -876,3 +876,81 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE TRIGGER check_no_check_in_after_departure
+BEFORE UPDATE ON ticket
+FOR EACH ROW
+BEGIN
+    -- A passenger can't check in once the flight has left (or was cancelled)
+    IF NEW.checked_in = 1 AND IFNULL(OLD.checked_in, 0) = 0
+       AND (SELECT fs.flight_status_name
+              FROM flight AS f
+              JOIN flight_status AS fs ON fs.flight_status_id = f.flight_status_id
+             WHERE f.flight_id = NEW.flight_id) IN ('DEPARTED', 'ARRIVED', 'CANCELLED')
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This flight has already left or was cancelled, so it can''t be checked in.';
+    END IF;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE TRIGGER check_flight_not_oversold
+BEFORE INSERT ON ticket
+FOR EACH ROW
+BEGIN
+    -- A flight can't sell more seated tickets than its aircraft has seats
+    IF NEW.seat_number IS NOT NULL
+       AND (SELECT COUNT(*) FROM ticket AS t WHERE t.flight_id = NEW.flight_id AND t.seat_number IS NOT NULL)
+           >= (SELECT a.capacity FROM flight AS f JOIN aircraft AS a ON a.aircraft_id = f.aircraft_id WHERE f.flight_id = NEW.flight_id)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This flight is sold out.';
+    END IF;
+END$$
+
+CREATE TRIGGER check_flight_not_oversold_on_change
+BEFORE UPDATE ON ticket
+FOR EACH ROW
+BEGIN
+    -- Same rule for a ticket moving to a different flight (My Trips > Change flight)
+    IF NEW.flight_id <> OLD.flight_id AND NEW.seat_number IS NOT NULL
+       AND (SELECT COUNT(*) FROM ticket AS t WHERE t.flight_id = NEW.flight_id AND t.seat_number IS NOT NULL)
+           >= (SELECT a.capacity FROM flight AS f JOIN aircraft AS a ON a.aircraft_id = f.aircraft_id WHERE f.flight_id = NEW.flight_id)
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This flight is sold out.';
+    END IF;
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE TRIGGER check_flight_status_order
+BEFORE UPDATE ON flight
+FOR EACH ROW
+BEGIN
+    -- Statuses only move forward: a departed flight can only land, and arrived or cancelled flights are final
+    DECLARE v_old VARCHAR(20);
+    DECLARE v_new VARCHAR(20);
+
+    IF NEW.flight_status_id <> OLD.flight_status_id THEN
+        SELECT flight_status_name INTO v_old FROM flight_status WHERE flight_status_id = OLD.flight_status_id;
+        SELECT flight_status_name INTO v_new FROM flight_status WHERE flight_status_id = NEW.flight_status_id;
+
+        IF v_old = 'ARRIVED' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'This flight has arrived, so its status can''t change.';
+        ELSEIF v_old = 'CANCELLED' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A cancelled flight can''t be reopened. Schedule a new flight instead.';
+        ELSEIF v_old = 'DEPARTED' AND v_new <> 'ARRIVED' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A departed flight can only move to Arrived.';
+        END IF;
+    END IF;
+END$$
+
+DELIMITER ;
