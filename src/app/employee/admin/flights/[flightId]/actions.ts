@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { db } from "@/lib/db";
+import { flightStatusChangeProblem } from "@/lib/flightRules";
 import { ASSIGNABLE_GATE_STATUS, gateRequired, missingGateMessage } from "@/lib/gateRules";
 import { OPERATIONS_MANAGER } from "@/lib/roles";
 
@@ -74,10 +75,15 @@ export async function updateFlightStatus(input: { flightId: number; status: stri
   if (!employee) return { ok: false, error: "Only Operations Managers and System Administrators can change statuses." };
 
   const [flights] = await db.query<RowDataPacket[]>(
-    "SELECT departure_gate_id, arrival_gate_id FROM flight WHERE flight_id = ?",
+    `SELECT f.departure_gate_id, f.arrival_gate_id, fs.flight_status_name
+       FROM flight f
+       JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
+      WHERE f.flight_id = ?`,
     [input.flightId],
   );
   if (flights.length === 0) return { ok: false, error: "That flight no longer exists." };
+  const backwards = flightStatusChangeProblem(flights[0].flight_status_name, input.status);
+  if (backwards) return { ok: false, error: backwards };
   const missing = missingGateMessage(input.status, flights[0].departure_gate_id !== null, flights[0].arrival_gate_id !== null);
   if (missing) return { ok: false, error: missing };
 

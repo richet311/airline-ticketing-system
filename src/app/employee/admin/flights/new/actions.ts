@@ -41,6 +41,7 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
   const durationMinutes = (Date.parse(`${arrival.replace(" ", "T")}Z`) - Date.parse(`${departure.replace(" ", "T")}Z`)) / 60000;
   if (durationMinutes <= 0) return fail("Arrival must be after departure.");
   if (durationMinutes > MAX_FLIGHT_HOURS * 60) return fail(`A flight can't be longer than ${MAX_FLIGHT_HOURS} hours. Check the dates.`);
+  if (Date.parse(`${departure.replace(" ", "T")}Z`) <= Date.now()) return fail("Departure must be in the future (UTC).");
   if (!Number.isInteger(distance) || distance <= 0) return fail("Distance is in miles and is greater than 0.");
 
   const cabins = CABINS.map((cabin) => ({
@@ -69,6 +70,19 @@ export async function scheduleFlight(previousState: AdminFormState, formData: Fo
   if (rowTotal !== planeRows) {
     return fail(`The cabins add up to ${rowTotal} rows, but ${values.aircraft} has ${planeRows}.`);
   }
+
+  // one plane can't fly two flights at once
+  const [busy] = await db.query<RowDataPacket[]>(
+    `SELECT f.flight_number
+       FROM flight f
+       JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
+      WHERE f.aircraft_id = ? AND fs.flight_status_name <> 'CANCELLED'
+        AND f.departure_time < ? AND f.arrival_time > ?
+      ORDER BY f.departure_time
+      LIMIT 1`,
+    [aircraft[0].aircraft_id, arrival, departure],
+  );
+  if (busy.length > 0) return fail(`${values.aircraft} is flying ${busy[0].flight_number} then. Choose another aircraft or time.`);
 
   try {
     await withTransaction(async (conn) => {

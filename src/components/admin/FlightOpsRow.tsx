@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { updateFlightGate, updateFlightStatus, type FlightUpdateResult } from "@/app/employee/admin/flights/[flightId]/actions";
-import { attentionReason } from "@/lib/flightRules";
+import { attentionReason, flightStatusChangeProblem } from "@/lib/flightRules";
 import { formatDate, formatTime } from "@/lib/format";
 import { ASSIGNABLE_GATE_STATUS, gateRequired, missingGateMessage } from "@/lib/gateRules";
 import type { OpsFlightRow } from "@/lib/types";
@@ -105,7 +105,13 @@ export function FlightOpsRow({
       <td className="py-2 pr-4">
         <select value={status} disabled={pending} onChange={(event) => changeStatus(event.target.value)} className={adminInputClass}>
           {statuses.map((name) => (
-            <option key={name} disabled={missingGateMessage(name, departureGate !== "", arrivalGate !== "") !== null}>
+            <option
+              key={name}
+              disabled={
+                missingGateMessage(name, departureGate !== "", arrivalGate !== "") !== null ||
+                flightStatusChangeProblem(status, name) !== null
+              }
+            >
               {name}
             </option>
           ))}

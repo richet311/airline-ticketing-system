@@ -32,7 +32,9 @@ const TIME_FIELDS = [
   { label: "Arrival time (UTC)", field: "arrival_time", type: "time" },
 ] as const;
 
+// null until all four fields are filled (the browser reads a blank date as Jan 1, 2000)
 function minutesBetween(times: typeof NO_TIMES): number | null {
+  if (Object.values(times).some((value) => value === "")) return null;
   const departs = Date.parse(`${times.departure_date}T${times.departure_time}:00Z`);
   const arrives = Date.parse(`${times.arrival_date}T${times.arrival_time}:00Z`);
   return Number.isNaN(departs) || Number.isNaN(arrives) ? null : (arrives - departs) / 60000;
