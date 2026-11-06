@@ -10,6 +10,9 @@ import { getCurrentUser } from "@/lib/session";
 // keep in sync with the countdown in SeatSelector
 const HOLD_MINUTES = 10;
 
+// once seats are chosen, they stay HELD this long while the customer checks out (keep in sync with CheckoutForm)
+const CHECKOUT_HOLD_MINUTES = 15;
+
 const AVAILABLE = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'AVAILABLE')";
 const HELD = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'HELD')";
 const BOOKED = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'BOOKED')";
@@ -45,6 +48,14 @@ async function releaseExpiredHolds(conn: PoolConnection, flightId: number) {
   await conn.query(
     `UPDATE seat SET seat_status_id = ${AVAILABLE}, held_until = NULL, last_updated = NOW()
       WHERE flight_id = ? AND seat_status_id = ${HELD} AND held_until <= NOW()`,
+    [flightId],
+  );
+  // seats left BOOKED with no ticket by the old checkout flow (chosen but never paid for) go back on sale
+  await conn.query(
+    `UPDATE seat s SET s.seat_status_id = ${AVAILABLE}, s.held_until = NULL, s.last_updated = NOW()
+      WHERE s.flight_id = ? AND s.seat_status_id = ${BOOKED}
+        AND s.last_updated < NOW() - INTERVAL ${CHECKOUT_HOLD_MINUTES} MINUTE
+        AND NOT EXISTS (SELECT 1 FROM ticket t WHERE t.flight_id = s.flight_id AND t.seat_number = s.seat_number)`,
     [flightId],
   );
 }
@@ -121,8 +132,8 @@ export async function releaseSeats(input: {
   return { ok: true };
 }
 
-// HELD -> BOOKED, then on to the return flight's seats or checkout.
-// TODO: seats stay BOOKED with no ticket if the user leaves before paying
+// Keeps the chosen seats HELD for checkout, then goes on to the return flight's seats or checkout.
+// Checkout turns them BOOKED when it's paid. If the customer leaves, the hold runs out and they go back on sale.
 export async function confirmSeats(input: {
   outbound: number;
   returnFare: number | null;
@@ -147,14 +158,17 @@ export async function confirmSeats(input: {
 
   const booked = await inTransaction(async (conn) => {
     await releaseExpiredHolds(conn, flightId);
-    const [result] = await conn.query<ResultSetHeader>(
-      `UPDATE seat SET seat_status_id = ${BOOKED}, held_until = NULL, last_updated = NOW()
-        WHERE flight_id = ? AND seat_number IN (?) AND seat_status_id = ${HELD}`,
-      [flightId, input.seats],
-    );
     // a hold ran out, undo everything
-    if (result.affectedRows !== input.seats.length) {
-      throw new HoldExpiredError();
+    if (!(await extendForCheckout(conn, flightId, input.seats))) throw new HoldExpiredError();
+
+    // the outbound seats get the same checkout time once the return seats are chosen
+    if (input.leg === "return" && input.outboundSeats.length > 0) {
+      const [outboundFares] = await conn.query<RowDataPacket[]>("SELECT flight_id FROM fare_class WHERE fare_class_id = ?", [
+        input.outbound,
+      ]);
+      if (outboundFares.length === 0 || !(await extendForCheckout(conn, outboundFares[0].flight_id, input.outboundSeats))) {
+        throw new HoldExpiredError();
+      }
     }
     await recountSeats(conn, flightId);
     return true;
@@ -184,3 +198,21 @@ export async function confirmSeats(input: {
 }
 
 class HoldExpiredError extends Error {}
+
+// True when every seat is still HELD (not expired), after giving them CHECKOUT_HOLD_MINUTES more
+async function extendForCheckout(conn: PoolConnection, flightId: number, seatNumbers: string[]): Promise<boolean> {
+  const [held] = await conn.query<RowDataPacket[]>(
+    `SELECT seat_number FROM seat
+      WHERE flight_id = ? AND seat_number IN (?) AND seat_status_id = ${HELD} AND held_until > NOW()
+        FOR UPDATE`,
+    [flightId, seatNumbers],
+  );
+  if (held.length !== new Set(seatNumbers).size) return false;
+
+  await conn.query(
+    `UPDATE seat SET held_until = NOW() + INTERVAL ${CHECKOUT_HOLD_MINUTES} MINUTE, last_updated = NOW()
+      WHERE flight_id = ? AND seat_number IN (?) AND seat_status_id = ${HELD}`,
+    [flightId, seatNumbers],
+  );
+  return true;
+}

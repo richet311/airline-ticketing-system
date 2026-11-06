@@ -6,7 +6,9 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/prom
 
 import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import { db } from "@/lib/db";
+import { formatMoney } from "@/lib/format";
 import { awardPoints } from "@/lib/rewards";
+import { rememberTrip } from "@/lib/tripAccess";
 import { LOGIN_REQUIRED } from "@/lib/loginRedirect";
 import { getCurrentUser } from "@/lib/session";
 import type { FareOption, UpgradeType } from "@/lib/types";
@@ -19,6 +21,7 @@ const BOOKED_BAG_WEIGHT_LB = 50;
 
 const MAX_PASSENGERS = 9;
 
+const HELD = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'HELD')";
 const BOOKED = "(SELECT seat_status_id FROM seat_status WHERE seat_status_name = 'BOOKED')";
 const CONFIRMED = "(SELECT booking_status_id FROM booking_status WHERE booking_status_name = 'CONFIRMED')";
 const CHECKED = "(SELECT baggage_status_id FROM baggage_status WHERE baggage_status_name = 'CHECKED')";
@@ -210,6 +213,21 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
         [newBookingId, total, paymentMethod, idempotencyKey, SYSTEM_USER_ID, SYSTEM_USER_ID],
       );
 
+      // "booking confirmed" message in the customer's inbox, worded like the seeded ones
+      await conn.query(
+        `INSERT INTO notification (user_id, notification_type, booking_id, subject, body,
+                                   created_by, created_at, updated_by, last_updated)
+         VALUES (?, 'ETICKET', ?, ?, ?, ?, NOW(), ?, NOW())`,
+        [
+          user.user_id,
+          newBookingId,
+          `Booking ${newBookingId} is confirmed`,
+          `Thanks for flying with Azure Air. Your booking ${newBookingId} is confirmed and paid (${formatMoney(total)}). Your e-tickets are on your trip page.`,
+          SYSTEM_USER_ID,
+          SYSTEM_USER_ID,
+        ],
+      );
+
       return newBookingId;
     });
   } catch (error) {
@@ -226,6 +244,7 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
     console.error(`Couldn't award points for booking ${bookingId}:`, error);
   });
 
+  await rememberTrip(bookingId);
   redirect(`/book/confirmation?booking=${bookingId}`);
 }
 
@@ -272,7 +291,7 @@ function isDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
 }
 
-// Makes sure the flight can still be sold and locks its seats.
+// Makes sure the flight can still be sold and its seats are still held, then books them (HELD -> BOOKED).
 async function checkLeg(conn: PoolConnection, leg: Leg) {
   const [flights] = await conn.query<RowDataPacket[]>(
     `SELECT f.flight_number
@@ -290,12 +309,15 @@ async function checkLeg(conn: PoolConnection, leg: Leg) {
     `SELECT s.seat_number
        FROM seat s
        JOIN fare_class fc ON fc.flight_id = s.flight_id AND fc.cabin_class_id = s.cabin_class_id
-      WHERE s.flight_id = ? AND s.seat_number IN (?) AND fc.fare_class_id = ? AND s.seat_status_id = ${BOOKED}
+      WHERE s.flight_id = ? AND s.seat_number IN (?) AND fc.fare_class_id = ?
+        AND s.seat_status_id = ${HELD} AND s.held_until > NOW()
         FOR UPDATE`,
     [leg.fare.flight_id, leg.seats, leg.fare.fare_class_id],
   );
   if (seats.length !== new Set(leg.seats).size || seats.length !== leg.seats.length) {
-    throw new CheckoutError(`Your seats on ${flights[0].flight_number} aren't reserved anymore. Please choose them again.`);
+    throw new CheckoutError(
+      `Your seat hold on ${flights[0].flight_number} ran out, so the seats were released. Please choose them again.`,
+    );
   }
 
   const [tickets] = await conn.query<RowDataPacket[]>(
@@ -307,6 +329,12 @@ async function checkLeg(conn: PoolConnection, leg: Leg) {
       `Your seats on ${flights[0].flight_number} have already been purchased. Find the booking in My Trips.`,
     );
   }
+
+  await conn.query(
+    `UPDATE seat SET seat_status_id = ${BOOKED}, held_until = NULL, last_updated = NOW()
+      WHERE flight_id = ? AND seat_number IN (?)`,
+    [leg.fare.flight_id, leg.seats],
+  );
 }
 
 // Reuses the passenger if the passport is already on file, otherwise adds a new one.
