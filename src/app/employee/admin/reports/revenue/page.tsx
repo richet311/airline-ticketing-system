@@ -6,10 +6,9 @@ import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
-import { addDateRange, readReportFilters, REPORTS } from "@/lib/reports";
+import { addDateRange, DEFAULT_MIN_TICKETS, readReportFilters, REPORTS } from "@/lib/reports";
 import type { CabinClass, RouteAirportsRow, RouteRevenueRow } from "@/lib/types";
 
-const DEFAULT_MIN_TICKETS = 5;
 const cell = "py-2 pr-4";
 
 export default function RevenueReportPage({ searchParams }: PageProps<"/employee/admin/reports/revenue">) {

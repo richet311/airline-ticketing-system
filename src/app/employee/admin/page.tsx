@@ -1,3 +1,4 @@
+import type { RowDataPacket } from "mysql2";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -9,6 +10,7 @@ import { AircraftRow } from "@/components/admin/AircraftRow";
 import { AirportRow } from "@/components/admin/AirportRow";
 import { FlightOpsRow } from "@/components/admin/FlightOpsRow";
 import { ScheduleFlightForm } from "@/components/admin/ScheduleFlightForm";
+import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { bookingFilterParams, BookingsTile } from "@/components/agent/BookingsTile";
 import { EmployeeHeader } from "@/components/employee/EmployeeHeader";
 import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
@@ -19,6 +21,11 @@ import { getSignedInEmployee } from "@/lib/session";
 import type { Airport, AircraftListRow, FlightStatus, GateOption, MaintenanceStatus, OpsFlightRow } from "@/lib/types";
 
 export const instant = false;
+
+type SearchParams = Awaited<PageProps<"/employee/admin">["searchParams"]>;
+
+const BASE_PATH = "/employee/admin";
+const TILE_PAGE_SIZE = 10;
 
 //This is the main employee portal page where signed in staff members can view their functions
 //It's segmented into tiles that each role can see
@@ -43,10 +50,10 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
   const gateFlight = gateFlightFromUrl(params);
 
   const tiles = [
-    canUse(role, []) && <AircraftTile key="aircraft" />,
-    canUse(role, []) && <AirportsTile key="airports" />,
+    canUse(role, []) && <AircraftTile key="aircraft" params={params} />,
+    canUse(role, []) && <AirportsTile key="airports" params={params} />,
     canUse(role, []) && <FlightsTile key="flights" />,
-    canUse(role, [OPERATIONS_MANAGER]) && <ScheduledFlightsTile key="scheduled-flights" />,
+    canUse(role, [OPERATIONS_MANAGER]) && <ScheduledFlightsTile key="scheduled-flights" params={params} />,
     canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" params={params} basePath="/employee/admin" />,
     canUse(role, [GATE_AGENT]) && (
       <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/admin" keep={bookingFilterParams(params)} />
@@ -71,12 +78,17 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
   );
 }
 
-async function AircraftTile() {
+async function AircraftTile({ params }: { params: SearchParams }) {
+  const [[counted]] = await db.query<RowDataPacket[]>("SELECT COUNT(*) AS total FROM aircraft");
+  const total = Number(counted.total);
+  const page = pageNumber(params, "aircraft_page", total, TILE_PAGE_SIZE);
   const [aircraft] = await db.query<AircraftListRow[]>(
     `SELECT a.aircraft_id, a.aircraft_number, a.aircraft_type, a.capacity, m.maintenance_status_name
        FROM aircraft a
        JOIN maintenance_status m ON m.maintenance_status_id = a.maintenance_status_id
-      ORDER BY a.aircraft_number`,
+      ORDER BY a.aircraft_number
+      LIMIT ? OFFSET ?`,
+    [TILE_PAGE_SIZE, (page - 1) * TILE_PAGE_SIZE],
   );
   const [statuses] = await db.query<MaintenanceStatus[]>(
     "SELECT * FROM maintenance_status ORDER BY maintenance_status_id",
@@ -90,12 +102,19 @@ async function AircraftTile() {
           <AircraftRow key={plane.aircraft_id} plane={plane} statuses={statuses.map((status) => status.maintenance_status_name)} />
         ))}
       </AdminTable>
+      <TilePager basePath={BASE_PATH} params={params} name="aircraft_page" page={page} size={TILE_PAGE_SIZE} total={total} noun="Aircraft" />
     </AdminTile>
   );
 }
 
-async function AirportsTile() {
-  const [airports] = await db.query<Airport[]>("SELECT * FROM airport ORDER BY airport_code");
+async function AirportsTile({ params }: { params: SearchParams }) {
+  const [[counted]] = await db.query<RowDataPacket[]>("SELECT COUNT(*) AS total FROM airport");
+  const total = Number(counted.total);
+  const page = pageNumber(params, "airports_page", total, TILE_PAGE_SIZE);
+  const [airports] = await db.query<Airport[]>("SELECT * FROM airport ORDER BY airport_code LIMIT ? OFFSET ?", [
+    TILE_PAGE_SIZE,
+    (page - 1) * TILE_PAGE_SIZE,
+  ]);
 
   return (
     <AdminTile overline="Network" title="Airports">
@@ -105,6 +124,7 @@ async function AirportsTile() {
           <AirportRow key={airport.airport_id} airport={airport} />
         ))}
       </AdminTable>
+      <TilePager basePath={BASE_PATH} params={params} name="airports_page" page={page} size={TILE_PAGE_SIZE} total={total} noun="Airports" />
     </AdminTile>
   );
 }
@@ -130,7 +150,7 @@ async function FlightsTile() {
 }
 
 //Pulling attributes from the db for scheduled flights
-async function ScheduledFlightsTile() {
+async function ScheduledFlightsTile({ params }: { params: SearchParams }) {
   const [flights] = await db.query<OpsFlightRow[]>(
     `SELECT f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
             TIMESTAMPDIFF(MINUTE, f.departure_time, f.arrival_time) AS duration_min,
@@ -169,6 +189,8 @@ async function ScheduledFlightsTile() {
         pastArrival: flight.past_arrival === 1,
       }) !== null,
   ).length;
+  const page = pageNumber(params, "flights_page", flights.length, TILE_PAGE_SIZE);
+  const shown = flights.slice((page - 1) * TILE_PAGE_SIZE, page * TILE_PAGE_SIZE);
 
   return (
     <AdminTile overline="Flight operations" title="Scheduled flights">
@@ -181,7 +203,7 @@ async function ScheduledFlightsTile() {
         )}
       </p>
       <AdminTable headings={["Flight", "Route", "Departs (UTC)", "Aircraft", "Departure gate", "Arrival gate", "Status"]}>
-        {flights.map((flight) => (
+        {shown.map((flight) => (
           <FlightOpsRow
             key={flight.flight_id}
             flight={flight}
@@ -191,6 +213,15 @@ async function ScheduledFlightsTile() {
           />
         ))}
       </AdminTable>
+      <TilePager
+        basePath={BASE_PATH}
+        params={params}
+        name="flights_page"
+        page={page}
+        size={TILE_PAGE_SIZE}
+        total={flights.length}
+        noun="Flights"
+      />
     </AdminTile>
   );
 }

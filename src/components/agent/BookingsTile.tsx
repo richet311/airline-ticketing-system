@@ -3,6 +3,7 @@ import Form from "next/form";
 import Link from "next/link";
 
 import { AdminTile, adminButtonClass, adminInputClass, adminLabelClass } from "@/components/admin/AdminTile";
+import { TilePager } from "@/components/admin/TilePager";
 import { RoutePicker } from "@/components/reports/RoutePicker";
 import { db } from "@/lib/db";
 import type {
@@ -18,7 +19,7 @@ import { BookingsEditor } from "./BookingsEditor";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 20;
 const FILTER_NAMES = ["booking", "flight", "origin", "destination"] as const;
 
 const TICKET_JOINS = `
@@ -172,8 +173,6 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
     const query = new URLSearchParams(Object.entries({ ...kept, ...extra }).filter(([, value]) => value !== ""));
     return query.size > 0 ? `${basePath}?${query}` : basePath;
   };
-  const first = (page - 1) * PAGE_SIZE + 1;
-  const last = Math.min(page * PAGE_SIZE, total);
 
   return (
     <AdminTile overline="Customer service" title="Bookings">
@@ -240,25 +239,7 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
             bagWeights={bagWeights}
             statuses={statuses.map((status) => status.booking_status_name)}
           />
-          <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4 text-sm">
-            {page > 1 ? (
-              <Link href={hrefFor({ page: String(page - 1) })} scroll={false} className="font-semibold text-azure-blue hover:underline">
-                ← Previous 25
-              </Link>
-            ) : (
-              <span className="text-gray-400">← Previous 25</span>
-            )}
-            <span className="text-gray-600">
-              Bookings {first}–{last} of {total}
-            </span>
-            {last < total ? (
-              <Link href={hrefFor({ page: String(page + 1) })} scroll={false} className="font-semibold text-azure-blue hover:underline">
-                Next 25 →
-              </Link>
-            ) : (
-              <span className="text-gray-400">Next 25 →</span>
-            )}
-          </div>
+          <TilePager basePath={basePath} params={params} name="page" page={page} size={PAGE_SIZE} total={total} noun="Bookings" />
         </>
       )}
     </AdminTile>
