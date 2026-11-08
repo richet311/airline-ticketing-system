@@ -706,6 +706,11 @@ ALTER TABLE notification
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS check_passport_expiry_is_after_flight_departure$$
+DROP TRIGGER IF EXISTS check_passport_expiry_on_flight_change$$
+
+DELIMITER $$
+
 CREATE TRIGGER check_passport_expiry_is_after_flight_departure
 BEFORE INSERT ON ticket
 FOR EACH ROW
@@ -719,7 +724,7 @@ BEGIN
            AND OrigArprt.country <> DestArprt.country -- the origin and destination airports' countries have to NOT be equal to each other to be an international flight, where passports are necessary
            AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time))) > 0 -- this condition captures all tuples that should not be allowed under a semantic constraint
           THEN SIGNAL SQLSTATE '45000' -- error code with error message that's to be displayed to the customer
-           SET MESSAGE_TEXT = 'Your passport expires before this flight departs.';
+           SET MESSAGE_TEXT = 'Your passport expires before this flight departs.'; -- you cannot fly international with an expired passport
     END IF;
 END$$
 
@@ -731,9 +736,7 @@ CREATE TRIGGER check_passport_expiry_on_flight_change
 BEFORE UPDATE ON ticket
 FOR EACH ROW
 BEGIN
-    -- Same rule as check_passport_expiry_is_after_flight_departure, for tickets that move to a different flight
-    -- (My Trips > Change flight) or to a different passenger. Check-in, boarding, and seat updates keep the same
-    -- flight and passenger, so they skip the check.
+    -- Same rule as check_passport_expiry_is_after_flight_departure, for tickets that move to a different flight/passenger
     IF (NEW.flight_id <> OLD.flight_id OR NEW.passenger_id <> OLD.passenger_id)
        AND (SELECT COUNT(*)
               FROM flight AS f
@@ -741,7 +744,7 @@ BEGIN
               JOIN airport AS DestArprt ON DestArprt.airport_id = f.destination_airport_id
               JOIN passenger AS p ON p.passenger_id = NEW.passenger_id
              WHERE f.flight_id = NEW.flight_id
-               AND OrigArprt.country <> DestArprt.country -- international flights only, where a passport is required
+               AND OrigArprt.country <> DestArprt.country
                AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time))) > 0
     THEN SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Your passport expires before this flight departs.';
@@ -751,6 +754,8 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+
+DROP EVENT IF EXISTS advance_flight_statuses$$
 
 CREATE EVENT advance_flight_statuses
 ON SCHEDULE EVERY 1 MINUTE
@@ -775,6 +780,8 @@ END$$
 DELIMITER ;
 
 DELIMITER $$
+
+DROP TRIGGER IF EXISTS flight_status_alert$$
 
 CREATE TRIGGER flight_status_alert
 AFTER UPDATE ON flight
@@ -815,6 +822,8 @@ DELIMITER ;
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS ticket_boarding_pass$$
+
 CREATE TRIGGER ticket_boarding_pass
 AFTER UPDATE ON ticket
 FOR EACH ROW
@@ -843,6 +852,8 @@ DELIMITER ;
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS check_no_cancel_after_departure$$
+
 CREATE TRIGGER check_no_cancel_after_departure
 BEFORE UPDATE ON flight
 FOR EACH ROW
@@ -859,6 +870,8 @@ DELIMITER ;
 
 
 DELIMITER $$
+
+DROP TRIGGER IF EXISTS check_no_flight_change_after_departure$$
 
 CREATE TRIGGER check_no_flight_change_after_departure
 BEFORE UPDATE ON ticket
@@ -880,6 +893,8 @@ DELIMITER ;
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS check_no_check_in_after_departure$$
+
 CREATE TRIGGER check_no_check_in_after_departure
 BEFORE UPDATE ON ticket
 FOR EACH ROW
@@ -899,6 +914,9 @@ DELIMITER ;
 
 
 DELIMITER $$
+
+DROP TRIGGER IF EXISTS check_flight_not_oversold$$
+DROP TRIGGER IF EXISTS check_flight_not_oversold_on_change$$
 
 CREATE TRIGGER check_flight_not_oversold
 BEFORE INSERT ON ticket
@@ -930,6 +948,8 @@ DELIMITER ;
 
 
 DELIMITER $$
+
+DROP TRIGGER IF EXISTS check_flight_status_order$$
 
 CREATE TRIGGER check_flight_status_order
 BEFORE UPDATE ON flight
