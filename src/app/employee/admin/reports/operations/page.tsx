@@ -6,17 +6,10 @@ import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatDate, formatMonthDay, formatTime } from "@/lib/format";
-import { addDateRange, readReportFilters, REPORTS } from "@/lib/reports";
+import { addDateRange, readReportFilters, REPORTS, STATUS_GROUPS, statusGroup } from "@/lib/reports";
 import type { FlightLoadRow, RouteOptionRow } from "@/lib/types";
 
-const STATUS_GROUPS = ["On schedule", "Delayed", "Cancelled"];
 const cell = "py-2 pr-4";
-
-function statusGroup(status: string): string {
-  if (status === "DELAYED") return "Delayed";
-  if (status === "CANCELLED") return "Cancelled";
-  return "On schedule";
-}
 
 export default function OperationsReportPage({ searchParams }: PageProps<"/employee/admin/reports/operations">) {
   return (

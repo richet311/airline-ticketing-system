@@ -47,24 +47,7 @@ export function PieChart({ data, format }: { data: { label: string; value: numbe
   const size = 220;
   const radius = 100;
   const center = size / 2;
-  const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
-
-  const slices = data.map((d, i) => {
-    const before = data.slice(0, i).reduce((sum, earlier) => sum + earlier.value, 0);
-    const start = -Math.PI / 2 + (before / total) * Math.PI * 2;
-    const sweep = (d.value / total) * Math.PI * 2;
-    const end = start + sweep;
-    const x1 = center + radius * Math.cos(start);
-    const y1 = center + radius * Math.sin(start);
-    const x2 = center + radius * Math.cos(end);
-    const y2 = center + radius * Math.sin(end);
-    const large = sweep > Math.PI ? 1 : 0;
-    const path =
-      sweep >= Math.PI * 2 - 0.0001
-        ? `M ${center - radius} ${center} a ${radius} ${radius} 0 1 0 ${radius * 2} 0 a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`
-        : `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2} Z`;
-    return { ...d, path, color: PIE_COLORS[i % PIE_COLORS.length], share: (d.value / total) * 100 };
-  });
+  const slices = pieSlices(data, radius, center);
 
   return (
     <div className="flex flex-wrap items-center gap-8">
@@ -89,4 +72,70 @@ export function PieChart({ data, format }: { data: { label: string; value: numbe
       </ul>
     </div>
   );
+}
+
+export function MiniBarChart({ data }: { data: { label: string; value: number }[] }) {
+  const width = 300;
+  const labelWidth = 100;
+  const rowHeight = 22;
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const height = data.length * rowHeight;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="Bar chart preview">
+      {data.map((d, i) => (
+        <g key={d.label}>
+          <text x={labelWidth - 6} y={i * rowHeight + 14} textAnchor="end" fontSize="11" fill={TEXT}>
+            {d.label}
+          </text>
+          <rect x={labelWidth} y={i * rowHeight + 5} width={Math.max(2, (d.value / max) * (width - labelWidth - 8))} height={12} rx={2} fill={CHART_BLUE} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+export function MiniPieChart({ data }: { data: { label: string; value: number }[] }) {
+  const radius = 42;
+  const center = 46;
+  const slices = pieSlices(data, radius, center);
+
+  return (
+    <div className="flex items-center gap-4">
+      <svg viewBox="0 0 92 92" className="h-23 w-23" role="img" aria-label="Pie chart preview">
+        {slices.map((slice) => (
+          <path key={slice.label} d={slice.path} fill={slice.color} stroke="#ffffff" strokeWidth={1.5} />
+        ))}
+      </svg>
+      <ul className="space-y-1 text-xs text-gray-700">
+        {slices.map((slice) => (
+          <li key={slice.label} className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-gray-300" style={{ backgroundColor: slice.color }} />
+            {slice.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function pieSlices(data: { label: string; value: number }[], radius: number, center: number) {
+  const total = data.reduce((sum, d) => sum + d.value, 0) || 1;
+
+  return data.map((d, i) => {
+    const before = data.slice(0, i).reduce((sum, earlier) => sum + earlier.value, 0);
+    const start = -Math.PI / 2 + (before / total) * Math.PI * 2;
+    const sweep = (d.value / total) * Math.PI * 2;
+    const end = start + sweep;
+    const x1 = center + radius * Math.cos(start);
+    const y1 = center + radius * Math.sin(start);
+    const x2 = center + radius * Math.cos(end);
+    const y2 = center + radius * Math.sin(end);
+    const large = sweep > Math.PI ? 1 : 0;
+    const path =
+      sweep >= Math.PI * 2 - 0.0001
+        ? `M ${center - radius} ${center} a ${radius} ${radius} 0 1 0 ${radius * 2} 0 a ${radius} ${radius} 0 1 0 ${-radius * 2} 0`
+        : `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2} Z`;
+    return { ...d, path, color: PIE_COLORS[i % PIE_COLORS.length], share: (d.value / total) * 100 };
+  });
 }
