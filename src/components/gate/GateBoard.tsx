@@ -17,7 +17,7 @@ import type { GateFlightRow, GatePassengerRow } from "@/lib/types";
 //Conditions for the gate tile
 //1. Both gates have to be not null and available. Anything that is set to occupied or maintenance needs to be
 //sent straight to a reselect where they can choose an available gate. Gate statuses are locked when the flight takes off
-//currently no functionality to unoccupy or complete maintenance on a flight
+//2. Occupied and maintenance gates go back to available from the Unavailable gates tile
 
 type Gate = { gate_id: number; label: string };
 type Which = "departure" | "arrival";
@@ -257,6 +257,7 @@ function GateField({
           {label}: {gate} ({status.toLowerCase()})
         </p>
         {picker(`Move to a new ${which} gate at ${airport}`)}
+        <p className="mt-1 text-xs text-gray-500">Once it&apos;s free, mark it available under Unavailable gates.</p>
       </div>
     );
   }

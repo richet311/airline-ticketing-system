@@ -18,20 +18,23 @@ export function AdminTile({ overline, title, children }: { overline?: string; ti
   );
 }
 
+// A table too wide for the tile scrolls sideways instead of squeezing its columns
 export function AdminTable({ headings, children }: { headings: string[]; children: ReactNode }) {
   return (
-    <table className="mt-5 w-full text-left text-sm">
-      <thead>
-        <tr className="border-b border-gray-200 text-[11px] tracking-wider text-gray-500 uppercase">
-          {headings.map((heading) => (
-            <th key={heading} className="py-2 pr-4 font-semibold">
-              {heading}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100 text-gray-800">{children}</tbody>
-    </table>
+    <div className="mt-5 overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-gray-200 text-[11px] tracking-wider text-gray-500 uppercase">
+            {headings.map((heading) => (
+              <th key={heading} className="py-2 pr-4 font-semibold">
+                {heading}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 text-gray-800">{children}</tbody>
+      </table>
+    </div>
   );
 }
 

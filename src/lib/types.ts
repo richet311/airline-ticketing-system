@@ -477,6 +477,16 @@ export interface GateOption extends RowDataPacket {
     gate_status_name: string;
 }
 
+// /employee Unavailable gates tile: a gate that is OCCUPIED or under MAINTENANCE.
+export interface UnavailableGateRow extends RowDataPacket {
+    gate_id: number;
+    airport_code: string;
+    city: string;
+    terminal_name: string;
+    gate_number: string;
+    gate_status_name: string;
+}
+
 // /employee Bookings tile: one ticket (a passenger on a flight) with its booking.
 export interface BookingTicketRow extends RowDataPacket {
     e_ticket_number: string;

@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { bookingFilterParams, BookingsTile } from "@/components/agent/BookingsTile";
 import { EmployeeHeader } from "@/components/employee/EmployeeHeader";
 import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
+import { UnavailableGatesTile } from "@/components/gate/UnavailableGatesTile";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT } from "@/lib/roles";
 import { getSignedInEmployee } from "@/lib/session";
 
@@ -34,6 +35,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
     canUse(role, [GATE_AGENT]) && (
       <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/agent" keep={bookingFilterParams(params)} />
     ),
+    canUse(role, [GATE_AGENT]) && <UnavailableGatesTile key="unavailable-gates" params={params} basePath="/employee/agent" />,
     canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" params={params} basePath="/employee/agent" />,
   ].filter(Boolean);
 

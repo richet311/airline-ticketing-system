@@ -245,38 +245,42 @@ export function BookingsEditor({
                   {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
                 </td>
                 <td className="py-2 pr-4">
-                  <select
-                    value={fareId}
-                    disabled={locked || pending}
-                    onChange={(event) => changeFare(ticket, event.target.value)}
-                    className={`${adminInputClass} ${fareId !== String(ticket.fare_class_id) ? stagedClass : ""}`}
-                  >
-                    {fareChoices.map((fare) => (
-                      <option key={fare.fare_class_id} value={fare.fare_class_id}>
-                        {fare.cabin_class_name} · {formatMoney(fare.base_price)}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="w-max">
+                    <select
+                      value={fareId}
+                      disabled={locked || pending}
+                      onChange={(event) => changeFare(ticket, event.target.value)}
+                      className={`${adminInputClass} ${fareId !== String(ticket.fare_class_id) ? stagedClass : ""}`}
+                    >
+                      {fareChoices.map((fare) => (
+                        <option key={fare.fare_class_id} value={fare.fare_class_id}>
+                          {fare.cabin_class_name} · {formatMoney(fare.base_price)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   {cabinChanged(ticket) && (
                     <p className="mt-1 text-xs text-amber-700">+ {formatMoney(oldChangeFee(ticket))} change fee</p>
                   )}
                 </td>
                 <td className="py-2 pr-4">
-                  <select
-                    value={seat}
-                    disabled={locked || pending}
-                    onChange={(event) => changeSeat(ticket, event.target.value)}
-                    className={`${adminInputClass} w-24 ${seatMoved(ticket) ? stagedClass : ""}`}
-                  >
-                    {seat === "" && (
-                      <option value="" disabled>
-                        {ticket.seat_number === null ? "None" : "Pick"}
-                      </option>
-                    )}
-                    {seatChoices.map((number) => (
-                      <option key={number}>{number}</option>
-                    ))}
-                  </select>
+                  <div className="w-20">
+                    <select
+                      value={seat}
+                      disabled={locked || pending}
+                      onChange={(event) => changeSeat(ticket, event.target.value)}
+                      className={`${adminInputClass} ${seatMoved(ticket) ? stagedClass : ""}`}
+                    >
+                      {seat === "" && (
+                        <option value="" disabled>
+                          {ticket.seat_number === null ? "None" : "Pick"}
+                        </option>
+                      )}
+                      {seatChoices.map((number) => (
+                        <option key={number}>{number}</option>
+                      ))}
+                    </select>
+                  </div>
                 </td>
                 <td className="py-2 pr-4 text-xs whitespace-nowrap">
                   {savedBags.length === 0 && newBags(ticket).length === 0 && <p className="text-gray-500">No bags</p>}
@@ -291,18 +295,20 @@ export function BookingsEditor({
                     </p>
                   ))}
                   <div className="mt-1 flex gap-1">
-                    <input
-                      type="number"
-                      min={0.1}
-                      max={100}
-                      step={0.1}
-                      placeholder="lb"
-                      aria-label={`New bag weight for ${ticket.first_name} ${ticket.last_name}`}
-                      value={weightDrafts[ticket.e_ticket_number] ?? ""}
-                      disabled={bagsLocked(ticket) || pending}
-                      onChange={(event) => setWeightDrafts({ ...weightDrafts, [ticket.e_ticket_number]: event.target.value })}
-                      className={`${adminInputClass} h-7 w-16`}
-                    />
+                    <div className="w-16 shrink-0">
+                      <input
+                        type="number"
+                        min={0.1}
+                        max={100}
+                        step={0.1}
+                        placeholder="lb"
+                        aria-label={`New bag weight for ${ticket.first_name} ${ticket.last_name}`}
+                        value={weightDrafts[ticket.e_ticket_number] ?? ""}
+                        disabled={bagsLocked(ticket) || pending}
+                        onChange={(event) => setWeightDrafts({ ...weightDrafts, [ticket.e_ticket_number]: event.target.value })}
+                        className={`${adminInputClass} h-7`}
+                      />
+                    </div>
                     <button
                       type="button"
                       disabled={bagsLocked(ticket) || pending}
@@ -328,18 +334,20 @@ export function BookingsEditor({
                       )}
                     </td>
                     <td rowSpan={span} className="py-2 pr-4">
-                      <select
-                        value={statusOf(first)}
-                        disabled={first.booking_status_name === "CANCELLED" || pending}
-                        onChange={(event) => changeStatus(bookingTickets, event.target.value)}
-                        className={`${adminInputClass} ${statusStaged ? stagedClass : ""}`}
-                      >
-                        {statuses.map((name) => (
-                          <option key={name} disabled={statusChangeProblem(first.booking_status_name, name) !== null}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="w-max">
+                        <select
+                          value={statusOf(first)}
+                          disabled={first.booking_status_name === "CANCELLED" || pending}
+                          onChange={(event) => changeStatus(bookingTickets, event.target.value)}
+                          className={`${adminInputClass} ${statusStaged ? stagedClass : ""}`}
+                        >
+                          {statuses.map((name) => (
+                            <option key={name} disabled={statusChangeProblem(first.booking_status_name, name) !== null}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                   </>
                 )}

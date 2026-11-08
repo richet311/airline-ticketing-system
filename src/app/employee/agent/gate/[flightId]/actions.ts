@@ -65,6 +65,24 @@ export async function setGateStatus(input: {
   return { ok: true };
 }
 
+// Puts an OCCUPIED or MAINTENANCE gate back in service, so it shows up in the Boarding gate lists again.
+export async function markGateAvailable(input: { gateId: number }): Promise<GateActionResult> {
+  const employee = await getSignedInStaff([GATE_AGENT]);
+  if (!employee) return NOT_ALLOWED;
+
+  const [result] = await db.query<ResultSetHeader>(
+    `UPDATE gate
+        SET gate_status_id = (SELECT gate_status_id FROM gate_status WHERE gate_status_name = ?),
+            updated_by = ?, last_updated = NOW()
+      WHERE gate_id = ?
+        AND gate_status_id <> (SELECT gate_status_id FROM gate_status WHERE gate_status_name = ?)`,
+    [ASSIGNABLE_GATE_STATUS, employee.user_id, input.gateId, ASSIGNABLE_GATE_STATUS],
+  );
+  if (result.affectedRows === 0) return { ok: false, error: "That gate is already available, or no longer exists." };
+  refresh();
+  return { ok: true };
+}
+
 // Gives the flight an AVAILABLE gate: departure at its origin airport, arrival at its destination.
 // Used for a pending gate, and to move off a gate that's OCCUPIED or under MAINTENANCE.
 export async function assignGate(input: {

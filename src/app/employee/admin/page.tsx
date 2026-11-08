@@ -14,6 +14,7 @@ import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { bookingFilterParams, BookingsTile } from "@/components/agent/BookingsTile";
 import { EmployeeHeader } from "@/components/employee/EmployeeHeader";
 import { gateFlightFromUrl, GateTile } from "@/components/gate/GateTile";
+import { UnavailableGatesTile } from "@/components/gate/UnavailableGatesTile";
 import { db } from "@/lib/db";
 import { attentionReason } from "@/lib/flightRules";
 import { canUse, CUSTOMER_SERVICE_AGENT, GATE_AGENT, OPERATIONS_MANAGER } from "@/lib/roles";
@@ -58,6 +59,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
     canUse(role, [GATE_AGENT]) && (
       <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/admin" keep={bookingFilterParams(params)} />
     ),
+    canUse(role, [GATE_AGENT]) && <UnavailableGatesTile key="unavailable-gates" params={params} basePath={BASE_PATH} />,
   ].filter(Boolean);
 
   return (
