@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
+import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { BarChart, PieChart } from "@/components/reports/Charts";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatDate, formatMonthDay, formatTime } from "@/lib/format";
-import { addDateRange, readReportFilters, REPORTS, STATUS_GROUPS, statusGroup } from "@/lib/reports";
+import { addDateRange, readReportFilters, REPORT_TABLE_SIZE, REPORTS, STATUS_GROUPS, statusGroup } from "@/lib/reports";
 import type { FlightLoadRow, RouteOptionRow } from "@/lib/types";
 
 const cell = "py-2 pr-4";
@@ -26,7 +27,8 @@ async function OperationsReport({
 }: {
   searchParams: PageProps<"/employee/admin/reports/operations">["searchParams"];
 }) {
-  const filters = readReportFilters(await searchParams);
+  const params = await searchParams;
+  const filters = readReportFilters(params);
 
   const where: string[] = [];
   const values: (string | number)[] = [];
@@ -66,6 +68,7 @@ async function OperationsReport({
   );
 
   const flying = flights.filter((flight) => flight.flight_status_name !== "CANCELLED");
+  const page = pageNumber(params, "page", flights.length, REPORT_TABLE_SIZE);
   const averageLoad = flying.length === 0 ? 0 : flying.reduce((sum, flight) => sum + flight.load_factor, 0) / flying.length;
   const percent = (value: number) => `${value.toFixed(1)}%`;
 
@@ -109,7 +112,7 @@ async function OperationsReport({
               max={100}
             />
             <AdminTable headings={["Flight", "Departs (UTC)", "Route", "Aircraft", "Seats", "Sold", "Seats filled", "Status"]}>
-              {flights.map((flight) => (
+              {flights.slice((page - 1) * REPORT_TABLE_SIZE, page * REPORT_TABLE_SIZE).map((flight) => (
                 <tr key={flight.flight_id}>
                   <td className={`${cell} font-semibold`}>{flight.flight_number}</td>
                   <td className={cell}>
@@ -126,6 +129,15 @@ async function OperationsReport({
                 </tr>
               ))}
             </AdminTable>
+            <TilePager
+              basePath={REPORTS.operations.href}
+              params={params}
+              name="page"
+              page={page}
+              size={REPORT_TABLE_SIZE}
+              total={flights.length}
+              noun="Flights"
+            />
           </AdminTile>
         </>
       )}

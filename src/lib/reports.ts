@@ -29,6 +29,8 @@ export type Report = (typeof REPORTS)[keyof typeof REPORTS];
 
 export const DEFAULT_MIN_TICKETS = 5;
 
+export const REPORT_TABLE_SIZE = 10;
+
 export const STATUS_GROUPS = ["On schedule", "Delayed", "Cancelled"];
 
 export function statusGroup(status: string): string {

@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
+import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { BarChart } from "@/components/reports/Charts";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
-import { addDateRange, DEFAULT_MIN_TICKETS, readReportFilters, REPORTS } from "@/lib/reports";
+import { addDateRange, DEFAULT_MIN_TICKETS, readReportFilters, REPORT_TABLE_SIZE, REPORTS } from "@/lib/reports";
 import type { CabinClass, RouteAirportsRow, RouteRevenueRow } from "@/lib/types";
 
 const cell = "py-2 pr-4";
@@ -22,7 +23,8 @@ export default function RevenueReportPage({ searchParams }: PageProps<"/employee
 }
 
 async function RevenueReport({ searchParams }: { searchParams: PageProps<"/employee/admin/reports/revenue">["searchParams"] }) {
-  const filters = readReportFilters(await searchParams);
+  const params = await searchParams;
+  const filters = readReportFilters(params);
   const typedMinimum = Number(filters.minTickets);
   const minTickets = Number.isInteger(typedMinimum) && typedMinimum >= 1 ? typedMinimum : DEFAULT_MIN_TICKETS;
 
@@ -71,6 +73,7 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
     values,
   );
   const ranked = rows.filter((row) => row.tickets >= minTickets);
+  const page = pageNumber(params, "page", ranked.length, REPORT_TABLE_SIZE);
   const tickets = (count: number) => `${count} ticket${count === 1 ? "" : "s"}`;
 
   return (
@@ -98,7 +101,16 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
         ) : (
           <>
             <BarChart data={ranked.map((row) => ({ label: row.route, value: row.revenue_per_100_miles }))} format={formatMoney} />
-            <RouteTable rows={ranked} />
+            <RouteTable rows={ranked.slice((page - 1) * REPORT_TABLE_SIZE, page * REPORT_TABLE_SIZE)} />
+            <TilePager
+              basePath={REPORTS.revenue.href}
+              params={params}
+              name="page"
+              page={page}
+              size={REPORT_TABLE_SIZE}
+              total={ranked.length}
+              noun="Routes"
+            />
           </>
         )}
       </AdminTile>

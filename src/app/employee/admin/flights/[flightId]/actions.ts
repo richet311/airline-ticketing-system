@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { db } from "@/lib/db";
-import { flightStatusChangeProblem } from "@/lib/flightRules";
+import { canFillArrivalGate, flightLocked, flightLockedMessage, flightStatusChangeProblem } from "@/lib/flightRules";
 import { ASSIGNABLE_GATE_STATUS, gateRequired, missingGateMessage } from "@/lib/gateRules";
 import { OPERATIONS_MANAGER } from "@/lib/roles";
 
@@ -39,6 +39,8 @@ export async function updateFlightGate(input: {
   );
   if (flights.length === 0) return { ok: false, error: "That flight no longer exists." };
   const { current_gate_id: currentGateId, flight_status_name: status } = flights[0];
+  const fillingArrivalGate = input.which === "arrival" && input.gateId !== null && canFillArrivalGate(status, currentGateId);
+  if (flightLocked(status) && !fillingArrivalGate) return { ok: false, error: flightLockedMessage(status) };
 
   if (input.gateId === null) {
     if (gateRequired(input.which, status)) {
@@ -82,6 +84,7 @@ export async function updateFlightStatus(input: { flightId: number; status: stri
     [input.flightId],
   );
   if (flights.length === 0) return { ok: false, error: "That flight no longer exists." };
+  if (flightLocked(flights[0].flight_status_name)) return { ok: false, error: flightLockedMessage(flights[0].flight_status_name) };
   const backwards = flightStatusChangeProblem(flights[0].flight_status_name, input.status);
   if (backwards) return { ok: false, error: backwards };
   const missing = missingGateMessage(input.status, flights[0].departure_gate_id !== null, flights[0].arrival_gate_id !== null);

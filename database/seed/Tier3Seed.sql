@@ -50,7 +50,7 @@ INSERT INTO flight (flight_id, flight_number, aircraft_id, origin_airport_id, de
 
 INSERT INTO fare_class (fare_class_id, flight_id, cabin_class_id, base_price, seats_total, seats_available, is_refundable, change_fee, created_by, created_at, updated_by, last_updated) VALUES
 (60001, 50001, 1, 189.00, 6, 4, 1, 50.00, 1, NOW(), 1, NOW()),
-(60002, 50002, 3, 640.00, 2, 1, 1, 150.00, 1, NOW(), 1, NOW()),
+(60002, 50002, 4, 640.00, 2, 1, 1, 300.00, 1, NOW(), 1, NOW()),
 (60003, 50002, 1, 229.00, 4, 3, 1, 50.00, 1, NOW(), 1, NOW()),
 (60004, 50003, 1, 695.00, 4, 0, 1, 50.00, 1, NOW(), 1, NOW()),
 (60005, 50004, 1, 215.00, 4, 2, 1, 50.00, 1, NOW(), 1, NOW()),
@@ -79,157 +79,49 @@ INSERT INTO fare_class (fare_class_id, flight_id, cabin_class_id, base_price, se
 (60028, 50016, 1, 199.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
 (60029, 50016, 4, 549.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
 (60030, 50017, 1, 209.00, 4, 4, 1, 50.00, 1, NOW(), 1, NOW()),
-(60031, 50017, 4, 559.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW());
+(60031, 50017, 4, 559.00, 2, 2, 1, 300.00, 1, NOW(), 1, NOW()),
+(60032, 50003, 2, 995.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60033, 50003, 3, 1395.00, 0, 0, 1, 150.00, 1, NOW(), 1, NOW()),
+(60034, 50010, 1, 449.00, 0, 0, 1, 50.00, 1, NOW(), 1, NOW()),
+(60035, 50010, 3, 1095.00, 0, 0, 1, 150.00, 1, NOW(), 1, NOW()),
+(60036, 50011, 1, 439.00, 0, 0, 1, 50.00, 1, NOW(), 1, NOW()),
+(60037, 50011, 3, 1075.00, 0, 0, 1, 150.00, 1, NOW(), 1, NOW()),
+(60038, 50005, 3, 489.00, 0, 0, 1, 150.00, 1, NOW(), 1, NOW()),
+(60039, 50009, 3, 499.00, 0, 0, 1, 150.00, 1, NOW(), 1, NOW()),
+(60040, 50001, 4, 459.00, 0, 0, 1, 300.00, 1, NOW(), 1, NOW()),
+(60041, 50001, 2, 279.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60042, 50002, 2, 339.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60043, 50004, 2, 319.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60044, 50006, 2, 289.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60045, 50007, 4, 649.00, 0, 0, 1, 300.00, 1, NOW(), 1, NOW()),
+(60046, 50008, 4, 629.00, 0, 0, 1, 300.00, 1, NOW(), 1, NOW()),
+(60047, 50012, 2, 189.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60048, 50013, 2, 194.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60049, 50014, 2, 229.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60050, 50015, 2, 239.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60051, 50016, 2, 309.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW()),
+(60052, 50017, 2, 319.00, 0, 0, 1, 100.00, 1, NOW(), 1, NOW());
 
--- seat_status is reserved if it's nested in a confirmed/completed booking that's again nested in a ticket
-INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated) VALUES
--- AZ410
-(50001, '1A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50001, '1B', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50001, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50001, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50001, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50001, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ320
-(50002, '1A', 3, 3, NULL, 1, NOW(), 1, NOW()),
-(50002, '1B', 3, 1, NULL, 1, NOW(), 1, NOW()),
-(50002, '2A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50002, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50002, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50002, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ640 (sold out)
-(50003, '1A', 4, 3, NULL, 1, NOW(), 1, NOW()),
-(50003, '1B', 4, 3, NULL, 1, NOW(), 1, NOW()),
-(50003, '2A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50003, '2B', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50003, '3A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50003, '3B', 1, 3, NULL, 1, NOW(), 1, NOW()),
--- AZ350
-(50004, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50004, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50004, '2A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50004, '2B', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50004, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50004, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ301
-(50005, '1A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50005, '1B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50005, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50005, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50005, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50005, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ411
-(50006, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50006, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50006, '2A', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50006, '2B', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50006, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50006, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ310
-(50007, '1A', 2, 3, NULL, 1, NOW(), 1, NOW()),
-(50007, '1B', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50007, '2A', 1, 2, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- As soon as you run the seed, this HELD seat will expire in 10 minutes
-(50007, '2B', 1, 2, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- This mirrors our business constraint on holding seats during checkout
-(50007, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50007, '3B', 1, 4, NULL, 1, NOW(), 1, NOW()),
-(50007, '4A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50007, '4B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ311
-(50008, '1A', 2, 3, NULL, 1, NOW(), 1, NOW()),
-(50008, '1B', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50008, '2A', 1, 2, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()),
-(50008, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50008, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50008, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50008, '4A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50008, '4B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ303
-(50009, '1A', 1, 1, NULL, 1, NOW(), 1, NOW()), -- freed when AZ42KV was cancelled
-(50009, '1B', 1, 3, NULL, 1, NOW(), 1, NOW()),
-(50009, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50009, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50009, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50009, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ101
-(50010, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50010, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50010, '2A', 2, 3, NULL, 1, NOW(), 1, NOW()),
-(50010, '2B', 2, 3, NULL, 1, NOW(), 1, NOW()),
-(50010, '3A', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50010, '3B', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50010, '4A', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50010, '4B', 2, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ102
-(50011, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50011, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50011, '2A', 2, 3, NULL, 1, NOW(), 1, NOW()),
-(50011, '2B', 2, 3, NULL, 1, NOW(), 1, NOW()),
-(50011, '3A', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50011, '3B', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50011, '4A', 2, 1, NULL, 1, NOW(), 1, NOW()),
-(50011, '4B', 2, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ330
-(50012, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50012, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50012, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50012, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50012, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50012, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ331
-(50013, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50013, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50013, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50013, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50013, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50013, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ412
-(50014, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50014, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50014, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50014, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50014, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50014, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ413
-(50015, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50015, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50015, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50015, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50015, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50015, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ322
-(50016, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50016, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50016, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50016, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50016, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50016, '3B', 1, 1, NULL, 1, NOW(), 1, NOW()),
--- AZ323
-(50017, '1A', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50017, '1B', 4, 1, NULL, 1, NOW(), 1, NOW()),
-(50017, '2A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50017, '2B', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50017, '3A', 1, 1, NULL, 1, NOW(), 1, NOW()),
-(50017, '3B', 1, 1, NULL, 1, NOW(), 1, NOW());
-
--- New code to expand the number of rows and seats per row to A-F. Our previous method of seeding data is still intact
 INSERT INTO seat (flight_id, seat_number, cabin_class_id, seat_status_id, held_until, created_by, created_at, updated_by, last_updated)
 WITH RECURSIVE seat_row (n) AS (
-    SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 10
+    SELECT 1 UNION ALL SELECT n + 1 FROM seat_row WHERE n < 40
 ),
 seat_letter (letter) AS (
     SELECT 'A' UNION ALL SELECT 'B' UNION ALL SELECT 'C' UNION ALL SELECT 'D' UNION ALL SELECT 'E' UNION ALL SELECT 'F'
 )
 SELECT f.flight_id,
        CONCAT(r.n, l.letter),
-       COALESCE(
-           (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, 'A')),
-           (SELECT s.cabin_class_id FROM seat s WHERE s.flight_id = f.flight_id ORDER BY CAST(REGEXP_SUBSTR(s.seat_number, '^[0-9]+') AS UNSIGNED) DESC LIMIT 1)
-       ),
+       CASE
+           WHEN f.distance >= 3000 THEN CASE WHEN r.n = 1 THEN 4 WHEN r.n <= 3 THEN 3 WHEN r.n <= 5 THEN 2 ELSE 1 END
+           WHEN f.distance < 500 THEN CASE WHEN r.n <= 2 THEN 3 ELSE 1 END
+           ELSE CASE WHEN r.n <= 2 THEN 4 WHEN r.n <= 4 THEN 2 ELSE 1 END
+       END,
        1, NULL, 1, NOW(), 1, NOW()
-FROM flight f
-CROSS JOIN seat_row r
-CROSS JOIN seat_letter l
-WHERE NOT EXISTS (SELECT 1 FROM seat s WHERE s.flight_id = f.flight_id AND s.seat_number = CONCAT(r.n, l.letter));
+  FROM flight f
+  JOIN aircraft a ON a.aircraft_id = f.aircraft_id
+ CROSS JOIN seat_row r
+ CROSS JOIN seat_letter l
+ WHERE r.n <= a.capacity / 6;
 
 
 -- booking total = (base price x number of tickets) + the price of each booking upgrade
@@ -240,7 +132,7 @@ INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, 
 ('AZ43AB', 1007, 2, 810.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Round trip, premium
 ('AZ43AC', 1005, 1, 507.00, 'USD', DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- PENDING round trip, choosing seats, no payment yet
 ('AZ43AD', 1013, 1, 258.00, 'USD', DATE_ADD(NOW(), INTERVAL 10 MINUTE), 1, NOW(), 1, NOW()), -- PENDING one way, at the payment step
-('AZ43AE', 1008, 2, 650.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- One way, business
+('AZ43AE', 1008, 2, 650.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- One way, first class
 ('AZ43AF', 1014, 2, 249.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- One way, economy
 ('AZ43AG', 1009, 2, 1395.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Two travelers, one booking
 ('AZ43AH', 1011, 2, 1400.00, 'USD', NULL, 1, NOW(), 1, NOW()), -- Two travelers, one booking
@@ -265,32 +157,41 @@ INSERT INTO booking_upgrade (upgrade_id, booking_id, created_by, created_at, upd
 -- flight fare is an attribute of ticket but we want to show the derived value on the ticket that is the total amount (the base price plus any booking upgrade)
 -- boarded: AZ640 is boarding, and 2 of its 6 checked-in passengers are on.
 INSERT INTO ticket (e_ticket_number, booking_id, passenger_id, flight_id, fare_class_id, seat_number, flight_fare, checked_in, boarded, created_by, created_at, updated_by, last_updated) VALUES
-('A2345678B', 'AZ42KU', 1003, 50009, 60012, '1B', 300.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('A2345678B', 'AZ42KU', 1003, 50009, 60012, '3B', 300.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
 ('B2345678C', 'AZ42KV', 1004, 50009, 60012, NULL, 300.00, FALSE, FALSE, 1, NOW(), 1, NOW()), -- cancelled, seat released
-('C2345678D', 'AZ43AA', 1005, 50001, 60001, '1A', 189.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('D2345678E', 'AZ43AA', 1006, 50001, 60001, '1B', 189.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('E2345678F', 'AZ43AA', 1005, 50006, 60007, '2A', 195.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('F2345678G', 'AZ43AA', 1006, 50006, 60007, '2B', 195.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('G2345678H', 'AZ43AB', 1007, 50007, 60008, '1A', 410.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('H2345678I', 'AZ43AB', 1007, 50008, 60010, '1A', 395.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('I2345678J', 'AZ43AC', 1005, 50007, 60009, '2A', 248.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('J2345678K', 'AZ43AC', 1005, 50008, 60011, '2A', 259.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('K2345678L', 'AZ43AD', 1013, 50007, 60009, '2B', 248.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('C2345678D', 'AZ43AA', 1005, 50001, 60001, '5A', 189.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('D2345678E', 'AZ43AA', 1006, 50001, 60001, '5B', 189.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('E2345678F', 'AZ43AA', 1005, 50006, 60007, '5A', 195.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('F2345678G', 'AZ43AA', 1006, 50006, 60007, '5B', 195.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('G2345678H', 'AZ43AB', 1007, 50007, 60008, '3A', 410.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('H2345678I', 'AZ43AB', 1007, 50008, 60010, '3A', 395.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('I2345678J', 'AZ43AC', 1005, 50007, 60009, '5A', 248.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('J2345678K', 'AZ43AC', 1005, 50008, 60011, '5A', 259.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('K2345678L', 'AZ43AD', 1013, 50007, 60009, '5B', 248.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
 ('L2345678M', 'AZ43AE', 1008, 50002, 60002, '1A', 640.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('M2345678N', 'AZ43AF', 1014, 50002, 60003, '2A', 229.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('N2345678O', 'AZ43AG', 1009, 50003, 60004, '2A', 695.00, TRUE, TRUE, 1, NOW(), 1, NOW()),
-('O2345678P', 'AZ43AG', 1010, 50003, 60004, '2B', 695.00, TRUE, TRUE, 1, NOW(), 1, NOW()),
-('P2345678Q', 'AZ43AH', 1011, 50003, 60004, '3A', 695.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('Q2345678R', 'AZ43AH', 1012, 50003, 60004, '3B', 695.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('M2345678N', 'AZ43AF', 1014, 50002, 60003, '5A', 229.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('N2345678O', 'AZ43AG', 1009, 50003, 60004, '6A', 695.00, TRUE, TRUE, 1, NOW(), 1, NOW()),
+('O2345678P', 'AZ43AG', 1010, 50003, 60004, '6B', 695.00, TRUE, TRUE, 1, NOW(), 1, NOW()),
+('P2345678Q', 'AZ43AH', 1011, 50003, 60004, '7A', 695.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('Q2345678R', 'AZ43AH', 1012, 50003, 60004, '7B', 695.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
 ('Y2345678Z', 'AZ43AL', 1015, 50003, 60016, '1A', 1650.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
 ('Z2345678A', 'AZ43AL', 1007, 50003, 60016, '1B', 1650.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('R2345678S', 'AZ43AI', 1013, 50004, 60005, '2A', 215.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
-('S2345678T', 'AZ43AJ', 1003, 50004, 60005, '2B', 215.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('T2345678U', 'AZ43AK', 1004, 50005, 60006, '1A', 289.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('U2345678V', 'AZ42KQ', 1001, 50010, 60013, '2A', 653.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('V2345678W', 'AZ42KQ', 1002, 50010, 60013, '2B', 653.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('W2345678X', 'AZ42KQ', 1001, 50011, 60014, '2A', 641.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
-('X2345678Y', 'AZ42KQ', 1002, 50011, 60014, '2B', 641.00, FALSE, FALSE, 1, NOW(), 1, NOW());
+('R2345678S', 'AZ43AI', 1013, 50004, 60005, '5A', 215.00, TRUE, FALSE, 1, NOW(), 1, NOW()),
+('S2345678T', 'AZ43AJ', 1003, 50004, 60005, '5B', 215.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('T2345678U', 'AZ43AK', 1004, 50005, 60006, '3A', 289.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('U2345678V', 'AZ42KQ', 1001, 50010, 60013, '4A', 653.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('V2345678W', 'AZ42KQ', 1002, 50010, 60013, '4B', 653.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('W2345678X', 'AZ42KQ', 1001, 50011, 60014, '4A', 641.00, FALSE, FALSE, 1, NOW(), 1, NOW()),
+('X2345678Y', 'AZ42KQ', 1002, 50011, 60014, '4B', 641.00, FALSE, FALSE, 1, NOW(), 1, NOW());
+
+UPDATE seat s
+  JOIN ticket t  ON t.flight_id = s.flight_id AND t.seat_number = s.seat_number
+  JOIN booking b ON b.booking_id = t.booking_id
+   SET s.seat_status_id = IF(b.booking_status_id = 1, 2, 3),
+       s.held_until = IF(b.booking_status_id = 1, b.expires_at, NULL)
+ WHERE s.flight_id > 0;
+
+UPDATE seat SET seat_status_id = 4 WHERE flight_id = 50007 AND seat_number = '10F';
 
 -- AZ42KU still owes a refund, AZ42KV is refunded, AZ43AC and AZ43AD are pending
 INSERT INTO payment (payment_id, booking_id, payment_status, total_amount, payment_method, idempotency_key, payment_time, created_by, created_at, updated_by, last_updated) VALUES

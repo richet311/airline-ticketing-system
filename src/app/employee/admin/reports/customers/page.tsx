@@ -2,12 +2,13 @@ import type { RowDataPacket } from "mysql2";
 import { Suspense } from "react";
 
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
+import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { BarChart } from "@/components/reports/Charts";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
-import { addDateRange, readReportFilters, REPORTS } from "@/lib/reports";
+import { addDateRange, readReportFilters, REPORT_TABLE_SIZE, REPORTS } from "@/lib/reports";
 import { getTiers, tierFor, tierLabel } from "@/lib/rewards";
 import type { CustomerValueRow } from "@/lib/types";
 
@@ -30,7 +31,8 @@ async function CustomersReport({
 }: {
   searchParams: PageProps<"/employee/admin/reports/customers">["searchParams"];
 }) {
-  const filters = readReportFilters(await searchParams);
+  const params = await searchParams;
+  const filters = readReportFilters(params);
 
   const where: string[] = [];
   const values: (string | number)[] = [];
@@ -71,6 +73,7 @@ async function CustomersReport({
       return { ...row, name, tier };
     })
     .filter((customer) => filters.tier === "" || customer.tier === filters.tier);
+  const page = pageNumber(params, "page", customers.length, REPORT_TABLE_SIZE);
   const topSpenders = customers
     .filter((customer) => customer.spend > 0)
     .slice(0, CHART_COUNT)
@@ -97,7 +100,7 @@ async function CustomersReport({
           </p>
           {topSpenders.length > 0 && <BarChart data={topSpenders} format={formatMoney} />}
           <AdminTable headings={["Customer", "Email", "Rewards tier", "Bookings", "Cancelled", "Spend", "Points balance"]}>
-            {customers.map((customer) => (
+            {customers.slice((page - 1) * REPORT_TABLE_SIZE, page * REPORT_TABLE_SIZE).map((customer) => (
               <tr key={customer.passenger_id}>
                 <td className={`${cell} font-semibold`}>{customer.name}</td>
                 <td className={cell}>{customer.email ?? "—"}</td>
@@ -109,6 +112,15 @@ async function CustomersReport({
               </tr>
             ))}
           </AdminTable>
+          <TilePager
+            basePath={REPORTS.customers.href}
+            params={params}
+            name="page"
+            page={page}
+            size={REPORT_TABLE_SIZE}
+            total={customers.length}
+            noun="Customers"
+          />
         </AdminTile>
       )}
     </>

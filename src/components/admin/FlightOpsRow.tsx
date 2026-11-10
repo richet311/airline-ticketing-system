@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { updateFlightGate, updateFlightStatus, type FlightUpdateResult } from "@/app/employee/admin/flights/[flightId]/actions";
-import { attentionReason, flightStatusChangeProblem } from "@/lib/flightRules";
+import { attentionReason, canFillArrivalGate, flightLocked, flightStatusChangeProblem } from "@/lib/flightRules";
 import { formatDate, formatTime } from "@/lib/format";
 import { ASSIGNABLE_GATE_STATUS, gateRequired, missingGateMessage } from "@/lib/gateRules";
 import type { OpsFlightRow } from "@/lib/types";
@@ -68,6 +68,8 @@ export function FlightOpsRow({
     pastDeparture: flight.past_departure === 1,
     pastArrival: flight.past_arrival === 1,
   });
+  const locked = flightLocked(status);
+  const arrivalOpen = canFillArrivalGate(status, flight.arrival_gate_id);
 
   return (
     <tr className="align-top">
@@ -88,7 +90,7 @@ export function FlightOpsRow({
           gates={departureGates}
           ownGateId={flight.departure_gate_id}
           required={gateRequired("departure", status)}
-          disabled={pending}
+          disabled={pending || locked}
           onChange={(value) => changeGate("departure", value)}
         />
       </td>
@@ -98,12 +100,12 @@ export function FlightOpsRow({
           gates={arrivalGates}
           ownGateId={flight.arrival_gate_id}
           required={gateRequired("arrival", status)}
-          disabled={pending}
+          disabled={pending || (locked && !arrivalOpen)}
           onChange={(value) => changeGate("arrival", value)}
         />
       </td>
       <td className="py-2 pr-4">
-        <select value={status} disabled={pending} onChange={(event) => changeStatus(event.target.value)} className={adminInputClass}>
+        <select value={status} disabled={pending || locked} onChange={(event) => changeStatus(event.target.value)} className={adminInputClass}>
           {statuses.map((name) => (
             <option
               key={name}

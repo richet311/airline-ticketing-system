@@ -10,6 +10,20 @@ export function flightStatusChangeProblem(from: string, to: string): string | nu
   return null;
 }
 
+const LOCKED_FLIGHT_STATUSES = ["BOARDING", "DEPARTED", "ARRIVED", "CANCELLED"];
+
+export function flightLocked(status: string): boolean {
+  return LOCKED_FLIGHT_STATUSES.includes(status);
+}
+
+export function flightLockedMessage(status: string): string {
+  return `${status.charAt(0)}${status.slice(1).toLowerCase()} flights can't be changed.`;
+}
+
+export function canFillArrivalGate(status: string, arrivalGateId: number | null): boolean {
+  return status === "DEPARTED" && arrivalGateId === null;
+}
+
 export function attentionReason(flight: {
   status: string;
   hasDepartureGate: boolean;
