@@ -229,6 +229,7 @@ traveler AS (
       FROM flight f
      CROSS JOIN passenger p
      WHERE NOT EXISTS (SELECT 1 FROM ticket t WHERE t.flight_id = f.flight_id AND t.passenger_id = p.passenger_id)
+       AND NOT (p.passenger_id = 1003 AND f.flight_id = 50010)
 )
 SELECT os.flight_id, os.seat_number, os.k, tr.passenger_id, tr.booker_id, fc.fare_class_id, fc.base_price, f.flight_status_id,
        CONCAT('S', LPAD(os.flight_id - 50000, 2, '0'), LPAD(os.seat_number, 3, '0')) AS booking_id,

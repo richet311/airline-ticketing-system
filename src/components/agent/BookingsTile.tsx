@@ -39,7 +39,7 @@ function urlValue(params: SearchParams, name: string): string {
 
 export function bookingFilterParams(params: SearchParams): Record<string, string> {
   const kept: Record<string, string> = {};
-  for (const name of [...FILTER_NAMES, "page"]) {
+  for (const name of [...FILTER_NAMES, "page", "hide_cancelled"]) {
     if (urlValue(params, name)) kept[name] = urlValue(params, name);
   }
   return kept;
@@ -52,7 +52,8 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
     string
   >;
   const gateFlight = urlValue(params, "gate_flight");
-  const statusCondition = SHOWN_FLIGHTS;
+  const hideCancelled = urlValue(params, "hide_cancelled") === "1";
+  const statusCondition = hideCancelled ? "fs.flight_status_name IN ('SCHEDULED', 'DELAYED')" : SHOWN_FLIGHTS;
 
   const problems: string[] = [];
   if (filters.booking) {
@@ -181,7 +182,7 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
   const bagWeights: Record<string, number[]> = {};
   for (const bag of bags) (bagWeights[bag.e_ticket_number] ??= []).push(Number(bag.weightage));
 
-  const kept = { ...filters, gate_flight: gateFlight };
+  const kept = { ...filters, gate_flight: gateFlight, hide_cancelled: hideCancelled ? "1" : "" };
   const hrefFor = (extra: Record<string, string>) => {
     const query = new URLSearchParams(Object.entries({ ...kept, ...extra }).filter(([, value]) => value !== ""));
     return query.size > 0 ? `${basePath}?${query}` : basePath;
@@ -191,6 +192,7 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
     <AdminTile overline="Customer service" title="Bookings">
       <Form key={JSON.stringify(filters)} action={basePath} scroll={false} className="mb-2 flex flex-wrap items-end gap-3">
         {gateFlight && <input type="hidden" name="gate_flight" value={gateFlight} />}
+        {hideCancelled && <input type="hidden" name="hide_cancelled" value="1" />}
         <label className="w-32">
           <span className={adminLabelClass}>Booking</span>
           <input name="booking" defaultValue={filters.booking} placeholder="AZ43AA" maxLength={6} className={`${adminInputClass} uppercase`} />
@@ -218,6 +220,18 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
           className="flex h-9 items-center text-sm font-semibold text-azure-blue hover:underline"
         >
           Clear
+        </Link>
+        <Link
+          href={hrefFor({ hide_cancelled: hideCancelled ? "" : "1", page: "" })}
+          scroll={false}
+          role="switch"
+          aria-checked={hideCancelled}
+          className="ml-2 flex h-9 items-center gap-2 text-sm text-gray-700"
+        >
+          <span className={`relative h-5 w-9 rounded-full ${hideCancelled ? "bg-azure-blue" : "bg-gray-300"}`}>
+            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white ${hideCancelled ? "left-4.5" : "left-0.5"}`} />
+          </span>
+          Hide cancelled flights
         </Link>
       </Form>
 

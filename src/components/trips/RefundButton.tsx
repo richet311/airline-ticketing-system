@@ -63,8 +63,8 @@ export function RefundButton({ bookingId, blockedReason }: { bookingId: string; 
       {asking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-card bg-white p-6">
-            {result ? (
-              <>
+            {result ? ( //When result has an error, the popup from the trigger shows, with a button to hit OK
+              <> 
                 <p role="alert" className="text-gray-900">
                   {result.error}
                 </p>

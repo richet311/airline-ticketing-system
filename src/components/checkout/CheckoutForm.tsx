@@ -297,8 +297,8 @@ export function CheckoutForm({
         </div>
 
         <PointsBox rewards={rewards} total={total} />
-
-        {message && (
+        {/* Error display for checkout form */}
+        {message && ( //This is the error display code that the trigger propagates the text to
           <p role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {message}
           </p>

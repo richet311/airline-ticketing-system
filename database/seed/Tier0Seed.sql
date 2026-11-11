@@ -54,7 +54,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO user (user_id, email, phone_number, password_hash, loyalty_points, created_by, created_at, updated_by, last_updated) VALUES
 (1, 'SysAdmin@AzureAir.net', '1234567890', 'TestAdminLogin123', 1500, 1, NOW(), 1, NOW()),
 (2, 'TestPassenger@AzureAir.net', '1111111111', 'TestPassengerPW123', 0, 1, NOW(), 1, NOW()),
-(3, 'TestEmployee@AzureAir.net', '9999999999', 'TestEmployeePW123', 350, 1, NOW(), 1, NOW()),
+(3, 'TestEmployee@AzureAir.net', '9999999999', 'manager123', 350, 1, NOW(), 1, NOW()),
 (4, 'Janedoe@gmail.com', '2222222222', 'JanedoePW123', 5000, 1, NOW(), 1, NOW()),
 (5, 'Johnsmith@gmail.com', '3333333333', 'johnsmithPW123', 30000, 1, NOW(), 1, NOW()),
 (6, 'Kennylee@gmail.com', '4444444444', 'kennypsw', 50000, 1, NOW(), 1, NOW()),
@@ -68,7 +68,7 @@ INSERT INTO user (user_id, email, phone_number, password_hash, loyalty_points, c
 (14, 'Oliviakeller@gmail.com', '2223334444', 'OKPASSWORD', 650, 1, NOW(), 1, NOW()),
 (15, 'Omarsmith@gmail.com', '3334445555', 'ospassword!', 22000, 1, NOW(), 1, NOW()),
 (16, 'Chloekishimoto@yahoo.com', '4445556666', 'kishimoto123', 100, 1, NOW(), 1, NOW()),
-(17, 'MirandaCosgrove@AzureAir.net', '5556667777', 'AgentLoginPW123', 0, 1, NOW(), 1, NOW());
+(17, 'MirandaCosgrove@AzureAir.net', '5556667777', 'customer', 0, 1, NOW(), 1, NOW());
 
 INSERT INTO passenger (passenger_id, user_id, passenger_parent_id, first_name, last_name, date_of_birth, passport_number, passport_expiry_date, nationality, created_by, created_at, updated_by, last_updated) VALUES
 (1001, 2, NULL, 'TESTPASSENGER', 'SINGLEADULT', '2002-01-01', '222333444', '2028-06-01', 'US', 1, NOW(), 1, NOW()),
