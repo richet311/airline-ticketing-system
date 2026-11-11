@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
 import { cancelTrip } from "@/app/my-trips/[bookingId]/cancel/actions";
-import { TripActionForm } from "@/components/trips/TripActionForm";
 
 export function RefundedPopup({ bookingId }: { bookingId: string }) {
   const router = useRouter();
@@ -37,6 +36,7 @@ export function RefundedPopup({ bookingId }: { bookingId: string }) {
 export function RefundButton({ bookingId, blockedReason }: { bookingId: string; blockedReason: string | null }) {
   const [asking, setAsking] = useState(false);
   const [refused, setRefused] = useState(false);
+  const [result, refund, pending] = useActionState(cancelTrip, null);
 
   function handleClick() {
     if (blockedReason) setRefused(true);
@@ -48,7 +48,7 @@ export function RefundButton({ bookingId, blockedReason }: { bookingId: string; 
       <button
         type="button"
         onClick={handleClick}
-        disabled={refused}
+        disabled={refused || result !== null}
         className="rounded-control border border-red-600 px-6 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-600 hover:text-white disabled:cursor-not-allowed disabled:border-gray-300 disabled:bg-gray-100 disabled:text-gray-400"
       >
         Refund trip
@@ -63,19 +63,43 @@ export function RefundButton({ bookingId, blockedReason }: { bookingId: string; 
       {asking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div role="dialog" aria-modal="true" className="w-full max-w-lg rounded-card bg-white p-6">
-            <p className="text-gray-900">Are you sure you want to refund this trip?</p>
-            <div className="mt-6 flex items-start gap-3">
-              <TripActionForm action={cancelTrip} variant="danger" submitLabel="Yes, refund" pendingLabel="Refunding...">
-                <input type="hidden" name="booking_id" value={bookingId} />
-              </TripActionForm>
-              <button
-                type="button"
-                onClick={() => setAsking(false)}
-                className="rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white"
-              >
-                No
-              </button>
-            </div>
+            {result ? (
+              <>
+                <p role="alert" className="text-gray-900">
+                  {result.error}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAsking(false)}
+                  className="mt-6 rounded-control bg-azure-blue px-6 py-2.5 text-sm font-semibold text-white hover:bg-azure-blue-dark"
+                >
+                  OK
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-gray-900">Are you sure you want to refund this trip?</p>
+                <div className="mt-6 flex items-start gap-3">
+                  <form action={refund}>
+                    <input type="hidden" name="booking_id" value={bookingId} />
+                    <button
+                      type="submit"
+                      disabled={pending}
+                      className="rounded-control bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                    >
+                      {pending ? "Refunding..." : "Yes, refund"}
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    onClick={() => setAsking(false)}
+                    className="rounded-control border border-azure-blue px-6 py-2.5 text-sm font-semibold text-azure-blue hover:bg-azure-blue hover:text-white"
+                  >
+                    No
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

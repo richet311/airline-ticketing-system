@@ -20,8 +20,18 @@ const PAYMENT_METHODS = [
 
 type TripLeg = { label: string; flight: FlightStatusRow; fare: FareOption; seats: string[] };
 
+export type TravelerDefaults = {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  nationality: string;
+  passportNumber: string;
+  passportExpiry: string;
+};
+
 export function CheckoutForm({
   rewards,
+  accountHolder,
   passengers,
   legs,
   upgrades,
@@ -32,6 +42,7 @@ export function CheckoutForm({
   idempotencyKey,
 }: {
   rewards: CheckoutRewards | null;
+  accountHolder: TravelerDefaults | null;
   passengers: number;
   legs: TripLeg[];
   upgrades: UpgradeType[];
@@ -90,7 +101,7 @@ export function CheckoutForm({
           </p>
           <div className="space-y-6">
             {Array.from({ length: passengers }, (_, i) => (
-              <TravelerFields key={i} index={i} legs={legs} />
+              <TravelerFields key={i} index={i} legs={legs} defaults={i === 0 ? accountHolder : null} />
             ))}
           </div>
         </Section>
@@ -325,7 +336,7 @@ function Section({ number, title, children }: { number: number; title: string; c
   );
 }
 
-function TravelerFields({ index, legs }: { index: number; legs: TripLeg[] }) {
+function TravelerFields({ index, legs, defaults }: { index: number; legs: TripLeg[]; defaults: TravelerDefaults | null }) {
   return (
     <fieldset className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
       <legend className="mb-3 text-sm font-semibold text-gray-900">
@@ -336,17 +347,32 @@ function TravelerFields({ index, legs }: { index: number; legs: TripLeg[] }) {
       </legend>
       <div className="grid grid-cols-3 gap-3">
         <Field label="First name">
-          <input name={`first_name_${index}`} required maxLength={50} autoComplete={index === 0 ? "given-name" : "off"} className={inputClass} />
+          <input
+            name={`first_name_${index}`}
+            defaultValue={defaults?.firstName}
+            required
+            maxLength={50}
+            autoComplete={index === 0 ? "given-name" : "off"}
+            className={inputClass}
+          />
         </Field>
         <Field label="Last name">
-          <input name={`last_name_${index}`} required maxLength={50} autoComplete={index === 0 ? "family-name" : "off"} className={inputClass} />
+          <input
+            name={`last_name_${index}`}
+            defaultValue={defaults?.lastName}
+            required
+            maxLength={50}
+            autoComplete={index === 0 ? "family-name" : "off"}
+            className={inputClass}
+          />
         </Field>
         <Field label="Date of birth">
-          <input type="date" name={`date_of_birth_${index}`} required className={inputClass} />
+          <input type="date" name={`date_of_birth_${index}`} defaultValue={defaults?.dateOfBirth} required className={inputClass} />
         </Field>
         <Field label="Nationality">
           <input
             name={`nationality_${index}`}
+            defaultValue={defaults?.nationality}
             required
             minLength={2}
             maxLength={2}
@@ -359,6 +385,7 @@ function TravelerFields({ index, legs }: { index: number; legs: TripLeg[] }) {
         <Field label="Passport number">
           <input
             name={`passport_number_${index}`}
+            defaultValue={defaults?.passportNumber}
             required
             minLength={8}
             maxLength={9}
@@ -368,7 +395,7 @@ function TravelerFields({ index, legs }: { index: number; legs: TripLeg[] }) {
           />
         </Field>
         <Field label="Passport expiry">
-          <input type="date" name={`passport_expiry_${index}`} required className={inputClass} />
+          <input type="date" name={`passport_expiry_${index}`} defaultValue={defaults?.passportExpiry} required className={inputClass} />
         </Field>
       </div>
     </fieldset>

@@ -8,6 +8,7 @@ import { AddAirportForm } from "@/components/admin/AddAirportForm";
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
 import { AircraftRow } from "@/components/admin/AircraftRow";
 import { AirportRow } from "@/components/admin/AirportRow";
+import { CustomersTile } from "@/components/admin/CustomersTile";
 import { FlightOpsRow } from "@/components/admin/FlightOpsRow";
 import { ScheduleFlightForm } from "@/components/admin/ScheduleFlightForm";
 import { pageNumber, TilePager } from "@/components/admin/TilePager";
@@ -55,6 +56,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/employee/
     canUse(role, []) && <AirportsTile key="airports" params={params} />,
     canUse(role, []) && <FlightsTile key="flights" />,
     canUse(role, [OPERATIONS_MANAGER]) && <ScheduledFlightsTile key="scheduled-flights" params={params} />,
+    canUse(role, [OPERATIONS_MANAGER]) && <CustomersTile key="customers" params={params} basePath={BASE_PATH} />,
     canUse(role, [CUSTOMER_SERVICE_AGENT]) && <BookingsTile key="bookings" params={params} basePath="/employee/admin" />,
     canUse(role, [GATE_AGENT]) && (
       <GateTile key="gate" flightNumber={gateFlight} basePath="/employee/admin" keep={bookingFilterParams(params)} />

@@ -54,6 +54,12 @@ export function FlightOpsRow({
 
   function changeStatus(value: string) {
     const current = status;
+    if (
+      value === "CANCELLED" &&
+      !window.confirm(`Are you sure you want to cancel flight ${flight.flight_number} from ${flight.origin} to ${flight.destination}?`)
+    ) {
+      return;
+    }
     save(
       () => setStatus(value),
       () => setStatus(current),

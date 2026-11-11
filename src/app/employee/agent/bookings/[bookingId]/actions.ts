@@ -12,7 +12,6 @@ import {
   cabinChangeCost,
   CHANGEABLE_FLIGHT_STATUSES,
   cancellationRefund,
-  flightHasDeparted,
   roundCents,
   statusChangeProblem,
 } from "@/lib/bookingRules";
@@ -92,7 +91,7 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
 
   const [tickets] = await conn.query<RowDataPacket[]>(
     `SELECT t.e_ticket_number, t.flight_id, t.fare_class_id, t.seat_number, t.flight_fare, fc.change_fee,
-            fs.flight_status_name, f.flight_number, TIMESTAMPDIFF(MINUTE, NOW(), f.departure_time) AS minutes_to_departure
+            fs.flight_status_name
        FROM ticket t
        JOIN fare_class fc    ON fc.fare_class_id = t.fare_class_id
        JOIN flight f         ON f.flight_id = t.flight_id
@@ -106,10 +105,6 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
   //In the event of cancelling, free the seat(s), refund everything paid and take back the points it earned.
   //A booking with a flight that already left can't be cancelled, so a flown trip is never refunded.
   if (newStatus === "CANCELLED") {
-    const flown = tickets.find((ticket) =>
-      flightHasDeparted({ flight_status_name: ticket.flight_status_name, minutes_to_departure: Number(ticket.minutes_to_departure) }),
-    );
-    if (flown) throw new Refused(`${flown.flight_number} has already left, so this booking can't be cancelled or refunded.`);
     const refund = cancellationRefund(paid);
     await conn.query(
       `UPDATE seat s JOIN ticket t ON t.flight_id = s.flight_id AND t.seat_number = s.seat_number

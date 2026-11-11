@@ -5,7 +5,7 @@ import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { TripActionForm } from "@/components/trips/TripActionForm";
 import { Card, cabinLabel, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
-import { checkInProblem, documentProblem } from "@/lib/bookingRules";
+import { checkInProblem, checkInStillNeeded, documentProblem } from "@/lib/bookingRules";
 import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, legLabel, type TripLeg } from "@/lib/trips";
@@ -39,6 +39,8 @@ async function CheckInTrip({ params }: { params: Promise<{ bookingId: string }> 
 
   const { booking, legs } = trip;
   const confirmed = booking.booking_status_name === "CONFIRMED";
+  const anyCheckedIn = legs.some((leg) => leg.tickets.some((ticket) => ticket.checked_in === 1));
+  const checkedIn = confirmed && anyCheckedIn && !legs.some((leg) => checkInStillNeeded(leg.flight, leg.tickets));
 
   return (
     <>
@@ -46,10 +48,16 @@ async function CheckInTrip({ params }: { params: Promise<{ bookingId: string }> 
         View trip {bookingId}
       </Link>
 
-      <PageHeading overline={`Check in · ${bookingId}`} title="Check in for your flight">
-        Check-in opens 24 hours before departure and closes 45 minutes before. Every traveler needs a seat and a
-        passport that is valid on the day of the flight.
-      </PageHeading>
+      {checkedIn ? (
+        <PageHeading overline={`Check in · ${bookingId}`} title="You're checked in">
+          You&apos;ve already checked in for this trip. Show your boarding pass below at the gate.
+        </PageHeading>
+      ) : (
+        <PageHeading overline={`Check in · ${bookingId}`} title="Check in for your flight">
+          Check-in opens 24 hours before departure and closes 45 minutes before. Every traveler needs a seat and a
+          passport that is valid on the day of the flight.
+        </PageHeading>
+      )}
 
       {!confirmed ? (
         <Card>
@@ -109,6 +117,11 @@ function LegCheckIn({ bookingId, leg, label }: { bookingId: string; leg: TripLeg
 
       {checkedIn.length > 0 && (
         <div className="mt-5 space-y-4 border-t border-gray-200 pt-4">
+          {waiting.length === 0 && (
+            <p className="text-sm font-semibold text-azure-navy">
+              {checkedIn.length === 1 ? "You're" : "Everyone on this booking is"} checked in for this flight.
+            </p>
+          )}
           <h3 className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">Boarding passes</h3>
           {checkedIn.map((ticket) => (
             <BoardingPass key={ticket.e_ticket_number} ticket={ticket} />

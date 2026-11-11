@@ -41,6 +41,35 @@ export function RegisterForm({ next }: { next: string | null }) {
         </Field>
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <Field id="register-date-of-birth" label="Date of birth">
+          <input
+            id="register-date-of-birth"
+            name="date_of_birth"
+            type="date"
+            defaultValue={state?.dateOfBirth}
+            autoComplete="bday"
+            required
+            min="1900-01-01"
+            className={inputClass}
+          />
+        </Field>
+        <Field id="register-nationality" label="Nationality">
+          <input
+            id="register-nationality"
+            name="nationality"
+            defaultValue={state?.nationality}
+            placeholder="e.g. US"
+            required
+            minLength={2}
+            maxLength={2}
+            pattern="[A-Za-z]{2}"
+            title="2-letter country code, like US"
+            className={`${inputClass} uppercase`}
+          />
+        </Field>
+      </div>
+
       <Field id="register-email" label="Email">
         <input
           id="register-email"

@@ -5,7 +5,7 @@ import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { TripLookupForm } from "@/components/TripLookupForm";
 import { BookingStatusPill } from "@/components/trips/TripParts";
-import { checkInProblem } from "@/lib/bookingRules";
+import { checkInStillNeeded } from "@/lib/bookingRules";
 import { db } from "@/lib/db";
 import { formatMonthDay } from "@/lib/format";
 import { getCurrentUser } from "@/lib/session";
@@ -16,6 +16,7 @@ type TripCardData = {
   bookingId: string;
   status: string;
   flights: MyTripRow[]; // one row per flight, in departure order
+  tickets: Pick<MyTripRow, "flight_id" | "checked_in">[];
   travelers: number;
   upcoming: boolean;
 };
@@ -49,7 +50,7 @@ async function SignedInTrips() {
   if (!user || user.passenger_id === null) return null;
 
   const [rows] = await db.query<MyTripRow[]>(
-    `SELECT t.booking_id, bs.booking_status_name, t.passenger_id,
+    `SELECT t.booking_id, bs.booking_status_name, t.passenger_id, t.checked_in,
             f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
             TIMESTAMPDIFF(MINUTE, NOW(), f.departure_time) AS minutes_to_departure,
             o.airport_code AS origin, o.city AS origin_city, o.timezone AS origin_timezone,
@@ -72,9 +73,10 @@ async function SignedInTrips() {
   for (const row of rows) {
     let trip = trips.get(row.booking_id);
     if (!trip) {
-      trip = { bookingId: row.booking_id, status: row.booking_status_name, flights: [], travelers: 0, upcoming: false, passengers: new Set() };
+      trip = { bookingId: row.booking_id, status: row.booking_status_name, flights: [], tickets: [], travelers: 0, upcoming: false, passengers: new Set() };
       trips.set(row.booking_id, trip);
     }
+    trip.tickets.push({ flight_id: row.flight_id, checked_in: row.checked_in });
     trip.passengers.add(row.passenger_id);
     trip.travelers = trip.passengers.size;
     if (!trip.flights.some((flight) => flight.flight_id === row.flight_id)) trip.flights.push(row);
@@ -93,7 +95,7 @@ async function SignedInTrips() {
   return (
     <section className="py-12">
       <div className="mx-auto max-w-6xl space-y-10 px-4">
-        <PageHeading overline="My trips" title={`Welcome back${user.first_name ? `, ${user.first_name}` : ""}`} />
+        <PageHeading overline="My trips" title={`Welcome${user.first_name ? `, ${user.first_name}` : ""}`} />
         <TripGroup title="Upcoming" trips={upcoming} empty="No upcoming trips. Where to next?" emptyLink />
         {past.length > 0 && <TripGroup title="Past" trips={past} />}
         {cancelled.length > 0 && <TripGroup title="Cancelled" trips={cancelled} />}
@@ -142,7 +144,14 @@ function TripCard({ trip }: { trip: TripCardData }) {
   const first = trip.flights[0];
   const last = trip.flights[trip.flights.length - 1];
   const roundTrip = trip.flights.length === 2 && last.destination === first.origin;
-  const canCheckIn = trip.status === "CONFIRMED" && trip.flights.some((flight) => checkInProblem(flight) === null);
+  const canCheckIn =
+    trip.status === "CONFIRMED" &&
+    trip.flights.some((flight) =>
+      checkInStillNeeded(
+        flight,
+        trip.tickets.filter((ticket) => ticket.flight_id === flight.flight_id),
+      ),
+    );
   const hasCancelledFlight = trip.status !== "CANCELLED" && trip.flights.some((f) => f.flight_status_name === "CANCELLED");
 
   return (

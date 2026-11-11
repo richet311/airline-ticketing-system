@@ -82,6 +82,7 @@ export function cancelProblem(bookingStatus: string, legs: LegForRules[][]): str
   if (bookingStatus === "CANCELLED") return "This trip is already cancelled.";
   if (bookingStatus !== "CONFIRMED") return "Only confirmed trips can be cancelled online.";
   for (const leg of legs) {
+    if (["DEPARTED", "ARRIVED"].includes(leg[0].flight_status_name)) continue;
     const problem = legChangeProblem(leg, "cancelled");
     if (problem) return problem;
   }
@@ -102,6 +103,13 @@ export function checkInProblem(flight: Omit<LegForRules, "checked_in">): string 
     return "Online check-in closed 45 minutes before departure. Please see an agent at the airport.";
   }
   return null;
+}
+
+export function checkInStillNeeded(
+  flight: Omit<LegForRules, "checked_in">,
+  tickets: Pick<LegForRules, "checked_in">[],
+): boolean {
+  return checkInProblem(flight) === null && tickets.some((ticket) => ticket.checked_in !== 1);
 }
 
 // A traveler needs a passport on file that is still valid on the day of the flight

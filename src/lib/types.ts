@@ -624,6 +624,17 @@ export interface FlightTicketRow extends RowDataPacket {
     booking_status_name: string;
 }
 
+export interface CustomerListRow extends RowDataPacket {
+    passenger_id: number;
+    user_id: number | null;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    date_of_birth: string | null;
+    nationality: string | null;
+    created_at: string;
+}
+
 export interface CustomerBookingRow extends RowDataPacket {
     booking_id: string;
     passenger_id: number;
@@ -689,6 +700,7 @@ export interface MyTripRow extends RowDataPacket {
     booking_id: string;
     booking_status_name: string;
     passenger_id: number;
+    checked_in: 0 | 1 | null;
     flight_id: number;
     flight_number: string;
     departure_time: string;

@@ -157,7 +157,8 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
 
       const passengerIds: number[] = [];
       for (const traveler of travelers) {
-        passengerIds.push(await findOrCreatePassenger(conn, traveler));
+        const accountId = passengerIds.includes(user.passenger_id ?? -1) ? null : user.passenger_id;
+        passengerIds.push(await findOrCreatePassenger(conn, traveler, accountId));
       }
 
       const newBookingId = await insertBooking(conn, user.passenger_id ?? passengerIds[0], total);
@@ -338,7 +339,7 @@ async function checkLeg(conn: PoolConnection, leg: Leg) {
 }
 
 // Reuses the passenger if the passport is already on file, otherwise adds a new one.
-async function findOrCreatePassenger(conn: PoolConnection, t: Traveler): Promise<number> {
+async function findOrCreatePassenger(conn: PoolConnection, t: Traveler, accountId: number | null): Promise<number> {
   const [existing] = await conn.query<RowDataPacket[]>(
     `SELECT passenger_id, first_name, last_name, date_of_birth
        FROM passenger
@@ -356,7 +357,34 @@ async function findOrCreatePassenger(conn: PoolConnection, t: Traveler): Promise
         `Passport ${t.passportNumber} is on file under a different name or date of birth. Please check it.`,
       );
     }
+    await conn.query(
+      "UPDATE passenger SET passport_expiry_date = ?, updated_by = ?, last_updated = NOW() WHERE passenger_id = ?",
+      [t.passportExpiry, SYSTEM_USER_ID, row.passenger_id],
+    );
     return row.passenger_id;
+  }
+
+  if (accountId !== null) {
+    const [accounts] = await conn.query<RowDataPacket[]>(
+      "SELECT first_name, last_name, date_of_birth FROM passenger WHERE passenger_id = ? FOR UPDATE",
+      [accountId],
+    );
+    const holder = accounts[0];
+    const isHolder =
+      holder &&
+      String(holder.first_name).toLowerCase() === t.firstName.toLowerCase() &&
+      String(holder.last_name).toLowerCase() === t.lastName.toLowerCase() &&
+      (holder.date_of_birth === null || holder.date_of_birth === t.dateOfBirth);
+    if (isHolder) {
+      await conn.query(
+        `UPDATE passenger
+            SET date_of_birth = ?, nationality = ?, passport_number = ?, passport_expiry_date = ?,
+                updated_by = ?, last_updated = NOW()
+          WHERE passenger_id = ?`,
+        [t.dateOfBirth, t.nationality, t.passportNumber, t.passportExpiry, SYSTEM_USER_ID, accountId],
+      );
+      return accountId;
+    }
   }
 
   const [result] = await conn.query<ResultSetHeader>(

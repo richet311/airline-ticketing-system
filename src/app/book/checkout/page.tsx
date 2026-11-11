@@ -129,10 +129,29 @@ async function Checkout({ searchParams }: { searchParams: Promise<SearchParams> 
     const tier = tierFor(await getQualifyingSpend(user.user_id), await getTiers());
     rewards = { points: user.loyalty_points, tierName: tierLabel(tier.tier_name), bonusPercent: tier.bonus_percent };
   }
+  const [holders] = user?.passenger_id
+    ? await db.query<RowDataPacket[]>(
+        `SELECT first_name, last_name, date_of_birth, nationality, passport_number, passport_expiry_date
+           FROM passenger
+          WHERE passenger_id = ?`,
+        [user.passenger_id],
+      )
+    : [[] as RowDataPacket[]];
+  const accountHolder = holders[0]
+    ? {
+        firstName: holders[0].first_name ?? "",
+        lastName: holders[0].last_name ?? "",
+        dateOfBirth: holders[0].date_of_birth ?? "",
+        nationality: holders[0].nationality ?? "",
+        passportNumber: holders[0].passport_number ?? "",
+        passportExpiry: holders[0].passport_expiry_date ?? "",
+      }
+    : null;
 
   return (
     <CheckoutForm
       rewards={rewards}
+      accountHolder={accountHolder}
       passengers={passengers}
       legs={tripLegs}
       upgrades={upgrades}
