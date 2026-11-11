@@ -21,6 +21,7 @@ type SearchParams = { [key: string]: string | string[] | undefined };
 
 const PAGE_SIZE = 20;
 const FILTER_NAMES = ["booking", "flight", "origin", "destination"] as const;
+const SHOWN_FLIGHTS = "fs.flight_status_name IN ('SCHEDULED', 'DELAYED', 'CANCELLED')";
 
 const TICKET_JOINS = `
        FROM ticket t
@@ -38,7 +39,7 @@ function urlValue(params: SearchParams, name: string): string {
 
 export function bookingFilterParams(params: SearchParams): Record<string, string> {
   const kept: Record<string, string> = {};
-  for (const name of [...FILTER_NAMES, "page", "hide_past"]) {
+  for (const name of [...FILTER_NAMES, "page"]) {
     if (urlValue(params, name)) kept[name] = urlValue(params, name);
   }
   return kept;
@@ -51,18 +52,30 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
     string
   >;
   const gateFlight = urlValue(params, "gate_flight");
-  const hidePast = urlValue(params, "hide_past") === "1";
-  const statusCondition = hidePast
-    ? "fs.flight_status_name NOT IN ('DEPARTED', 'ARRIVED')"
-    : "fs.flight_status_name <> 'ARRIVED'";
+  const statusCondition = SHOWN_FLIGHTS;
 
   const problems: string[] = [];
   if (filters.booking) {
-    const [found] = await db.query<RowDataPacket[]>("SELECT 1 FROM booking WHERE booking_id = ?", [filters.booking]);
+    const [found] = await db.query<RowDataPacket[]>(
+      `SELECT 1
+         FROM ticket t
+         JOIN flight f         ON f.flight_id = t.flight_id
+         JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
+        WHERE t.booking_id = ? AND ${SHOWN_FLIGHTS}
+        LIMIT 1`,
+      [filters.booking],
+    );
     if (found.length === 0) problems.push("Please enter a valid booking ID");
   }
   if (filters.flight) {
-    const [found] = await db.query<RowDataPacket[]>("SELECT 1 FROM flight WHERE flight_number = ? LIMIT 1", [filters.flight]);
+    const [found] = await db.query<RowDataPacket[]>(
+      `SELECT 1
+         FROM flight f
+         JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
+        WHERE f.flight_number = ? AND ${SHOWN_FLIGHTS}
+        LIMIT 1`,
+      [filters.flight],
+    );
     if (found.length === 0) problems.push("Please enter a valid flight number");
   }
 
@@ -168,7 +181,7 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
   const bagWeights: Record<string, number[]> = {};
   for (const bag of bags) (bagWeights[bag.e_ticket_number] ??= []).push(Number(bag.weightage));
 
-  const kept = { ...filters, gate_flight: gateFlight, hide_past: hidePast ? "1" : "" };
+  const kept = { ...filters, gate_flight: gateFlight };
   const hrefFor = (extra: Record<string, string>) => {
     const query = new URLSearchParams(Object.entries({ ...kept, ...extra }).filter(([, value]) => value !== ""));
     return query.size > 0 ? `${basePath}?${query}` : basePath;
@@ -178,7 +191,6 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
     <AdminTile overline="Customer service" title="Bookings">
       <Form key={JSON.stringify(filters)} action={basePath} scroll={false} className="mb-2 flex flex-wrap items-end gap-3">
         {gateFlight && <input type="hidden" name="gate_flight" value={gateFlight} />}
-        {hidePast && <input type="hidden" name="hide_past" value="1" />}
         <label className="w-32">
           <span className={adminLabelClass}>Booking</span>
           <input name="booking" defaultValue={filters.booking} placeholder="AZ43AA" maxLength={6} className={`${adminInputClass} uppercase`} />
@@ -206,18 +218,6 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
           className="flex h-9 items-center text-sm font-semibold text-azure-blue hover:underline"
         >
           Clear
-        </Link>
-        <Link
-          href={hrefFor({ hide_past: hidePast ? "" : "1", page: "" })}
-          scroll={false}
-          role="switch"
-          aria-checked={hidePast}
-          className="ml-2 flex h-9 items-center gap-2 text-sm text-gray-700"
-        >
-          <span className={`relative h-5 w-9 rounded-full ${hidePast ? "bg-azure-blue" : "bg-gray-300"}`}>
-            <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white ${hidePast ? "left-4.5" : "left-0.5"}`} />
-          </span>
-          Hide departed flights
         </Link>
       </Form>
 

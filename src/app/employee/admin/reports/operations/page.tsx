@@ -8,7 +8,7 @@ import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatDate, formatMonthDay, formatTime } from "@/lib/format";
 import { addDateRange, readReportFilters, REPORT_TABLE_SIZE, REPORTS, STATUS_GROUPS, statusGroup } from "@/lib/reports";
-import type { FlightLoadRow, RouteOptionRow } from "@/lib/types";
+import type { FlightLoadRow, FlightTicketRow, RouteOptionRow } from "@/lib/types";
 
 const cell = "py-2 pr-4";
 
@@ -67,8 +67,26 @@ async function OperationsReport({
     values,
   );
 
+  const [tickets] = await db.query<FlightTicketRow[]>(
+    `SELECT t.e_ticket_number, t.booking_id, f.flight_number, f.departure_time, t.seat_number,
+            cc.cabin_class_name, bs.booking_status_name
+       FROM ticket t
+       JOIN flight f          ON f.flight_id = t.flight_id
+       JOIN airport o         ON o.airport_id = f.origin_airport_id
+       JOIN airport d         ON d.airport_id = f.destination_airport_id
+       JOIN booking b         ON b.booking_id = t.booking_id
+       JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id
+       JOIN fare_class fc     ON fc.fare_class_id = t.fare_class_id
+       JOIN cabin_class cc    ON cc.cabin_class_id = fc.cabin_class_id
+      ${where.length > 0 ? `WHERE ${where.join(" AND ")}` : ""}
+      ORDER BY f.departure_time, f.flight_number, CAST(t.seat_number AS UNSIGNED), t.seat_number, t.e_ticket_number`,
+    values,
+  );
+
   const flying = flights.filter((flight) => flight.flight_status_name !== "CANCELLED");
   const page = pageNumber(params, "page", flights.length, REPORT_TABLE_SIZE);
+  const ticketPage = pageNumber(params, "detail_page", tickets.length, REPORT_TABLE_SIZE);
+  const label = (name: string) => name.charAt(0) + name.slice(1).toLowerCase();
   const averageLoad = flying.length === 0 ? 0 : flying.reduce((sum, flight) => sum + flight.load_factor, 0) / flying.length;
   const percent = (value: number) => `${value.toFixed(1)}%`;
 
@@ -123,9 +141,7 @@ async function OperationsReport({
                   <td className={cell}>{flight.capacity}</td>
                   <td className={cell}>{flight.seats_sold}</td>
                   <td className={cell}>{percent(flight.load_factor)}</td>
-                  <td className={cell}>
-                    {flight.flight_status_name.charAt(0) + flight.flight_status_name.slice(1).toLowerCase()}
-                  </td>
+                  <td className={cell}>{label(flight.flight_status_name)}</td>
                 </tr>
               ))}
             </AdminTable>
@@ -139,6 +155,37 @@ async function OperationsReport({
               noun="Flights"
             />
           </AdminTile>
+
+          {tickets.length > 0 && (
+            <AdminTile overline="Detail" title="Tickets on these flights">
+              <p className="mb-4 text-sm text-gray-600">Every ticket above, in the flight order it appears in.</p>
+              <AdminTable headings={["Flight", "Departs (UTC)", "Ticket", "Booking", "Seat", "Cabin", "Booking status", "Counts as sold"]}>
+                {tickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
+                  <tr key={ticket.e_ticket_number}>
+                    <td className={`${cell} font-semibold`}>{ticket.flight_number}</td>
+                    <td className={cell}>
+                      {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
+                    </td>
+                    <td className={cell}>{ticket.e_ticket_number}</td>
+                    <td className={cell}>{ticket.booking_id}</td>
+                    <td className={cell}>{ticket.seat_number ?? "—"}</td>
+                    <td className={cell}>{label(ticket.cabin_class_name)}</td>
+                    <td className={cell}>{label(ticket.booking_status_name)}</td>
+                    <td className={cell}>{ticket.booking_status_name === "CONFIRMED" ? "Yes" : "No"}</td>
+                  </tr>
+                ))}
+              </AdminTable>
+              <TilePager
+                basePath={REPORTS.operations.href}
+                params={params}
+                name="detail_page"
+                page={ticketPage}
+                size={REPORT_TABLE_SIZE}
+                total={tickets.length}
+                noun="Tickets"
+              />
+            </AdminTile>
+          )}
         </>
       )}
     </>

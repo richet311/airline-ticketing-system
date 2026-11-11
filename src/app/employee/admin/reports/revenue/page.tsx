@@ -6,11 +6,21 @@ import { BarChart } from "@/components/reports/Charts";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
-import { formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, formatTime } from "@/lib/format";
 import { addDateRange, DEFAULT_MIN_TICKETS, readReportFilters, REPORT_TABLE_SIZE, REPORTS } from "@/lib/reports";
-import type { CabinClass, RouteAirportsRow, RouteRevenueRow } from "@/lib/types";
+import type { CabinClass, RouteAirportsRow, RouteRevenueRow, RouteTicketRow } from "@/lib/types";
 
 const cell = "py-2 pr-4";
+
+const TICKET_JOINS = `FROM ticket t
+       JOIN booking b         ON b.booking_id = t.booking_id
+       JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id
+       JOIN flight f          ON f.flight_id = t.flight_id
+       JOIN flight_status fs  ON fs.flight_status_id = f.flight_status_id
+       JOIN airport o         ON o.airport_id = f.origin_airport_id
+       JOIN airport d         ON d.airport_id = f.destination_airport_id
+       JOIN fare_class fc     ON fc.fare_class_id = t.fare_class_id
+       JOIN cabin_class cc    ON cc.cabin_class_id = fc.cabin_class_id`;
 
 export default function RevenueReportPage({ searchParams }: PageProps<"/employee/admin/reports/revenue">) {
   return (
@@ -58,22 +68,29 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
             COUNT(DISTINCT f.flight_id) AS flights, COUNT(*) AS tickets,
             SUM(t.flight_fare) AS revenue, SUM(f.distance) AS passenger_miles,
             ROUND(SUM(t.flight_fare) / SUM(f.distance) * 100, 2) AS revenue_per_100_miles
-       FROM ticket t
-       JOIN booking b         ON b.booking_id = t.booking_id
-       JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id
-       JOIN flight f          ON f.flight_id = t.flight_id
-       JOIN flight_status fs  ON fs.flight_status_id = f.flight_status_id
-       JOIN airport o        ON o.airport_id = f.origin_airport_id
-       JOIN airport d         ON d.airport_id = f.destination_airport_id
-       JOIN fare_class fc     ON fc.fare_class_id = t.fare_class_id
-       JOIN cabin_class cc    ON cc.cabin_class_id = fc.cabin_class_id
+       ${TICKET_JOINS}
       WHERE ${where.join(" AND ")}
       GROUP BY o.airport_code, d.airport_code, f.distance
       ORDER BY revenue_per_100_miles DESC`,
     values,
   );
+  const [ticketRows] = await db.query<RouteTicketRow[]>(
+    `SELECT t.e_ticket_number, t.booking_id, f.flight_number, f.departure_time,
+            CONCAT(o.airport_code, ' → ', d.airport_code) AS route, f.distance,
+            cc.cabin_class_name, t.flight_fare,
+            ROUND(t.flight_fare / f.distance * 100, 2) AS fare_per_100_miles
+       ${TICKET_JOINS}
+      WHERE ${where.join(" AND ")}
+      ORDER BY f.departure_time, f.flight_number, t.e_ticket_number`,
+    values,
+  );
   const ranked = rows.filter((row) => row.tickets >= minTickets);
   const page = pageNumber(params, "page", ranked.length, REPORT_TABLE_SIZE);
+  const routeOrder = new Map(ranked.map((row, index) => [row.route, index]));
+  const rankedTickets = ticketRows
+    .filter((ticket) => routeOrder.has(ticket.route))
+    .sort((a, b) => (routeOrder.get(a.route) ?? 0) - (routeOrder.get(b.route) ?? 0));
+  const ticketPage = pageNumber(params, "detail_page", rankedTickets.length, REPORT_TABLE_SIZE);
   const tickets = (count: number) => `${count} ticket${count === 1 ? "" : "s"}`;
 
   return (
@@ -114,6 +131,37 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
           </>
         )}
       </AdminTile>
+
+      {rankedTickets.length > 0 && (
+        <AdminTile overline="Detail" title="Tickets on these routes">
+          <p className="mb-4 text-sm text-gray-600">Every ticket above, in the route order it appears in.</p>
+          <AdminTable headings={["Ticket", "Flight", "Departs (UTC)", "Route", "Cabin", "Miles", "Fare paid", "Fare / 100 mi"]}>
+            {rankedTickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
+              <tr key={ticket.e_ticket_number}>
+                <td className={`${cell} font-semibold`}>{ticket.e_ticket_number}</td>
+                <td className={cell}>{ticket.flight_number}</td>
+                <td className={cell}>
+                  {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
+                </td>
+                <td className={cell}>{ticket.route}</td>
+                <td className={cell}>{ticket.cabin_class_name.charAt(0) + ticket.cabin_class_name.slice(1).toLowerCase()}</td>
+                <td className={cell}>{ticket.distance.toLocaleString("en-US")}</td>
+                <td className={cell}>{formatMoney(ticket.flight_fare)}</td>
+                <td className={cell}>{formatMoney(ticket.fare_per_100_miles)}</td>
+              </tr>
+            ))}
+          </AdminTable>
+          <TilePager
+            basePath={REPORTS.revenue.href}
+            params={params}
+            name="detail_page"
+            page={ticketPage}
+            size={REPORT_TABLE_SIZE}
+            total={rankedTickets.length}
+            noun="Tickets"
+          />
+        </AdminTile>
+      )}
     </>
   );
 }

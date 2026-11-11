@@ -5,8 +5,8 @@ import { CHECKED_BAG_FEES } from "@/lib/baggageFees";
 // A ticket's fare class and seat can only change before takeoff
 export const CHANGEABLE_FLIGHT_STATUSES = ["SCHEDULED", "DELAYED"];
 
-// Bags can be added for longer: right up until the plane leaves
-export const BAG_FLIGHT_STATUSES = ["SCHEDULED", "DELAYED", "BOARDING"];
+// Bag check closes when boarding starts
+export const BAG_FLIGHT_STATUSES = ["SCHEDULED", "DELAYED"];
 
 export function statusChangeProblem(from: string, to: string): string | null {
   if (from === to) return null;

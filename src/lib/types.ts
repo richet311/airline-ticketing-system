@@ -602,6 +602,38 @@ export interface CustomerValueRow extends RowDataPacket {
     spend: number;
 }
 
+export interface RouteTicketRow extends RowDataPacket {
+    e_ticket_number: string;
+    booking_id: string;
+    flight_number: string;
+    departure_time: string;
+    route: string;
+    distance: number;
+    cabin_class_name: string;
+    flight_fare: number;
+    fare_per_100_miles: number;
+}
+
+export interface FlightTicketRow extends RowDataPacket {
+    e_ticket_number: string;
+    booking_id: string;
+    flight_number: string;
+    departure_time: string;
+    seat_number: string | null;
+    cabin_class_name: string;
+    booking_status_name: string;
+}
+
+export interface CustomerBookingRow extends RowDataPacket {
+    booking_id: string;
+    passenger_id: number;
+    created_at: string;
+    booking_status_name: string;
+    total_amount: number;
+    on_cancelled_flight: 0 | 1;
+    flights: string | null;
+}
+
 // /my-trips/[bookingId] and /check-in/[bookingId]: the booking with who booked it and what they paid
 export interface TripBookingRow extends RowDataPacket {
     booking_id: string;
