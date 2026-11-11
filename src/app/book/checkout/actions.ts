@@ -357,6 +357,10 @@ async function findOrCreatePassenger(conn: PoolConnection, t: Traveler, accountI
         `Passport ${t.passportNumber} is on file under a different name or date of birth. Please check it.`,
       );
     }
+    await conn.query(
+      "UPDATE passenger SET passport_expiry_date = ?, updated_by = ?, last_updated = NOW() WHERE passenger_id = ?",
+      [t.passportExpiry, SYSTEM_USER_ID, row.passenger_id],
+    );
     return row.passenger_id;
   }
 

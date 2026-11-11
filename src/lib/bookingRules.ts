@@ -82,6 +82,7 @@ export function cancelProblem(bookingStatus: string, legs: LegForRules[][]): str
   if (bookingStatus === "CANCELLED") return "This trip is already cancelled.";
   if (bookingStatus !== "CONFIRMED") return "Only confirmed trips can be cancelled online.";
   for (const leg of legs) {
+    if (["DEPARTED", "ARRIVED"].includes(leg[0].flight_status_name)) continue;
     const problem = legChangeProblem(leg, "cancelled");
     if (problem) return problem;
   }

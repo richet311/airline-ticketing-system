@@ -70,7 +70,6 @@ async function TripDetails({
   const cancelBlocked = cancelProblem(booking.booking_status_name, legs.map((leg) => leg.tickets));
   const departed = legs.some((leg) => flightHasDeparted(leg.flight));
   let refundBlocked = cancelBlocked;
-  if (departed) refundBlocked = "This flight has already departed and can no longer be refunded.";
   if (booking.booking_status_name === "PENDING") refundBlocked = "This trip is still pending, so there's nothing to refund yet.";
 
   let changeBlocked: string | null = null;
