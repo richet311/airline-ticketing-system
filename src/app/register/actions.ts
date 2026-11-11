@@ -16,6 +16,8 @@ export type RegisterState = {
   error: string;
   firstName: string;
   lastName: string;
+  dateOfBirth: string;
+  nationality: string;
   email: string;
   phone: string;
   redirectTo?: string;
@@ -25,11 +27,13 @@ export type RegisterState = {
 export async function register(previousState: RegisterState, formData: FormData): Promise<RegisterState> {
   const firstName = String(formData.get("first_name") ?? "").trim();
   const lastName = String(formData.get("last_name") ?? "").trim();
+  const dateOfBirth = String(formData.get("date_of_birth") ?? "").trim();
+  const nationality = String(formData.get("nationality") ?? "").trim().toUpperCase();
   const email = String(formData.get("email") ?? "").trim();
   const phoneTyped = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
-  const typed = { firstName, lastName, email, phone: phoneTyped };
+  const typed = { firstName, lastName, dateOfBirth, nationality, email, phone: phoneTyped };
 
   // "+1 (713) 555-0100" -> "+17135550100" (the schema only allows digits and a leading +)
   const phone = phoneTyped === "" ? null : phoneTyped.replace(/[\s().-]/g, "");
@@ -37,6 +41,11 @@ export async function register(previousState: RegisterState, formData: FormData)
   // same rules as the schema's constraints
   if (firstName === "" || lastName === "") return { error: "Enter your first and last name.", ...typed };
   if (firstName.length > 50 || lastName.length > 50) return { error: "Names can be at most 50 characters.", ...typed };
+  const today = new Date().toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) || Number.isNaN(Date.parse(dateOfBirth)) || dateOfBirth < "1900-01-01" || dateOfBirth >= today) {
+    return { error: "Enter your date of birth as a real date in the past.", ...typed };
+  }
+  if (!/^[A-Z]{2}$/.test(nationality)) return { error: "Nationality is a 2-letter country code, like US.", ...typed };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 100) {
     return { error: "Enter a valid email address.", ...typed };
   }
@@ -70,9 +79,9 @@ export async function register(previousState: RegisterState, formData: FormData)
         [email, phone, passwordHash, SYSTEM_USER_ID, SYSTEM_USER_ID],
       );
       await conn.query(
-        `INSERT INTO passenger (user_id, first_name, last_name, created_by, created_at, updated_by, last_updated)
-         VALUES (?, ?, ?, ?, NOW(), ?, NOW())`,
-        [user.insertId, firstName, lastName, SYSTEM_USER_ID, SYSTEM_USER_ID],
+        `INSERT INTO passenger (user_id, first_name, last_name, date_of_birth, nationality, created_by, created_at, updated_by, last_updated)
+         VALUES (?, ?, ?, ?, ?, ?, NOW(), ?, NOW())`,
+        [user.insertId, firstName, lastName, dateOfBirth, nationality, SYSTEM_USER_ID, SYSTEM_USER_ID],
       );
       return user.insertId;
     });

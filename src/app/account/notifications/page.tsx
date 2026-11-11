@@ -37,6 +37,14 @@ function TypeLabel({ type }: { type: string }) {
       </span>
     );
   }
+  if (type === "REFUND") {
+    return (
+      <span className="flex items-center gap-1.5 text-gray-700">
+        <CheckCircleIcon className="h-4 w-4" />
+        Refund
+      </span>
+    );
+  }
   return (
     <span className="flex items-center gap-1.5 text-green-700">
       <CheckCircleIcon className="h-4 w-4" />

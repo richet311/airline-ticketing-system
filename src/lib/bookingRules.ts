@@ -104,6 +104,13 @@ export function checkInProblem(flight: Omit<LegForRules, "checked_in">): string 
   return null;
 }
 
+export function checkInStillNeeded(
+  flight: Omit<LegForRules, "checked_in">,
+  tickets: Pick<LegForRules, "checked_in">[],
+): boolean {
+  return checkInProblem(flight) === null && tickets.some((ticket) => ticket.checked_in !== 1);
+}
+
 // A traveler needs a passport on file that is still valid on the day of the flight
 export function documentProblem(ticket: {
   passport_number: string | null;

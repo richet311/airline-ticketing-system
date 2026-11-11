@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { ChangeFlightButton } from "@/components/trips/ChangeFlightButton";
 import { RefundButton, RefundedPopup } from "@/components/trips/RefundButton";
 import { BookingStatusPill, Card, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
-import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInProblem, flightHasDeparted, legChangeProblem } from "@/lib/bookingRules";
+import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInStillNeeded, flightHasDeparted, legChangeProblem } from "@/lib/bookingRules";
 import { formatDate, formatMoney } from "@/lib/format";
 import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, legLabel } from "@/lib/trips";
@@ -64,7 +64,7 @@ async function TripDetails({
   const bagFees = tickets.reduce((sum, ticket) => sum + ticket.bag_fees, 0);
 
   const confirmed = booking.booking_status_name === "CONFIRMED";
-  const canCheckIn = confirmed && legs.some((leg) => checkInProblem(leg.flight) === null);
+  const canCheckIn = confirmed && legs.some((leg) => checkInStillNeeded(leg.flight, leg.tickets));
   const checkInLater = confirmed && !canCheckIn && legs.some((leg) => leg.flight.minutes_to_departure > CHECK_IN_OPENS_MINUTES);
   const changeable = confirmed && legs.some((leg) => legChangeProblem(leg.tickets) === null);
   const cancelBlocked = cancelProblem(booking.booking_status_name, legs.map((leg) => leg.tickets));
