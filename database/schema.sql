@@ -732,6 +732,30 @@ DELIMITER ;
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS check_no_refund_after_departure$$
+
+CREATE TRIGGER check_no_refund_after_departure
+BEFORE UPDATE ON booking
+FOR EACH ROW
+BEGIN
+    -- A booking can't be cancelled (refunded) once any of its flights has departed or arrived
+    IF NEW.booking_status_id = (SELECT booking_status_id FROM booking_status WHERE booking_status_name = 'CANCELLED')
+       AND NEW.booking_status_id <> OLD.booking_status_id
+       AND (SELECT COUNT(*)
+              FROM ticket AS t
+              JOIN flight AS f ON f.flight_id = t.flight_id
+              JOIN flight_status AS fs ON fs.flight_status_id = f.flight_status_id
+             WHERE t.booking_id = NEW.booking_id
+               AND fs.flight_status_name IN ('DEPARTED', 'ARRIVED')) > 0
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This flight has already departed and can no longer be refunded.';
+    END IF;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
 CREATE TRIGGER check_passport_expiry_on_flight_change
 BEFORE UPDATE ON ticket
 FOR EACH ROW
@@ -970,31 +994,6 @@ BEGIN
         ELSEIF v_old = 'DEPARTED' AND v_new <> 'ARRIVED' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A departed flight can only move to Arrived.';
         END IF;
-    END IF;
-END$$
-
-DELIMITER ;
-
-
-DELIMITER $$
-
-DROP TRIGGER IF EXISTS check_no_refund_after_departure$$
-
-CREATE TRIGGER check_no_refund_after_departure
-BEFORE UPDATE ON booking
-FOR EACH ROW
-BEGIN
-    -- A booking can't be cancelled (refunded) once any of its flights has departed or arrived
-    IF NEW.booking_status_id = (SELECT booking_status_id FROM booking_status WHERE booking_status_name = 'CANCELLED')
-       AND NEW.booking_status_id <> OLD.booking_status_id
-       AND (SELECT COUNT(*)
-              FROM ticket AS t
-              JOIN flight AS f ON f.flight_id = t.flight_id
-              JOIN flight_status AS fs ON fs.flight_status_id = f.flight_status_id
-             WHERE t.booking_id = NEW.booking_id
-               AND fs.flight_status_name IN ('DEPARTED', 'ARRIVED')) > 0
-    THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'This flight has already departed and can no longer be refunded.';
     END IF;
 END$$
 
