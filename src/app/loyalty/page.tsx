@@ -13,7 +13,7 @@ const STEPS = [
   { title: "Book", text: "Book a flight while you're logged in." },
   { title: "Earn", text: `Get ${POINTS_PER_DOLLAR} points for every $1, plus your tier bonus.` },
   { title: "Move up", text: "Spend more in a year to reach Silver, Gold and Platinum." },
-  { title: "Use them", text: `${POINTS_PER_DOLLAR_OFF} points = $1 off a booking. Coming soon.` },
+  { title: "Use them", text: `Pay for upgrades like Wi-Fi with points at checkout. ${POINTS_PER_DOLLAR_OFF} points = $1.` },
 ];
 
 // one color per tier for the badge and tier cards

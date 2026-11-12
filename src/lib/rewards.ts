@@ -110,33 +110,55 @@ export async function awardPoints(bookingId: string, updatedBy: number): Promise
   }
 }
 
-// Takes back the points a booking earned when it is cancelled. Run inside the cancel's transaction.
-// Returns the points removed. Never takes the balance below 0 (points may already be spent).
+// When a booking is cancelled: takes back the points it earned and gives back the points spent on its upgrades.
+// Run inside the cancel's transaction. Saved as one REFUND row. Never takes the balance below 0.
 export async function refundPoints(conn: Connection, bookingId: string, updatedBy: number): Promise<number> {
-  const [earned] = await conn.query<RowDataPacket[]>(
-    `SELECT pt.user_id, pt.points, pt.qualifying_spend, u.loyalty_points
+  const [rows] = await conn.query<RowDataPacket[]>(
+    `SELECT pt.user_id, pt.transaction_type, pt.points, pt.qualifying_spend, u.loyalty_points
        FROM points_transaction pt
        JOIN user u ON u.user_id = pt.user_id
-      WHERE pt.booking_id = ? AND pt.transaction_type = 'EARN'
+      WHERE pt.booking_id = ? AND pt.transaction_type IN ('EARN', 'REDEEM')
         FOR UPDATE`,
     [bookingId],
   );
-  const earn = earned[0];
-  if (!earn) return 0;
+  if (rows.length === 0) return 0;
+  const earn = rows.find((row) => row.transaction_type === "EARN");
+  const redeem = rows.find((row) => row.transaction_type === "REDEEM");
 
-  const points = Math.min(earn.points, earn.loyalty_points);
+  const spentBack = redeem ? -Number(redeem.points) : 0;
+  const earnedBack = earn ? Math.min(Number(earn.points), Number(rows[0].loyalty_points) + spentBack) : 0;
+  const change = spentBack - earnedBack;
+  const spend = earn ? -Number(earn.qualifying_spend) : 0;
   // unique_booking_transaction stops a second REFUND for the same booking
   await conn.query(
     `INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description,
                                      created_by, created_at, updated_by, last_updated)
      VALUES (?, ?, 'REFUND', ?, ?, ?, ?, NOW(), ?, NOW())`,
-    [earn.user_id, bookingId, -points, -earn.qualifying_spend, `Cancelled booking ${bookingId}`, updatedBy, updatedBy],
+    [rows[0].user_id, bookingId, change, spend, `Cancelled booking ${bookingId}`, updatedBy, updatedBy],
+  );
+  await conn.query(
+    "UPDATE user SET loyalty_points = loyalty_points + ?, updated_by = ?, last_updated = NOW() WHERE user_id = ?",
+    [change, updatedBy, rows[0].user_id],
+  );
+  return change;
+}
+
+// Pays for upgrades with points: saves a REDEEM row and lowers the balance. Run inside the purchase's transaction.
+export async function redeemPoints(conn: Connection, userId: number, bookingId: string, points: number, updatedBy: number) {
+  const [users] = await conn.query<RowDataPacket[]>("SELECT loyalty_points FROM user WHERE user_id = ? FOR UPDATE", [userId]);
+  if (users.length === 0 || Number(users[0].loyalty_points) < points) return false;
+
+  await conn.query(
+    `INSERT INTO points_transaction (user_id, booking_id, transaction_type, points, qualifying_spend, description,
+                                     created_by, created_at, updated_by, last_updated)
+     VALUES (?, ?, 'REDEEM', ?, 0, ?, ?, NOW(), ?, NOW())`,
+    [userId, bookingId, -points, `Upgrades on booking ${bookingId}`, updatedBy, updatedBy],
   );
   await conn.query(
     "UPDATE user SET loyalty_points = loyalty_points - ?, updated_by = ?, last_updated = NOW() WHERE user_id = ?",
-    [points, updatedBy, earn.user_id],
+    [points, updatedBy, userId],
   );
-  return points;
+  return true;
 }
 
 // "SILVER" -> "Silver"
@@ -149,7 +171,7 @@ export function tierPerks(tier: LoyaltyTier): string[] {
   const perks = [
     tier.bonus_percent > 0 ? `${tier.bonus_percent}% bonus points` : `${POINTS_PER_DOLLAR} points per $1`,
   ];
-  if (tier.free_bags > 0) perks.push(`${tier.free_bags} free checked ${tier.free_bags === 1 ? "bag" : "bags"}`);
+  if (tier.free_bags > 0) perks.push(tier.free_bags === 1 ? "2nd checked bag free" : `${tier.free_bags} extra free checked bags`);
   if (tier.priority_boarding) perks.push("Priority boarding");
   if (tier.upgrade_discount_percent > 0) perks.push(`${tier.upgrade_discount_percent}% off upgrades`);
   if (tier.free_seat_choice) perks.push("Free seat choice");

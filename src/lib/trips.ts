@@ -89,7 +89,7 @@ export async function getTrip(bookingId: string, conn: Connection = db): Promise
   );
 
   const [upgrades] = await conn.query<UpgradeType[]>(
-    `SELECT ut.upgrade_id, ut.upgrade_name, ut.upgrade_description, ut.upgrade_price
+    `SELECT ut.upgrade_id, ut.upgrade_name, ut.upgrade_description, ut.upgrade_price, bu.paid_with
        FROM booking_upgrade bu
        JOIN upgrade_type ut ON ut.upgrade_id = bu.upgrade_id
       WHERE bu.booking_id = ?

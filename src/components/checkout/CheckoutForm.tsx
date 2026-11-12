@@ -6,7 +6,11 @@ import { purchase } from "@/app/book/checkout/actions";
 import { PointsBox, type CheckoutRewards } from "@/components/rewards/PointsBox";
 import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
 import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
+import { upgradePoints } from "@/lib/rewardPoints";
 import type { FareOption, FlightStatusRow, UpgradeType } from "@/lib/types";
+
+// the upgrade that Silver and higher tiers get for free
+const PRIORITY_BOARDING = "Priority boarding";
 
 const inputClass =
   "h-11 w-full rounded-control border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-azure-blue focus:ring-1 focus:ring-azure-blue focus:outline-none";
@@ -54,20 +58,43 @@ export function CheckoutForm({
 }) {
   const [bags, setBags] = useState<number[]>(() => Array.from({ length: passengers }, () => 0));
   const [chosenUpgrades, setChosenUpgrades] = useState<number[]>([]);
+  // chosen upgrades the customer pays for with points instead of card
+  const [pointsUpgrades, setPointsUpgrades] = useState<number[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("CREDIT");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  // tier perks: priority boarding comes free with the tier, and some tiers get extra free bags
+  const freeBags = rewards?.freeBags ?? 0;
+  const includedUpgrade = rewards?.priorityBoarding
+    ? upgrades.find((upgrade) => upgrade.upgrade_name === PRIORITY_BOARDING)?.upgrade_id
+    : undefined;
+  const paidWith = (upgrade: UpgradeType) =>
+    upgrade.upgrade_id === includedUpgrade ? "TIER" : pointsUpgrades.includes(upgrade.upgrade_id) ? "POINTS" : "CARD";
+  const shownUpgrades = upgrades.filter(
+    (upgrade) => upgrade.upgrade_id === includedUpgrade || chosenUpgrades.includes(upgrade.upgrade_id),
+  );
+
   const fareTotal = legs.reduce((sum, leg) => sum + leg.fare.base_price * passengers, 0);
-  const upgradeTotal = upgrades
-    .filter((upgrade) => chosenUpgrades.includes(upgrade.upgrade_id))
+  const upgradeTotal = shownUpgrades
+    .filter((upgrade) => paidWith(upgrade) === "CARD")
     .reduce((sum, upgrade) => sum + upgrade.upgrade_price, 0);
-  const bagTotal = bags.reduce((sum, count) => sum + bagFee(count), 0) * legs.length;
+  const pointsUsed = shownUpgrades
+    .filter((upgrade) => paidWith(upgrade) === "POINTS")
+    .reduce((sum, upgrade) => sum + upgradePoints(upgrade.upgrade_price), 0);
+  const bagTotal = bags.reduce((sum, count) => sum + bagFee(count, freeBags), 0) * legs.length;
   const total = fareTotal + upgradeTotal + bagTotal;
   const bagCount = bags.reduce((sum, count) => sum + count, 0) * legs.length;
 
   function toggleUpgrade(upgradeId: number) {
     setChosenUpgrades((current) =>
+      current.includes(upgradeId) ? current.filter((id) => id !== upgradeId) : [...current, upgradeId],
+    );
+    setPointsUpgrades((current) => current.filter((id) => id !== upgradeId));
+  }
+
+  function togglePoints(upgradeId: number) {
+    setPointsUpgrades((current) =>
       current.includes(upgradeId) ? current.filter((id) => id !== upgradeId) : [...current, upgradeId],
     );
   }
@@ -111,6 +138,7 @@ export function CheckoutForm({
           <p className="mb-3 text-xs text-gray-500">
             Per traveler, on every flight of your trip. 1st bag {feeLabel(CHECKED_BAG_FEES[0])}, 2nd bag{" "}
             {feeLabel(CHECKED_BAG_FEES[1])}. Up to 50 lb each.
+            {freeBags > 0 && ` Your ${rewards?.tierName} perk makes the 2nd bag free.`}
           </p>
           <ul className="mb-6 divide-y divide-gray-100 rounded-control border border-gray-200">
             {bags.map((count, i) => (
@@ -125,7 +153,7 @@ export function CheckoutForm({
                   {Array.from({ length: CHECKED_BAG_FEES.length + 1 }, (_, n) => (
                     <option key={n} value={n}>
                       {n} {n === 1 ? "bag" : "bags"}
-                      {n > 0 && ` · ${feeLabel(bagFee(n))}`}
+                      {n > 0 && ` · ${feeLabel(bagFee(n, freeBags))}`}
                     </option>
                   ))}
                 </select>
@@ -134,33 +162,59 @@ export function CheckoutForm({
           </ul>
 
           <h3 className="mb-1 text-sm font-semibold text-gray-900">Upgrades</h3>
-          <p className="mb-3 text-xs text-gray-500">One price for the whole booking.</p>
+          <p className="mb-3 text-xs text-gray-500">
+            One price for the whole booking.{rewards && " Members can pay for any upgrade with points (100 points = $1)."}
+          </p>
           <div className="grid grid-cols-2 gap-3">
             {upgrades.map((upgrade) => {
-              const checked = chosenUpgrades.includes(upgrade.upgrade_id);
+              const included = upgrade.upgrade_id === includedUpgrade;
+              const checked = included || chosenUpgrades.includes(upgrade.upgrade_id);
+              const cost = upgradePoints(upgrade.upgrade_price);
+              const withPoints = pointsUpgrades.includes(upgrade.upgrade_id);
+              // enough points left for this one, counting the other upgrades already paid with points
+              const affordable = rewards !== null && (withPoints || rewards.points - pointsUsed >= cost);
               return (
-                <label
+                <div
                   key={upgrade.upgrade_id}
-                  className={`flex cursor-pointer gap-3 rounded-card border p-3 ${
+                  className={`rounded-card border p-3 ${
                     checked ? "border-azure-blue bg-azure-sky" : "border-gray-200 hover:border-azure-blue"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    name="upgrade"
-                    value={upgrade.upgrade_id}
-                    checked={checked}
-                    onChange={() => toggleUpgrade(upgrade.upgrade_id)}
-                    className="mt-1 accent-azure-blue"
-                  />
-                  <span className="flex-1">
-                    <span className="flex justify-between gap-2 text-sm font-semibold text-gray-900">
-                      {upgrade.upgrade_name}
-                      <span>{formatPrice(upgrade.upgrade_price)}</span>
+                  <label className={`flex gap-3 ${included ? "" : "cursor-pointer"}`}>
+                    <input
+                      type="checkbox"
+                      name={included ? undefined : "upgrade"}
+                      value={upgrade.upgrade_id}
+                      checked={checked}
+                      disabled={included}
+                      onChange={() => toggleUpgrade(upgrade.upgrade_id)}
+                      className="mt-1 accent-azure-blue"
+                    />
+                    <span className="flex-1">
+                      <span className="flex justify-between gap-2 text-sm font-semibold text-gray-900">
+                        {upgrade.upgrade_name}
+                        <span>{included ? "Included" : withPoints ? `${cost.toLocaleString("en-US")} pts` : formatPrice(upgrade.upgrade_price)}</span>
+                      </span>
+                      <span className="block text-xs text-gray-500">
+                        {included ? `Free with your ${rewards?.tierName} tier.` : upgrade.upgrade_description}
+                      </span>
                     </span>
-                    <span className="block text-xs text-gray-500">{upgrade.upgrade_description}</span>
-                  </span>
-                </label>
+                  </label>
+                  {checked && !included && rewards && (
+                    <label className={`mt-2 ml-7 flex items-center gap-2 text-xs ${affordable ? "cursor-pointer text-azure-navy" : "text-gray-400"}`}>
+                      <input
+                        type="checkbox"
+                        name="upgrade_points"
+                        value={upgrade.upgrade_id}
+                        checked={withPoints}
+                        disabled={!affordable}
+                        onChange={() => togglePoints(upgrade.upgrade_id)}
+                        className="accent-azure-blue"
+                      />
+                      Pay with {cost.toLocaleString("en-US")} points{!affordable && " (not enough points)"}
+                    </label>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -281,11 +335,20 @@ export function CheckoutForm({
           {bagCount > 0 && (
             <PriceLine label={`Checked bags (${bagCount})`} amount={bagTotal} />
           )}
-          {upgrades
-            .filter((upgrade) => chosenUpgrades.includes(upgrade.upgrade_id))
-            .map((upgrade) => (
-              <PriceLine key={upgrade.upgrade_id} label={upgrade.upgrade_name} amount={upgrade.upgrade_price} />
-            ))}
+          {shownUpgrades.map((upgrade) => (
+            <PriceLine
+              key={upgrade.upgrade_id}
+              label={upgrade.upgrade_name}
+              amount={upgrade.upgrade_price}
+              text={
+                paidWith(upgrade) === "TIER"
+                  ? `Included (${rewards?.tierName})`
+                  : paidWith(upgrade) === "POINTS"
+                    ? `${upgradePoints(upgrade.upgrade_price).toLocaleString("en-US")} pts`
+                    : undefined
+              }
+            />
+          ))}
           <div className="mt-3 flex justify-between border-t border-gray-200 pt-3 font-semibold text-azure-navy">
             <span>Total</span>
             <span>{formatPrice(total)}</span>
@@ -296,7 +359,7 @@ export function CheckoutForm({
           </p>
         </div>
 
-        <PointsBox rewards={rewards} total={total} />
+        <PointsBox rewards={rewards} total={total} pointsUsed={pointsUsed} />
         {/* Error display for checkout form */}
         {message && ( //This is the error display code that the trigger propagates the text to
           <p role="alert" className="rounded-control border border-red-200 bg-red-50 p-3 text-sm text-red-700">

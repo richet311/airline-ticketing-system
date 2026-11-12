@@ -143,6 +143,11 @@ export function GateBoard({
                   <td className="py-2 pr-4 font-semibold">{passenger.seat_number ?? "—"}</td>
                   <td className="py-2 pr-4">
                     {passenger.last_name}, {passenger.first_name}
+                    {passenger.priority === 1 && (
+                      <span className="ml-2 rounded-control bg-azure-sky px-1.5 py-0.5 text-[11px] font-semibold text-azure-navy">
+                        Priority
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 pr-4">{passenger.e_ticket_number}</td>
                   <td className="py-2 pr-4">{passenger.passport_number ?? "—"}</td>

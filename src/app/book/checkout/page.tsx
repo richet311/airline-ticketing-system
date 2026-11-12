@@ -127,7 +127,13 @@ async function Checkout({ searchParams }: { searchParams: Promise<SearchParams> 
   let rewards = null;
   if (user) {
     const tier = tierFor(await getQualifyingSpend(user.user_id), await getTiers());
-    rewards = { points: user.loyalty_points, tierName: tierLabel(tier.tier_name), bonusPercent: tier.bonus_percent };
+    rewards = {
+      points: user.loyalty_points,
+      tierName: tierLabel(tier.tier_name),
+      bonusPercent: tier.bonus_percent,
+      freeBags: tier.free_bags,
+      priorityBoarding: Boolean(tier.priority_boarding),
+    };
   }
   const [holders] = user?.passenger_id
     ? await db.query<RowDataPacket[]>(

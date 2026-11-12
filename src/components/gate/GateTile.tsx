@@ -96,7 +96,10 @@ async function GateFlight({ flightNumber }: { flightNumber: string }) {
   //shows everyone on a confirmed booking where the front of the plane is first
   const [passengers] = await db.query<GatePassengerRow[]>(
     `SELECT t.e_ticket_number, t.seat_number, p.first_name, p.last_name, p.passport_number, t.checked_in, t.boarded,
-            (SELECT COUNT(*) FROM baggage bg WHERE bg.e_ticket_number = t.e_ticket_number) AS bag_count
+            (SELECT COUNT(*) FROM baggage bg WHERE bg.e_ticket_number = t.e_ticket_number) AS bag_count,
+            -- priority boarding, bought or free with the rewards tier
+            EXISTS (SELECT 1 FROM booking_upgrade bu JOIN upgrade_type ut ON ut.upgrade_id = bu.upgrade_id
+                     WHERE bu.booking_id = t.booking_id AND ut.upgrade_name = 'Priority boarding') AS priority
        FROM ticket t
        JOIN booking b         ON b.booking_id = t.booking_id
        JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id

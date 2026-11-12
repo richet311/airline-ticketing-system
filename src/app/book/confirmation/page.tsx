@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { CheckCircleIcon } from "@/components/icons";
 import { formatDate, formatLocalTime, formatTime } from "@/lib/format";
+import { upgradeLine } from "@/lib/rewardPoints";
 import { db } from "@/lib/db";
 import { canOpenTrip } from "@/lib/tripAccess";
 import type { BookingSummary, ConfirmationTicket, Payment, UpgradeType } from "@/lib/types";
@@ -83,7 +84,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
   );
 
   const [upgrades] = await db.query<UpgradeType[]>(
-    `SELECT ut.upgrade_id, ut.upgrade_name, ut.upgrade_description, ut.upgrade_price
+    `SELECT ut.upgrade_id, ut.upgrade_name, ut.upgrade_description, ut.upgrade_price, bu.paid_with
        FROM booking_upgrade bu
        JOIN upgrade_type ut ON ut.upgrade_id = bu.upgrade_id
       WHERE bu.booking_id = ?
@@ -185,7 +186,7 @@ async function Confirmation({ searchParams }: { searchParams: Promise<SearchPara
           <PriceLine label={`Fares (${tickets.length} ${tickets.length === 1 ? "ticket" : "tickets"})`} amount={fareTotal} />
           {bagCount > 0 && <PriceLine label={`Checked bags (${bagCount})`} amount={bagFees} />}
           {upgrades.map((upgrade) => (
-            <PriceLine key={upgrade.upgrade_id} label={upgrade.upgrade_name} amount={upgrade.upgrade_price} />
+            <PriceLine key={upgrade.upgrade_id} {...upgradeLine(upgrade)} />
           ))}
           <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold text-azure-navy">
             <span>Total</span>
