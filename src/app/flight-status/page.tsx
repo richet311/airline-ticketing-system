@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { PageHeading } from "@/components/PageHeading";
 import { SiteHeader } from "@/components/SiteHeader";
 import { FlightStatusSearch, type StatusSearchValues } from "@/components/flight-status/FlightStatusSearch";
-import { formatDate, formatLocalTime, formatTime, isCalendarDate } from "@/lib/format";
+import { formatDate, formatLocalTime, formatTime, isCalendarDate, localDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportOption, FlightStatusRow } from "@/lib/types";
@@ -63,15 +63,16 @@ async function SearchCard({ searchParams }: { searchParams: Promise<SearchParams
 async function StatusResults({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const search = readStatusSearch(await searchParams);
 
-  // search by flight number and date (same UTC day issue as /book/results)
+  // search by flight number and date
   if (search.flightNumber !== "") {
     if (!isCalendarDate(search.date)) return <MessageBox>Choose a departure date to look up {search.flightNumber}.</MessageBox>;
-    const [flights] = await db.query<FlightStatusRow[]>(
+    const [nearbyFlights] = await db.query<FlightStatusRow[]>(
       `${STATUS_SELECT}
-        WHERE f.flight_number = ? AND DATE(f.departure_time) = ?
+        WHERE f.flight_number = ? AND DATE(f.departure_time) BETWEEN ? - INTERVAL 1 DAY AND ? + INTERVAL 1 DAY
         ORDER BY f.departure_time`,
-      [search.flightNumber, search.date],
+      [search.flightNumber, search.date, search.date],
     );
+    const flights = nearbyFlights.filter((flight) => localDate(flight.departure_time, flight.origin_timezone) === search.date);
 
     if (flights.length === 0) {
       return (

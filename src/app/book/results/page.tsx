@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 
-import { formatLocalTime, formatTime, isCalendarDate } from "@/lib/format";
+import { formatLocalTime, formatTime, isCalendarDate, localDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { flightStatusDisplay } from "@/lib/flightStatusDisplay";
 import type { AirportCity, FareOption, FlightSearchResult } from "@/lib/types";
@@ -216,9 +216,8 @@ async function FlightList({
   chosenCabin: string;
   hrefFor: (fareClassId: number) => string;
 }) {
-  // Known issue: DATE() is the UTC day, so late-evening flights show under the next day.
   // An impossible date typed into the URL finds nothing instead of reaching the database.
-  const [flights] = !isCalendarDate(day)
+  const [nearbyFlights] = !isCalendarDate(day)
     ? [[] as FlightSearchResult[]]
     : await db.query<FlightSearchResult[]>(
     `SELECT f.flight_id, f.flight_number, f.departure_time, f.arrival_time,
@@ -232,13 +231,14 @@ async function FlightList({
        JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
       WHERE o.airport_code = ?
         AND d.airport_code = ?
-        AND DATE(f.departure_time) = ?
+        AND DATE(f.departure_time) BETWEEN ? - INTERVAL 1 DAY AND ? + INTERVAL 1 DAY
         AND f.departure_time > NOW()
         AND fs.flight_status_name IN ('SCHEDULED', 'DELAYED')
         AND EXISTS (SELECT 1 FROM fare_class fc WHERE fc.flight_id = f.flight_id AND fc.seats_available > 0)
       ORDER BY f.departure_time`,
-    [from, to, day],
+    [from, to, day, day],
   );
+  const flights = nearbyFlights.filter((flight) => localDate(flight.departure_time, flight.origin_timezone) === day);
 
   if (flights.length === 0) {
     return (

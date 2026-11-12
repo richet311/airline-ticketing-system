@@ -28,6 +28,14 @@ export function formatLocalTime(value: string, timeZone: string): string {
   );
 }
 
+export function localDate(value: string, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "2-digit", day: "2-digit", timeZone }).formatToParts(
+    fromDatabase(value),
+  );
+  const part = (type: string) => parts.find((p) => p.type === type)?.value;
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 export function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   return hours === 0 ? `${minutes % 60}m` : `${hours}h ${minutes % 60}m`;
