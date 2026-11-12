@@ -5,8 +5,8 @@ import { connection } from "next/server";
 import { PageHeading } from "@/components/PageHeading";
 import { ArrowRightIcon } from "@/components/icons";
 import { db } from "@/lib/db";
-import { formatMoney, formatMonthDay } from "@/lib/format";
-import type { AirportCity, PopularTripRow } from "@/lib/types";
+import { formatMoney, formatMonthDay, localDate } from "@/lib/format";
+import type { Airport, PopularTripRow } from "@/lib/types";
 
 const TRIP_COUNT = 4;
 
@@ -20,11 +20,10 @@ const destinationImages: Record<number, string> = {
 
 export async function PopularDestinations({ airportId }: { airportId: number }) {
   await connection();
-  const [homes] = await db.query<AirportCity[]>("SELECT airport_code, city, country FROM airport WHERE airport_id = ?", [
-    airportId,
-  ]);
+  const [homes] = await db.query<Airport[]>("SELECT * FROM airport WHERE airport_id = ?", [airportId]);
   if (homes.length === 0) return null;
-  const from = { code: homes[0].airport_code, city: homes[0].city };
+  // every trip leaves from here, so its time zone gives each flight's local departure day
+  const from = { code: homes[0].airport_code, city: homes[0].city, timezone: homes[0].timezone };
 
   const [fares] = await db.query<PopularTripRow[]>(
     `SELECT cc.cabin_class_name, f.flight_number, f.departure_time,
@@ -62,8 +61,8 @@ export async function PopularDestinations({ airportId }: { airportId: number }) 
                   trip: "one-way",
                   from: from.code,
                   to: trip.destination,
-                  // the flight's UTC day, the same day the results page searches by
-                  depart: trip.departure_time.slice(0, 10),
+                  // the local departure day, the same day the results page searches by
+                  depart: localDate(trip.departure_time, from.timezone),
                   passengers: "1",
                   cabin: trip.cabin_class_name,
                 })}`}
@@ -83,7 +82,7 @@ export async function PopularDestinations({ airportId }: { airportId: number }) 
                 </div>
                 <div className="p-5">
                   <p className="text-[11px] font-semibold tracking-widest text-gray-500 uppercase">
-                    {from.code} → {trip.destination} · {trip.flight_number} · {formatMonthDay(trip.departure_time)}
+                    {from.code} → {trip.destination} · {trip.flight_number} · {formatMonthDay(trip.departure_time, from.timezone)}
                   </p>
                   <p className="mt-1 text-lg font-semibold text-azure-navy">{trip.city}</p>
                   <p className="mt-1 text-sm text-gray-600">
