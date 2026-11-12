@@ -179,10 +179,11 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
           {shownTickets.length === 0 ? (
             <p className="text-sm text-gray-600">No tickets match this search.</p>
           ) : (
-            <AdminTable headings={["Ticket", "Flight", "Departs (UTC)", "Route", "Cabin", "Miles", "Fare paid", "Fare / 100 mi"]}>
+            <AdminTable headings={["Ticket", "Booking", "Flight", "Departs (UTC)", "Route", "Cabin", "Miles", "Fare paid", "Fare / 100 mi"]}>
               {shownTickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
                 <tr key={ticket.e_ticket_number}>
                   <td className={`${cell} font-semibold`}>{ticket.e_ticket_number}</td>
+                  <td className={cell}>{ticket.booking_id}</td>
                   <td className={cell}>{ticket.flight_number}</td>
                   <td className={cell}>
                     {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
