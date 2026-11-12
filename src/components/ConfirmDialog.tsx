@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 
 // A yes/no popup for risky actions, in place of the browser's confirm() box.
 // Escape, the cancel button and a click outside the box all count as "no".
+// It sets its own text alignment and wrapping, so it looks the same inside any table cell.
 export function ConfirmDialog({
   open,
   title,
@@ -42,7 +43,7 @@ export function ConfirmDialog({
       onClick={(event) => {
         if (event.target === event.currentTarget) onCancel();
       }}
-      className="m-auto w-full max-w-md rounded-card bg-white text-gray-900 shadow-xl backdrop:bg-black/40"
+      className="m-auto w-full max-w-md rounded-card bg-white text-left font-normal whitespace-normal text-gray-900 shadow-xl backdrop:bg-black/40"
     >
       <div className="p-6">
         <h2 id={titleId} className="text-lg font-semibold text-azure-navy">

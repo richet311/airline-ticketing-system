@@ -70,6 +70,21 @@ export function readReportFilters(params: SearchParams): ReportFilters {
   };
 }
 
+// Each detail table has its own filters, named detail_<name> in the URL. They narrow that table only;
+// the summary above it keeps its numbers.
+export const DETAIL_PREFIX = "detail_";
+
+export function readDetailFilter(params: SearchParams, name: string): string {
+  const value = params[DETAIL_PREFIX + name];
+  return (Array.isArray(value) ? value[0] : (value ?? "")).trim();
+}
+
+// true when the search is empty or any field contains it (ignoring case)
+export function matchesSearch(search: string, fields: (string | null | undefined)[]): boolean {
+  const needle = search.toLowerCase();
+  return needle === "" || fields.some((field) => field?.toLowerCase().includes(needle));
+}
+
 export function addDateRange(where: string[], values: (string | number)[], column: string, filters: ReportFilters) {
   if (filters.from) {
     where.push(`${column} >= ?`);

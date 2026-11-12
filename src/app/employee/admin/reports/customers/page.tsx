@@ -4,11 +4,12 @@ import { Suspense } from "react";
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
 import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { BarChart } from "@/components/reports/Charts";
+import { DetailFilterForm } from "@/components/reports/DetailFilterForm";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatDate, formatMoney } from "@/lib/format";
-import { addDateRange, readReportFilters, REPORT_TABLE_SIZE, REPORTS } from "@/lib/reports";
+import { addDateRange, matchesSearch, readDetailFilter, readReportFilters, REPORT_TABLE_SIZE, REPORTS } from "@/lib/reports";
 import { getTiers, tierFor, tierLabel } from "@/lib/rewards";
 import type { CustomerBookingRow, CustomerValueRow } from "@/lib/types";
 
@@ -20,6 +21,11 @@ const CANCELLED_FLIGHT_BOOKINGS = `(SELECT DISTINCT t.booking_id
 const NO_ACCOUNT = "NONE";
 const CHART_COUNT = 10;
 const cell = "py-2 pr-4";
+const BOOKING_STATUSES = ["CONFIRMED", "PENDING", "CANCELLED"];
+const YES_NO = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
 
 export default function CustomersReportPage({ searchParams }: PageProps<"/employee/admin/reports/customers">) {
   return (
@@ -100,13 +106,25 @@ async function CustomersReport({
   const customerBookings = bookingRows
     .filter((booking) => customerOrder.has(booking.passenger_id))
     .sort((a, b) => (customerOrder.get(a.passenger_id) ?? 0) - (customerOrder.get(b.passenger_id) ?? 0));
-  const bookingPage = pageNumber(params, "detail_page", customerBookings.length, REPORT_TABLE_SIZE);
   const spendNote = (booking: CustomerBookingRow) => {
     if (booking.booking_status_name === "CANCELLED") return "No · booking cancelled";
     if (booking.booking_status_name !== "CONFIRMED") return "No · not paid yet";
     if (booking.on_cancelled_flight === 1) return "No · flight cancelled";
     return "Yes";
   };
+  const statusLabel = (status: string) => status.charAt(0) + status.slice(1).toLowerCase();
+
+  // the detail table's own filters; "counted in spend" picks out the bookings the Spend column adds up
+  const detailSearch = readDetailFilter(params, "search");
+  const detailStatus = readDetailFilter(params, "status").toUpperCase();
+  const detailCounted = readDetailFilter(params, "counted");
+  const shownBookings = customerBookings.filter(
+    (booking) =>
+      matchesSearch(detailSearch, [customerName.get(booking.passenger_id), booking.booking_id, booking.flights]) &&
+      (detailStatus === "" || booking.booking_status_name === detailStatus) &&
+      (detailCounted === "" || (detailCounted === "yes") === (spendNote(booking) === "Yes")),
+  );
+  const bookingPage = pageNumber(params, "detail_page", shownBookings.length, REPORT_TABLE_SIZE);
 
   return (
     <>
@@ -156,28 +174,47 @@ async function CustomersReport({
             <p className="mb-4 text-sm text-gray-600">
               Every booking behind the customers above, in the order in which they appear.
             </p>
-            <AdminTable headings={["Customer", "Booking", "Booked (UTC)", "Flights", "Status", "Total", "Counted in spend"]}>
-              {customerBookings.slice((bookingPage - 1) * REPORT_TABLE_SIZE, bookingPage * REPORT_TABLE_SIZE).map((booking) => (
-                <tr key={booking.booking_id}>
-                  <td className={`${cell} font-semibold`}>{customerName.get(booking.passenger_id)}</td>
-                  <td className={cell}>{booking.booking_id}</td>
-                  <td className={cell}>{formatDate(booking.created_at)}</td>
-                  <td className={cell}>{booking.flights ?? "—"}</td>
-                  <td className={cell}>
-                    {booking.booking_status_name.charAt(0) + booking.booking_status_name.slice(1).toLowerCase()}
-                  </td>
-                  <td className={cell}>{formatMoney(booking.total_amount)}</td>
-                  <td className={cell}>{spendNote(booking)}</td>
-                </tr>
-              ))}
-            </AdminTable>
+            <DetailFilterForm
+              action={REPORTS.customers.href}
+              params={params}
+              searchPlaceholder="Customer, booking or flight"
+              choices={[
+                {
+                  name: "status",
+                  label: "Status",
+                  allLabel: "All statuses",
+                  options: BOOKING_STATUSES.map((status) => ({ value: status, label: statusLabel(status) })),
+                },
+                { name: "counted", label: "Counted in spend", allLabel: "All", options: YES_NO },
+              ]}
+              matched={shownBookings.length}
+              total={customerBookings.length}
+              noun="bookings"
+            />
+            {shownBookings.length === 0 ? (
+              <p className="text-sm text-gray-600">No bookings match this search.</p>
+            ) : (
+              <AdminTable headings={["Customer", "Booking", "Booked (UTC)", "Flights", "Status", "Total", "Counted in spend"]}>
+                {shownBookings.slice((bookingPage - 1) * REPORT_TABLE_SIZE, bookingPage * REPORT_TABLE_SIZE).map((booking) => (
+                  <tr key={booking.booking_id}>
+                    <td className={`${cell} font-semibold`}>{customerName.get(booking.passenger_id)}</td>
+                    <td className={cell}>{booking.booking_id}</td>
+                    <td className={cell}>{formatDate(booking.created_at)}</td>
+                    <td className={cell}>{booking.flights ?? "—"}</td>
+                    <td className={cell}>{statusLabel(booking.booking_status_name)}</td>
+                    <td className={cell}>{formatMoney(booking.total_amount)}</td>
+                    <td className={cell}>{spendNote(booking)}</td>
+                  </tr>
+                ))}
+              </AdminTable>
+            )}
             <TilePager
               basePath={REPORTS.customers.href}
               params={params}
               name="detail_page"
               page={bookingPage}
               size={REPORT_TABLE_SIZE}
-              total={customerBookings.length}
+              total={shownBookings.length}
               noun="Bookings"
             />
           </AdminTile>

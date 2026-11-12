@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { deleteAirport, updateAirport } from "@/app/employee/admin/airports/actions";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { Airport } from "@/lib/types";
 
 import { adminInputClass } from "./AdminTile";
@@ -14,6 +15,7 @@ export function AirportRow({ airport }: { airport: Airport }) {
   const [country, setCountry] = useState(airport.country);
   const [timezone, setTimezone] = useState(airport.timezone);
   const [message, setMessage] = useState<string | null>(null);
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const [pending, startTransition] = useTransition();
   const changed =
     code !== airport.airport_code ||
@@ -31,7 +33,6 @@ export function AirportRow({ airport }: { airport: Airport }) {
   }
 
   function remove() {
-    if (!window.confirm(`Remove ${airport.airport_code}? Its terminals and gates are removed too.`)) return;
     setMessage(null);
     startTransition(async () => {
       const result = await deleteAirport(airport.airport_id);
@@ -72,7 +73,7 @@ export function AirportRow({ airport }: { airport: Airport }) {
         <button type="button" onClick={save} disabled={!changed || pending} className="mr-3 font-semibold text-azure-blue hover:underline disabled:text-gray-400 disabled:no-underline">
           {pending ? "Saving..." : "Save"}
         </button>
-        <button type="button" onClick={remove} disabled={pending} className="font-semibold text-red-700 hover:underline disabled:opacity-60">
+        <button type="button" onClick={() => setConfirmingRemove(true)} disabled={pending} className="font-semibold text-red-700 hover:underline disabled:opacity-60">
           Remove
         </button>
         {message && (
@@ -80,6 +81,18 @@ export function AirportRow({ airport }: { airport: Airport }) {
             {message}
           </p>
         )}
+        <ConfirmDialog
+          open={confirmingRemove}
+          title={`Remove ${airport.airport_code}?`}
+          message="Its terminals and gates are removed too."
+          confirmLabel="Remove airport"
+          cancelLabel="Keep airport"
+          onConfirm={() => {
+            setConfirmingRemove(false);
+            remove();
+          }}
+          onCancel={() => setConfirmingRemove(false)}
+        />
       </td>
     </tr>
   );

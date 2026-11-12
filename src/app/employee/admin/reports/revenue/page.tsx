@@ -3,11 +3,20 @@ import { Suspense } from "react";
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
 import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { BarChart } from "@/components/reports/Charts";
+import { DetailFilterForm } from "@/components/reports/DetailFilterForm";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatDate, formatMoney, formatTime } from "@/lib/format";
-import { addDateRange, DEFAULT_MIN_TICKETS, readReportFilters, REPORT_TABLE_SIZE, REPORTS } from "@/lib/reports";
+import {
+  addDateRange,
+  DEFAULT_MIN_TICKETS,
+  matchesSearch,
+  readDetailFilter,
+  readReportFilters,
+  REPORT_TABLE_SIZE,
+  REPORTS,
+} from "@/lib/reports";
 import type { CabinClass, RouteAirportsRow, RouteRevenueRow, RouteTicketRow } from "@/lib/types";
 
 const cell = "py-2 pr-4";
@@ -90,8 +99,18 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
   const rankedTickets = ticketRows
     .filter((ticket) => routeOrder.has(ticket.route))
     .sort((a, b) => (routeOrder.get(a.route) ?? 0) - (routeOrder.get(b.route) ?? 0));
-  const ticketPage = pageNumber(params, "detail_page", rankedTickets.length, REPORT_TABLE_SIZE);
+  const detailSearch = readDetailFilter(params, "search");
+  const detailRoute = readDetailFilter(params, "route");
+  const detailCabin = readDetailFilter(params, "cabin").toUpperCase();
+  const shownTickets = rankedTickets.filter(
+    (ticket) =>
+      matchesSearch(detailSearch, [ticket.e_ticket_number, ticket.booking_id, ticket.flight_number]) &&
+      (detailRoute === "" || ticket.route === detailRoute) &&
+      (detailCabin === "" || ticket.cabin_class_name === detailCabin),
+  );
+  const ticketPage = pageNumber(params, "detail_page", shownTickets.length, REPORT_TABLE_SIZE);
   const tickets = (count: number) => `${count} ticket${count === 1 ? "" : "s"}`;
+  const cabinLabel = (name: string) => name.charAt(0) + name.slice(1).toLowerCase();
 
   return (
     <>
@@ -104,7 +123,7 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
           destination: route.destination,
           destinationCity: route.destination_city,
         }))}
-        cabins={cabins.map(({ cabin_class_name: name }) => ({ value: name, label: name.charAt(0) + name.slice(1).toLowerCase() }))}
+        cabins={cabins.map(({ cabin_class_name: name }) => ({ value: name, label: cabinLabel(name) }))}
         minTickets={minTickets}
       />
 
@@ -135,29 +154,55 @@ async function RevenueReport({ searchParams }: { searchParams: PageProps<"/emplo
       {rankedTickets.length > 0 && (
         <AdminTile overline="Detail" title="Tickets on these routes">
           <p className="mb-4 text-sm text-gray-600">Every ticket above, in the route order it appears in.</p>
-          <AdminTable headings={["Ticket", "Flight", "Departs (UTC)", "Route", "Cabin", "Miles", "Fare paid", "Fare / 100 mi"]}>
-            {rankedTickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
-              <tr key={ticket.e_ticket_number}>
-                <td className={`${cell} font-semibold`}>{ticket.e_ticket_number}</td>
-                <td className={cell}>{ticket.flight_number}</td>
-                <td className={cell}>
-                  {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
-                </td>
-                <td className={cell}>{ticket.route}</td>
-                <td className={cell}>{ticket.cabin_class_name.charAt(0) + ticket.cabin_class_name.slice(1).toLowerCase()}</td>
-                <td className={cell}>{ticket.distance.toLocaleString("en-US")}</td>
-                <td className={cell}>{formatMoney(ticket.flight_fare)}</td>
-                <td className={cell}>{formatMoney(ticket.fare_per_100_miles)}</td>
-              </tr>
-            ))}
-          </AdminTable>
+          <DetailFilterForm
+            action={REPORTS.revenue.href}
+            params={params}
+            searchPlaceholder="Ticket, booking or flight"
+            choices={[
+              {
+                name: "route",
+                label: "Route",
+                allLabel: "All routes",
+                options: ranked.map((row) => ({ value: row.route, label: row.route })),
+              },
+              {
+                name: "cabin",
+                label: "Cabin",
+                allLabel: "All cabins",
+                options: cabins.map(({ cabin_class_name: name }) => ({ value: name, label: cabinLabel(name) })),
+              },
+            ]}
+            matched={shownTickets.length}
+            total={rankedTickets.length}
+            noun="tickets"
+          />
+          {shownTickets.length === 0 ? (
+            <p className="text-sm text-gray-600">No tickets match this search.</p>
+          ) : (
+            <AdminTable headings={["Ticket", "Flight", "Departs (UTC)", "Route", "Cabin", "Miles", "Fare paid", "Fare / 100 mi"]}>
+              {shownTickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
+                <tr key={ticket.e_ticket_number}>
+                  <td className={`${cell} font-semibold`}>{ticket.e_ticket_number}</td>
+                  <td className={cell}>{ticket.flight_number}</td>
+                  <td className={cell}>
+                    {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
+                  </td>
+                  <td className={cell}>{ticket.route}</td>
+                  <td className={cell}>{cabinLabel(ticket.cabin_class_name)}</td>
+                  <td className={cell}>{ticket.distance.toLocaleString("en-US")}</td>
+                  <td className={cell}>{formatMoney(ticket.flight_fare)}</td>
+                  <td className={cell}>{formatMoney(ticket.fare_per_100_miles)}</td>
+                </tr>
+              ))}
+            </AdminTable>
+          )}
           <TilePager
             basePath={REPORTS.revenue.href}
             params={params}
             name="detail_page"
             page={ticketPage}
             size={REPORT_TABLE_SIZE}
-            total={rankedTickets.length}
+            total={shownTickets.length}
             noun="Tickets"
           />
         </AdminTile>

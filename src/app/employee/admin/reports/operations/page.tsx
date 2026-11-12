@@ -3,14 +3,29 @@ import { Suspense } from "react";
 import { AdminTable, AdminTile } from "@/components/admin/AdminTile";
 import { pageNumber, TilePager } from "@/components/admin/TilePager";
 import { BarChart, PieChart } from "@/components/reports/Charts";
+import { DetailFilterForm } from "@/components/reports/DetailFilterForm";
 import { ReportFilterForm } from "@/components/reports/ReportFilterForm";
 import { ReportShell } from "@/components/reports/ReportShell";
 import { db } from "@/lib/db";
 import { formatDate, formatMonthDay, formatTime } from "@/lib/format";
-import { addDateRange, readReportFilters, REPORT_TABLE_SIZE, REPORTS, STATUS_GROUPS, statusGroup } from "@/lib/reports";
+import {
+  addDateRange,
+  matchesSearch,
+  readDetailFilter,
+  readReportFilters,
+  REPORT_TABLE_SIZE,
+  REPORTS,
+  STATUS_GROUPS,
+  statusGroup,
+} from "@/lib/reports";
 import type { FlightLoadRow, FlightTicketRow, RouteOptionRow } from "@/lib/types";
 
 const cell = "py-2 pr-4";
+const CABIN_ORDER = ["ECONOMY", "PREMIUM", "BUSINESS", "FIRST"];
+const YES_NO = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+];
 
 export default function OperationsReportPage({ searchParams }: PageProps<"/employee/admin/reports/operations">) {
   return (
@@ -85,8 +100,27 @@ async function OperationsReport({
 
   const flying = flights.filter((flight) => flight.flight_status_name !== "CANCELLED");
   const page = pageNumber(params, "page", flights.length, REPORT_TABLE_SIZE);
-  const ticketPage = pageNumber(params, "detail_page", tickets.length, REPORT_TABLE_SIZE);
   const label = (name: string) => name.charAt(0) + name.slice(1).toLowerCase();
+
+  // the detail table's own filters; "counts as sold" is what the Sold column and seats filled are built from
+  const detailSearch = readDetailFilter(params, "search");
+  const detailFlight = readDetailFilter(params, "flight").toUpperCase();
+  const detailCabin = readDetailFilter(params, "cabin").toUpperCase();
+  const detailSold = readDetailFilter(params, "sold");
+  const shownTickets = tickets.filter((ticket) => {
+    const sold = ticket.booking_status_name === "CONFIRMED";
+    return (
+      matchesSearch(detailSearch, [ticket.e_ticket_number, ticket.booking_id, ticket.flight_number, ticket.seat_number]) &&
+      (detailFlight === "" || ticket.flight_number === detailFlight) &&
+      (detailCabin === "" || ticket.cabin_class_name === detailCabin) &&
+      (detailSold === "" || (detailSold === "yes") === sold)
+    );
+  });
+  const ticketPage = pageNumber(params, "detail_page", shownTickets.length, REPORT_TABLE_SIZE);
+  const flightChoices = new Map(
+    flights.map((flight) => [flight.flight_number, `${flight.flight_number} · ${formatMonthDay(flight.departure_time)}`]),
+  );
+  const cabinChoices = CABIN_ORDER.filter((cabin) => tickets.some((ticket) => ticket.cabin_class_name === cabin));
   const averageLoad = flying.length === 0 ? 0 : flying.reduce((sum, flight) => sum + flight.load_factor, 0) / flying.length;
   const percent = (value: number) => `${value.toFixed(1)}%`;
 
@@ -159,29 +193,51 @@ async function OperationsReport({
           {tickets.length > 0 && (
             <AdminTile overline="Detail" title="Tickets on these flights">
               <p className="mb-4 text-sm text-gray-600">Every ticket above, in the flight order it appears in.</p>
-              <AdminTable headings={["Flight", "Departs (UTC)", "Ticket", "Booking", "Seat", "Cabin", "Booking status", "Counts as sold"]}>
-                {tickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
-                  <tr key={ticket.e_ticket_number}>
-                    <td className={`${cell} font-semibold`}>{ticket.flight_number}</td>
-                    <td className={cell}>
-                      {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
-                    </td>
-                    <td className={cell}>{ticket.e_ticket_number}</td>
-                    <td className={cell}>{ticket.booking_id}</td>
-                    <td className={cell}>{ticket.seat_number ?? "—"}</td>
-                    <td className={cell}>{label(ticket.cabin_class_name)}</td>
-                    <td className={cell}>{label(ticket.booking_status_name)}</td>
-                    <td className={cell}>{ticket.booking_status_name === "CONFIRMED" ? "Yes" : "No"}</td>
-                  </tr>
-                ))}
-              </AdminTable>
+              <DetailFilterForm
+                action={REPORTS.operations.href}
+                params={params}
+                searchPlaceholder="Ticket, booking, flight or seat"
+                choices={[
+                  {
+                    name: "flight",
+                    label: "Flight",
+                    allLabel: "All flights",
+                    options: [...flightChoices].map(([value, text]) => ({ value, label: text })),
+                  },
+                  { name: "cabin", label: "Cabin", allLabel: "All cabins", options: cabinChoices.map((cabin) => ({ value: cabin, label: label(cabin) })) },
+                  { name: "sold", label: "Counts as sold", allLabel: "All", options: YES_NO },
+                ]}
+                matched={shownTickets.length}
+                total={tickets.length}
+                noun="tickets"
+              />
+              {shownTickets.length === 0 ? (
+                <p className="text-sm text-gray-600">No tickets match this search.</p>
+              ) : (
+                <AdminTable headings={["Flight", "Departs (UTC)", "Ticket", "Booking", "Seat", "Cabin", "Booking status", "Counts as sold"]}>
+                  {shownTickets.slice((ticketPage - 1) * REPORT_TABLE_SIZE, ticketPage * REPORT_TABLE_SIZE).map((ticket) => (
+                    <tr key={ticket.e_ticket_number}>
+                      <td className={`${cell} font-semibold`}>{ticket.flight_number}</td>
+                      <td className={cell}>
+                        {formatDate(ticket.departure_time)}, {formatTime(ticket.departure_time)}
+                      </td>
+                      <td className={cell}>{ticket.e_ticket_number}</td>
+                      <td className={cell}>{ticket.booking_id}</td>
+                      <td className={cell}>{ticket.seat_number ?? "—"}</td>
+                      <td className={cell}>{label(ticket.cabin_class_name)}</td>
+                      <td className={cell}>{label(ticket.booking_status_name)}</td>
+                      <td className={cell}>{ticket.booking_status_name === "CONFIRMED" ? "Yes" : "No"}</td>
+                    </tr>
+                  ))}
+                </AdminTable>
+              )}
               <TilePager
                 basePath={REPORTS.operations.href}
                 params={params}
                 name="detail_page"
                 page={ticketPage}
                 size={REPORT_TABLE_SIZE}
-                total={tickets.length}
+                total={shownTickets.length}
                 noun="Tickets"
               />
             </AdminTile>

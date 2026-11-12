@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { deleteAircraft, updateAircraft } from "@/app/employee/admin/aircraft/actions";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import type { AircraftListRow } from "@/lib/types";
 
 import { adminInputClass } from "./AdminTile";
@@ -11,14 +12,18 @@ export function AircraftRow({ plane, statuses }: { plane: AircraftListRow; statu
   const [type, setType] = useState(plane.aircraft_type);
   const [status, setStatus] = useState(plane.maintenance_status_name);
   const [message, setMessage] = useState<string | null>(null);
+  // which question the popup is asking, if any
+  const [asking, setAsking] = useState<"out of service" | "delete" | null>(null);
   const [pending, startTransition] = useTransition();
   const changed = type !== plane.aircraft_type || status !== plane.maintenance_status_name;
 
   function save() {
     const leaving = plane.maintenance_status_name === "OPERATIONAL" && status !== "OPERATIONAL";
-    if (leaving && !window.confirm(`Take ${plane.aircraft_number} out of service? Its upcoming flights move to a free aircraft with the same number of seats.`)) {
-      return;
-    }
+    if (leaving) setAsking("out of service");
+    else saveChanges();
+  }
+
+  function saveChanges() {
     setMessage(null);
     startTransition(async () => {
       const result = await updateAircraft({ aircraftId: plane.aircraft_id, type, status });
@@ -27,7 +32,6 @@ export function AircraftRow({ plane, statuses }: { plane: AircraftListRow; statu
   }
 
   function remove() {
-    if (!window.confirm(`Delete ${plane.aircraft_number}? Its upcoming flights move to a free aircraft with the same number of seats.`)) return;
     setMessage(null);
     startTransition(async () => {
       const result = await deleteAircraft(plane.aircraft_id);
@@ -53,7 +57,7 @@ export function AircraftRow({ plane, statuses }: { plane: AircraftListRow; statu
         <button type="button" onClick={save} disabled={!changed || pending} className="mr-3 font-semibold text-azure-blue hover:underline disabled:text-gray-400 disabled:no-underline">
           {pending ? "Saving..." : "Save"}
         </button>
-        <button type="button" onClick={remove} disabled={pending} className="font-semibold text-red-700 hover:underline disabled:opacity-60">
+        <button type="button" onClick={() => setAsking("delete")} disabled={pending} className="font-semibold text-red-700 hover:underline disabled:opacity-60">
           Delete
         </button>
         {message && (
@@ -61,6 +65,30 @@ export function AircraftRow({ plane, statuses }: { plane: AircraftListRow; statu
             {message}
           </p>
         )}
+        <ConfirmDialog
+          open={asking === "out of service"}
+          title={`Take ${plane.aircraft_number} out of service?`}
+          message="Its upcoming flights move to a free aircraft with the same number of seats."
+          confirmLabel="Take out of service"
+          cancelLabel="Keep in service"
+          onConfirm={() => {
+            setAsking(null);
+            saveChanges();
+          }}
+          onCancel={() => setAsking(null)}
+        />
+        <ConfirmDialog
+          open={asking === "delete"}
+          title={`Delete ${plane.aircraft_number}?`}
+          message="Its upcoming flights move to a free aircraft with the same number of seats."
+          confirmLabel="Delete aircraft"
+          cancelLabel="Keep aircraft"
+          onConfirm={() => {
+            setAsking(null);
+            remove();
+          }}
+          onCancel={() => setAsking(null)}
+        />
       </td>
     </tr>
   );
