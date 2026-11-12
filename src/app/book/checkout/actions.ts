@@ -7,7 +7,8 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/prom
 import { bagFee, CHECKED_BAG_FEES } from "@/lib/baggageFees";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/format";
-import { awardPoints } from "@/lib/rewards";
+import { awardPoints, getQualifyingSpend, getTiers, redeemPoints, tierFor } from "@/lib/rewards";
+import { upgradePoints } from "@/lib/rewardPoints";
 import { rememberTrip } from "@/lib/tripAccess";
 import { LOGIN_REQUIRED } from "@/lib/loginRedirect";
 import { getCurrentUser } from "@/lib/session";
@@ -76,6 +77,8 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
   const idempotencyKey = text("idempotency_key");
   const paymentMethod = text("payment_method");
   const upgradeIds = [...new Set(formData.getAll("upgrade").map(Number))].filter(Number.isInteger);
+  // the chosen upgrades the customer pays for with points
+  const pointsUpgradeIds = formData.getAll("upgrade_points").map(Number).filter((id) => upgradeIds.includes(id));
 
   if (!Number.isInteger(passengers) || passengers < 1 || passengers > MAX_PASSENGERS) {
     return { ok: false, error: "Something went wrong with your trip. Please start a new search." };
@@ -138,15 +141,34 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
     legs.push({ fare: returnFareRow, seats: returnSeats });
   }
 
+  // the booker's rewards tier decides the free perks
+  const tier = tierFor(await getQualifyingSpend(user.user_id), await getTiers());
+
   let upgrades: UpgradeType[] = [];
-  if (upgradeIds.length > 0) {
-    [upgrades] = await db.query<UpgradeType[]>("SELECT * FROM upgrade_type WHERE upgrade_id IN (?)", [upgradeIds]);
+  if (upgradeIds.length > 0 || tier.priority_boarding) {
+    [upgrades] = await db.query<UpgradeType[]>(
+      "SELECT * FROM upgrade_type WHERE upgrade_id IN (?) OR (? AND upgrade_name = 'Priority boarding')",
+      [upgradeIds.length > 0 ? upgradeIds : [0], Boolean(tier.priority_boarding)],
+    );
   }
+  // how each upgrade is paid: free with the tier, with points, or in the card total
+  const paidWith = (upgrade: UpgradeType) =>
+    tier.priority_boarding && upgrade.upgrade_name === "Priority boarding"
+      ? "TIER"
+      : pointsUpgradeIds.includes(upgrade.upgrade_id)
+        ? "POINTS"
+        : "CARD";
 
   const fareTotal = legs.reduce((sum, leg) => sum + leg.fare.base_price * passengers, 0);
-  const upgradeTotal = upgrades.reduce((sum, upgrade) => sum + upgrade.upgrade_price, 0);
-  const bagTotal = travelers.reduce((sum, t) => sum + bagFee(t.bags), 0) * legs.length;
-  const total = fareTotal + upgradeTotal + bagTotal;
+  const upgradeTotal = upgrades
+    .filter((upgrade) => paidWith(upgrade) === "CARD")
+    .reduce((sum, upgrade) => sum + upgrade.upgrade_price, 0);
+  const pointsNeeded = upgrades
+    .filter((upgrade) => paidWith(upgrade) === "POINTS")
+    .reduce((sum, upgrade) => sum + upgradePoints(upgrade.upgrade_price), 0);
+  // what the page showed; the bag fees saved by the database (apply_free_bag_perk trigger) are the final word
+  const bagTotal = travelers.reduce((sum, t) => sum + bagFee(t.bags, tier.free_bags), 0) * legs.length;
+  let total = fareTotal + upgradeTotal + bagTotal;
 
   let bookingId: string;
   try {
@@ -198,12 +220,26 @@ export async function purchase(formData: FormData): Promise<PurchaseResult> {
         }
       }
 
+      // read back the bag fees the database saved, after the free bag perk trigger
+      const [[savedBags]] = await conn.query<RowDataPacket[]>(
+        `SELECT COALESCE(SUM(bg.fee), 0) AS fees
+           FROM baggage bg
+           JOIN ticket t ON t.e_ticket_number = bg.e_ticket_number
+          WHERE t.booking_id = ?`,
+        [newBookingId],
+      );
+      total = fareTotal + upgradeTotal + Number(savedBags.fees);
+      await conn.query("UPDATE booking SET total_amount = ? WHERE booking_id = ?", [total, newBookingId]);
+
       for (const upgrade of upgrades) {
         await conn.query(
-          `INSERT INTO booking_upgrade (upgrade_id, booking_id, created_by, created_at, updated_by, last_updated)
-           VALUES (?, ?, ?, NOW(), ?, NOW())`,
-          [upgrade.upgrade_id, newBookingId, SYSTEM_USER_ID, SYSTEM_USER_ID],
+          `INSERT INTO booking_upgrade (upgrade_id, booking_id, paid_with, created_by, created_at, updated_by, last_updated)
+           VALUES (?, ?, ?, ?, NOW(), ?, NOW())`,
+          [upgrade.upgrade_id, newBookingId, paidWith(upgrade), SYSTEM_USER_ID, SYSTEM_USER_ID],
         );
+      }
+      if (pointsNeeded > 0 && !(await redeemPoints(conn, user.user_id, newBookingId, pointsNeeded, SYSTEM_USER_ID))) {
+        throw new CheckoutError("You don't have enough points for those upgrades. Pay for one of them by card instead.");
       }
 
       //card details aren't collected for the scope of our project

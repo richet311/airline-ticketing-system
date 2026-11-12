@@ -228,6 +228,7 @@ export interface UpgradeType extends RowDataPacket {
     upgrade_name: string;
     upgrade_description: string;
     upgrade_price: number;
+    paid_with?: "CARD" | "POINTS" | "TIER"; // only set when read from booking_upgrade
     created_at: string;
     last_updated: string;
     created_by: number;
@@ -554,6 +555,7 @@ export interface GatePassengerRow extends RowDataPacket {
     bag_count: number;
     checked_in: 0 | 1 | null;
     boarded: 0 | 1;
+    priority: 0 | 1;
 }
 
 export interface RouteRevenueRow extends RowDataPacket {

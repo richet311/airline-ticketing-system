@@ -7,6 +7,7 @@ import { RefundButton, RefundedPopup } from "@/components/trips/RefundButton";
 import { BookingStatusPill, Card, LegSummary, TripNotFound, travelerName } from "@/components/trips/TripParts";
 import { cancelProblem, CHECK_IN_OPENS_MINUTES, checkInStillNeeded, flightHasDeparted, legChangeProblem } from "@/lib/bookingRules";
 import { formatDate, formatMoney } from "@/lib/format";
+import { upgradeLine } from "@/lib/rewardPoints";
 import { canOpenTrip } from "@/lib/tripAccess";
 import { getTrip, legLabel } from "@/lib/trips";
 
@@ -149,7 +150,7 @@ async function TripDetails({
           <PriceLine label={`Fares (${tickets.length} ${tickets.length === 1 ? "ticket" : "tickets"})`} amount={fareTotal} />
           {bagCount > 0 && <PriceLine label={`Checked bags (${bagCount})`} amount={bagFees} />}
           {upgrades.map((upgrade) => (
-            <PriceLine key={upgrade.upgrade_id} label={upgrade.upgrade_name} amount={upgrade.upgrade_price} />
+            <PriceLine key={upgrade.upgrade_id} {...upgradeLine(upgrade)} />
           ))}
           <div className="flex justify-between border-t border-gray-200 pt-2 font-semibold text-azure-navy">
             <span>Trip total</span>

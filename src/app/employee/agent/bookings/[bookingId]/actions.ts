@@ -208,7 +208,9 @@ async function applyBookingChange(conn: PoolConnection, change: BookingChange, u
                  ?, ?, NOW(), ?, NOW())`,
         [tag, added.eTicket, weight, fee, userId, userId],
       );
-      difference += fee;
+      // charge what the database saved, since the free bag perk trigger can make it $0
+      const [[saved]] = await conn.query<RowDataPacket[]>("SELECT fee FROM baggage WHERE tag_number = ?", [tag]);
+      difference += Number(saved.fee);
     }
   }
 

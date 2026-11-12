@@ -326,13 +326,16 @@ CREATE TABLE seat_status(
 CREATE TABLE booking_upgrade(
     upgrade_id INT NOT NULL,
     booking_id CHAR(6) NOT NULL,
+    -- CARD: paid in the booking total, POINTS: paid with reward points, TIER: free with the rewards tier
+    paid_with VARCHAR(10) NOT NULL DEFAULT 'CARD',
 
     created_at TIMESTAMP NOT NULL,
     last_updated TIMESTAMP NOT NULL,
     created_by INT NOT NULL,
     updated_by INT NOT NULL,
 
-    PRIMARY KEY (upgrade_id, booking_id)
+    PRIMARY KEY (upgrade_id, booking_id),
+    CONSTRAINT check_upgrade_paid_with CHECK (paid_with IN ('CARD', 'POINTS', 'TIER'))
 );
 
 CREATE TABLE upgrade_type(
@@ -1023,6 +1026,46 @@ BEGIN
           JOIN passenger bp      ON bp.passenger_id = b.passenger_id
          WHERE b.booking_id = NEW.booking_id
            AND bp.user_id IS NOT NULL;
+    END IF;
+END$$
+
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS apply_free_bag_perk;
+
+DELIMITER $$
+
+CREATE TRIGGER apply_free_bag_perk
+BEFORE INSERT ON baggage
+FOR EACH ROW
+BEGIN
+    -- Everyone's 1st checked bag is free. Gold and Platinum also get their tier's free_bags after that (2nd bag free).
+    DECLARE v_spend DECIMAL(10,2);
+    DECLARE v_free_bags INT DEFAULT 0;
+    DECLARE v_bags_before INT;
+
+    -- what the bag owner's account spent in the last 12 months (bag -> ticket -> passenger -> points history)
+    SELECT COALESCE(SUM(pt.qualifying_spend), 0) INTO v_spend
+      FROM ticket AS t
+      JOIN passenger AS p           ON p.passenger_id = t.passenger_id
+      JOIN points_transaction AS pt ON pt.user_id = p.user_id
+     WHERE t.e_ticket_number = NEW.e_ticket_number
+       AND pt.created_at >= NOW() - INTERVAL 12 MONTH;
+
+    -- their tier is the highest one that spend reaches
+    SELECT free_bags INTO v_free_bags
+      FROM loyalty_tier
+     WHERE min_qualifying_spend <= v_spend
+     ORDER BY min_qualifying_spend DESC
+     LIMIT 1;
+
+    -- how many bags this ticket already has, so this one is bag number v_bags_before + 1
+    SELECT COUNT(*) INTO v_bags_before FROM baggage WHERE e_ticket_number = NEW.e_ticket_number;
+
+    -- the perk covers the bags after the free 1st one, up to the tier's free_bags
+    IF NEW.fee > 0 AND v_bags_before >= 1 AND v_bags_before < 1 + v_free_bags THEN
+        SET NEW.fee = 0;
     END IF;
 END$$
 
