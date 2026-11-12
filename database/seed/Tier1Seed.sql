@@ -53,7 +53,7 @@ INSERT INTO baggage_status (baggage_status_id, baggage_status_name, created_by, 
 
 INSERT INTO upgrade_type (upgrade_id, upgrade_name, upgrade_description, upgrade_price, created_by, created_at, updated_by, last_updated) VALUES
 (1, 'Pillow and blanket', 'Provides amenities for comfortable sleeping', 5.00, 1, NOW(), 1, NOW()),
-(2, 'Extra legroom', 'Seat with additional legroom', 15.00, 1, NOW(), 1, NOW()),
+(2, 'Extra snacks', 'Additional snacks served during your flight', 15.00, 1, NOW(), 1, NOW()),
 (3, 'Priority boarding', 'Board before standard boarding groups', 10.00, 1, NOW(), 1, NOW()),
 (4, 'In-flight Wi-Fi', 'Wi-Fi access for one flight', 20.00, 1, NOW(), 1, NOW());
 
