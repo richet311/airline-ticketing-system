@@ -96,7 +96,7 @@ function Balance({ user, spend, tiers }: { user: CurrentUser; spend: number; tie
     : 100;
 
   return (
-    <section className="rounded-card border border-t-4 border-gray-200 border-t-azure-blue bg-white p-6 shadow-card">
+    <section className="rounded-card border border-gray-200 bg-white p-6 shadow-card">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold tracking-widest text-gray-600 uppercase">

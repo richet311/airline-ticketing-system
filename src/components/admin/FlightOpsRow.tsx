@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { updateFlightGate, updateFlightStatus, type FlightUpdateResult } from "@/app/employee/admin/flights/[flightId]/actions";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { attentionReason, canFillArrivalGate, flightLocked, flightStatusChangeProblem } from "@/lib/flightRules";
 import { formatDate, formatTime } from "@/lib/format";
 import { ASSIGNABLE_GATE_STATUS, gateRequired, missingGateMessage } from "@/lib/gateRules";
@@ -28,6 +29,7 @@ export function FlightOpsRow({
   const [arrivalGate, setArrivalGate] = useState(String(flight.arrival_gate_id ?? ""));
   const [status, setStatus] = useState(flight.flight_status_name);
   const [message, setMessage] = useState<string | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [pending, startTransition] = useTransition();
 
   //Try the update on the dropdown and prevent it if it fails
@@ -53,13 +55,16 @@ export function FlightOpsRow({
   }
 
   function changeStatus(value: string) {
-    const current = status;
-    if (
-      value === "CANCELLED" &&
-      !window.confirm(`Are you sure you want to cancel flight ${flight.flight_number} from ${flight.origin} to ${flight.destination}?`)
-    ) {
+    // cancelling asks first; the dropdown keeps the old status until it's confirmed
+    if (value === "CANCELLED") {
+      setConfirmingCancel(true);
       return;
     }
+    applyStatus(value);
+  }
+
+  function applyStatus(value: string) {
+    const current = status;
     save(
       () => setStatus(value),
       () => setStatus(current),
@@ -129,6 +134,18 @@ export function FlightOpsRow({
             {message}
           </p>
         )}
+        <ConfirmDialog
+          open={confirmingCancel}
+          title={`Cancel flight ${flight.flight_number}?`}
+          message={`${flight.flight_number} from ${flight.origin} to ${flight.destination} will be cancelled and everyone booked on it gets a cancellation notice. A cancelled flight can't be reopened.`}
+          confirmLabel="Cancel flight"
+          cancelLabel="Keep flight"
+          onConfirm={() => {
+            setConfirmingCancel(false);
+            applyStatus("CANCELLED");
+          }}
+          onCancel={() => setConfirmingCancel(false)}
+        />
       </td>
     </tr>
   );
