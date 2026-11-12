@@ -20,21 +20,30 @@ import { BookingsEditor } from "./BookingsEditor";
 type SearchParams = { [key: string]: string | string[] | undefined };
 
 const PAGE_SIZE = 20;
-const FILTER_NAMES = ["booking", "flight", "origin", "destination"] as const;
+// traveler name filters, matched anywhere in the name like the Customers tile
+const NAME_FILTERS = ["traveler_first", "traveler_last"] as const;
+const FILTER_NAMES = ["booking", "flight", "origin", "destination", ...NAME_FILTERS] as const;
 const SHOWN_FLIGHTS = "fs.flight_status_name IN ('SCHEDULED', 'DELAYED', 'CANCELLED')";
 
 const TICKET_JOINS = `
        FROM ticket t
        JOIN booking b         ON b.booking_id = t.booking_id
        JOIN booking_status bs ON bs.booking_status_id = b.booking_status_id
+       JOIN passenger p       ON p.passenger_id = t.passenger_id
        JOIN flight f          ON f.flight_id = t.flight_id
        JOIN flight_status fs  ON fs.flight_status_id = f.flight_status_id
        JOIN airport o         ON o.airport_id = f.origin_airport_id
        JOIN airport d         ON d.airport_id = f.destination_airport_id`;
 
+function isNameFilter(name: string): boolean {
+  return (NAME_FILTERS as readonly string[]).includes(name);
+}
+
+// codes are uppercased; names are kept as typed since name matching ignores case
 function urlValue(params: SearchParams, name: string): string {
   const value = params[name];
-  return (Array.isArray(value) ? value[0] : (value ?? "")).trim().toUpperCase();
+  const text = (Array.isArray(value) ? value[0] : (value ?? "")).trim();
+  return isNameFilter(name) ? text : text.toUpperCase();
 }
 
 export function bookingFilterParams(params: SearchParams): Record<string, string> {
@@ -91,11 +100,19 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
 
   const where = [statusCondition];
   const values: string[] = [];
-  const conditions = { booking: "b.booking_id = ?", flight: "f.flight_number = ?", origin: "o.airport_code = ?", destination: "d.airport_code = ?" };
+  const conditions = {
+    booking: "b.booking_id = ?",
+    flight: "f.flight_number = ?",
+    origin: "o.airport_code = ?",
+    destination: "d.airport_code = ?",
+    traveler_first: "p.first_name LIKE ?",
+    traveler_last: "p.last_name LIKE ?",
+  };
   for (const name of FILTER_NAMES) {
     if (filters[name]) {
       where.push(conditions[name]);
-      values.push(filters[name]);
+      // escape % and _ so they are searched as plain characters
+      values.push(isNameFilter(name) ? `%${filters[name].replace(/[\\%_]/g, "\\$&")}%` : filters[name]);
     }
   }
 
@@ -132,7 +149,6 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
                                                              WHEN 'REFUNDED' THEN -pay.total_amount ELSE 0 END), 0)
                    FROM payment pay WHERE pay.booking_id = b.booking_id) AS paid_amount
            ${TICKET_JOINS}
-           JOIN passenger p       ON p.passenger_id = t.passenger_id
            JOIN fare_class fc     ON fc.fare_class_id = t.fare_class_id
            JOIN cabin_class cc    ON cc.cabin_class_id = fc.cabin_class_id
           WHERE ${where.join(" AND ")} AND b.booking_id IN (?)
@@ -201,6 +217,14 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
           <span className={adminLabelClass}>Flight</span>
           <input name="flight" defaultValue={filters.flight} placeholder="AZ101" maxLength={10} className={`${adminInputClass} uppercase`} />
         </label>
+        <label className="w-36">
+          <span className={adminLabelClass}>First name</span>
+          <input name="traveler_first" defaultValue={filters.traveler_first} placeholder="Jane" maxLength={50} className={adminInputClass} />
+        </label>
+        <label className="w-36">
+          <span className={adminLabelClass}>Last name</span>
+          <input name="traveler_last" defaultValue={filters.traveler_last} placeholder="Doe" maxLength={50} className={adminInputClass} />
+        </label>
         <RoutePicker
           routes={routes.map((route) => ({
             origin: route.origin,
@@ -215,7 +239,7 @@ export async function BookingsTile({ params, basePath }: { params: SearchParams;
           Apply
         </button>
         <Link
-          href={hrefFor({ booking: "", flight: "", origin: "", destination: "" })}
+          href={hrefFor({ booking: "", flight: "", origin: "", destination: "", traveler_first: "", traveler_last: "" })}
           scroll={false}
           className="flex h-9 items-center text-sm font-semibold text-azure-blue hover:underline"
         >
