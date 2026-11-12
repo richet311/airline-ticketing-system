@@ -27,12 +27,13 @@ export async function PopularDestinations({ airportId }: { airportId: number }) 
   const from = { code: homes[0].airport_code, city: homes[0].city };
 
   const [fares] = await db.query<PopularTripRow[]>(
-    `SELECT fc.fare_class_id, f.flight_number, f.departure_time,
+    `SELECT cc.cabin_class_name, f.flight_number, f.departure_time,
             d.airport_id AS destination_id, d.airport_code AS destination, d.city, fc.base_price
        FROM flight f
        JOIN airport d        ON d.airport_id = f.destination_airport_id
        JOIN flight_status fs ON fs.flight_status_id = f.flight_status_id
        JOIN fare_class fc    ON fc.flight_id = f.flight_id
+       JOIN cabin_class cc   ON cc.cabin_class_id = fc.cabin_class_id
       WHERE f.origin_airport_id = ?
         AND f.departure_time > NOW()
         AND fs.flight_status_name IN ('SCHEDULED', 'DELAYED')
@@ -57,7 +58,15 @@ export async function PopularDestinations({ airportId }: { airportId: number }) 
           {trips.map((trip) => (
             <li key={trip.destination_id}>
               <Link
-                href={`/book/seats?${new URLSearchParams({ outbound: String(trip.fare_class_id), passengers: "1" })}`}
+                href={`/book/results?${new URLSearchParams({
+                  trip: "one-way",
+                  from: from.code,
+                  to: trip.destination,
+                  // the flight's UTC day, the same day the results page searches by
+                  depart: trip.departure_time.slice(0, 10),
+                  passengers: "1",
+                  cabin: trip.cabin_class_name,
+                })}`}
                 className="group block overflow-hidden rounded-card border border-gray-200 bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-azure-blue hover:shadow-xl"
               >
                 <div className="relative flex h-40 flex-col justify-end overflow-hidden bg-azure-navy p-5 text-white">
@@ -82,7 +91,7 @@ export async function PopularDestinations({ airportId }: { airportId: number }) 
                     <span className="text-xl font-semibold text-azure-navy">{formatMoney(trip.base_price)}</span>
                   </p>
                   <span className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-azure-blue group-hover:underline">
-                    Choose seats
+                    Choose cabin
                     <ArrowRightIcon className="h-4 w-4" />
                   </span>
                 </div>

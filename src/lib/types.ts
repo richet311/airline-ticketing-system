@@ -737,7 +737,7 @@ export interface ReplacementFareRow extends RowDataPacket {
 export type TripActionState = { error: string } | null;
 
 export interface PopularTripRow extends RowDataPacket {
-    fare_class_id: number;
+    cabin_class_name: string;
     flight_number: string;
     departure_time: string;
     destination_id: number;
