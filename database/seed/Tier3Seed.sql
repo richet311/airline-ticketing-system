@@ -215,8 +215,29 @@ INSERT INTO flight_target VALUES
 (50001, 48), (50002, 51), (50003, 60), (50004, 42), (50005, 39), (50006, 30), (50007, 27), (50008, 18),
 (50010, 21), (50011, 12), (50012, 33), (50013, 24), (50014, 36), (50015, 21), (50016, 27), (50017, 15);
 
-CREATE TEMPORARY TABLE planned_ticket AS
-WITH open_seat AS (
+CREATE TEMPORARY TABLE planned_ticket (PRIMARY KEY (flight_id, seat_number)) AS
+WITH timeline AS (
+    SELECT flight_id, departure_time,
+           departure_time >= MAX(arrival_time) OVER (ORDER BY departure_time, flight_id ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING)
+                             + INTERVAL 24 HOUR AS starts_group
+      FROM flight
+),
+flight_group AS (
+    SELECT flight_id, SUM(IFNULL(starts_group, 1)) OVER (ORDER BY departure_time, flight_id) AS group_id
+      FROM timeline
+),
+flight_slot AS (
+    SELECT fg.flight_id, fg.group_id,
+           ft.seats_sold - (SELECT COUNT(*) FROM ticket t WHERE t.flight_id = ft.flight_id AND t.seat_number IS NOT NULL) AS needed
+      FROM flight_target ft
+      JOIN flight_group fg ON fg.flight_id = ft.flight_id
+),
+flight_start AS (
+    SELECT flight_id, group_id, needed,
+           SUM(needed) OVER (PARTITION BY group_id ORDER BY flight_id) - needed AS first_slot
+      FROM flight_slot
+),
+open_seat AS (
     SELECT s.flight_id, s.seat_number, s.cabin_class_id,
            ROW_NUMBER() OVER (PARTITION BY s.flight_id ORDER BY CRC32(CONCAT(s.flight_id, s.seat_number))) AS k
       FROM seat s
@@ -224,22 +245,29 @@ WITH open_seat AS (
        AND NOT EXISTS (SELECT 1 FROM ticket t WHERE t.flight_id = s.flight_id AND t.seat_number = s.seat_number)
 ),
 traveler AS (
-    SELECT f.flight_id, p.passenger_id, COALESCE(p.passenger_parent_id, p.passenger_id) AS booker_id,
-           ROW_NUMBER() OVER (PARTITION BY f.flight_id ORDER BY CRC32(CONCAT(p.passenger_id, f.flight_id))) AS k
-      FROM flight f
+    SELECT g.group_id, p.passenger_id, COALESCE(p.passenger_parent_id, p.passenger_id) AS booker_id,
+           ROW_NUMBER() OVER (PARTITION BY g.group_id
+                              ORDER BY p.passenger_id = 1003
+                                       AND EXISTS (SELECT 1 FROM flight_group pg WHERE pg.group_id = g.group_id AND pg.flight_id = 50001) DESC,
+                                       CRC32(CONCAT(p.passenger_id, '-', g.group_id))) AS slot
+      FROM (SELECT DISTINCT group_id FROM flight_group) g
      CROSS JOIN passenger p
-     WHERE NOT EXISTS (SELECT 1 FROM ticket t WHERE t.flight_id = f.flight_id AND t.passenger_id = p.passenger_id)
-       AND NOT (p.passenger_id = 1003 AND f.flight_id = 50010)
+     WHERE NOT EXISTS (SELECT 1
+                         FROM ticket t
+                         JOIN flight_group tg ON tg.flight_id = t.flight_id
+                        WHERE tg.group_id = g.group_id AND t.passenger_id = p.passenger_id)
+       AND NOT (p.passenger_id = 1003
+                AND EXISTS (SELECT 1 FROM flight_group jg
+                             WHERE jg.group_id = g.group_id AND jg.flight_id IN (50002, 50003, 50005, 50010, 50011)))
 )
 SELECT os.flight_id, os.seat_number, os.k, tr.passenger_id, tr.booker_id, fc.fare_class_id, fc.base_price, f.flight_status_id,
        CONCAT('S', LPAD(os.flight_id - 50000, 2, '0'), LPAD(os.seat_number, 3, '0')) AS booking_id,
        LEAST(NOW(), f.departure_time - INTERVAL 1 DAY) - INTERVAL (os.k % 45) DAY AS booked_at
-  FROM flight_target ft
-  JOIN flight f      ON f.flight_id = ft.flight_id
-  JOIN open_seat os  ON os.flight_id = ft.flight_id
-  JOIN traveler tr   ON tr.flight_id = os.flight_id AND tr.k = os.k
-  JOIN fare_class fc ON fc.flight_id = os.flight_id AND fc.cabin_class_id = os.cabin_class_id
- WHERE os.k <= ft.seats_sold - (SELECT COUNT(*) FROM ticket t WHERE t.flight_id = ft.flight_id AND t.seat_number IS NOT NULL);
+  FROM flight_start fs
+  JOIN flight f      ON f.flight_id = fs.flight_id
+  JOIN open_seat os  ON os.flight_id = fs.flight_id AND os.k <= fs.needed
+  JOIN traveler tr   ON tr.group_id = fs.group_id AND tr.slot = fs.first_slot + os.k
+  JOIN fare_class fc ON fc.flight_id = os.flight_id AND fc.cabin_class_id = os.cabin_class_id;
 
 INSERT INTO booking (booking_id, passenger_id, booking_status_id, total_amount, currency, expires_at, created_by, created_at, updated_by, last_updated)
 SELECT booking_id, booker_id, 2, base_price, 'USD', NULL, 1, booked_at, 1, booked_at
