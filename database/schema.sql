@@ -725,9 +725,9 @@ BEGIN
           JOIN passenger AS p ON p.passenger_id = NEW.passenger_id -- (1/2) ensures we are validating the passenger and his/her passport associated with the
          WHERE f.flight_id = NEW.flight_id -- (2/2) current process of building out a NEW ticket tuple for one specific flight
            AND OrigArprt.country <> DestArprt.country -- the origin and destination airports' countries have to NOT be equal to each other to be an international flight, where passports are necessary
-           AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time))) > 0 -- this condition captures all tuples that should not be allowed under a semantic constraint
+           AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time) + INTERVAL 6 MONTH)) > 0 -- the passport has to stay valid for at least 6 months after the flight departs
           THEN SIGNAL SQLSTATE '45000' -- error code with error message that's to be displayed to the customer
-           SET MESSAGE_TEXT = 'Your passport expires before this flight departs.'; -- you cannot fly international with an expired passport
+           SET MESSAGE_TEXT = 'Your passport must be valid for at least 6 months after this flight departs.';
     END IF;
 END$$
 
@@ -772,9 +772,9 @@ BEGIN
               JOIN passenger AS p ON p.passenger_id = NEW.passenger_id
              WHERE f.flight_id = NEW.flight_id
                AND OrigArprt.country <> DestArprt.country
-               AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time))) > 0
+               AND (p.passport_expiry_date IS NULL OR p.passport_expiry_date < DATE(f.departure_time) + INTERVAL 6 MONTH)) > 0
     THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Your passport expires before this flight departs.';
+        SET MESSAGE_TEXT = 'Your passport must be valid for at least 6 months after this flight departs.';
     END IF;
 END$$
 
@@ -1066,6 +1066,27 @@ BEGIN
     -- the perk covers the bags after the free 1st one, up to the tier's free_bags
     IF NEW.fee > 0 AND v_bags_before >= 1 AND v_bags_before < 1 + v_free_bags THEN
         SET NEW.fee = 0;
+    END IF;
+END$$
+
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS check_aircraft_operational;
+
+DELIMITER $$
+
+CREATE TRIGGER check_aircraft_operational
+BEFORE INSERT ON flight
+FOR EACH ROW
+BEGIN
+    -- A new flight can only be scheduled on an aircraft that is OPERATIONAL (not in MAINTENANCE or GROUNDED)
+    IF (SELECT ms.maintenance_status_name
+          FROM aircraft AS a
+          JOIN maintenance_status AS ms ON ms.maintenance_status_id = a.maintenance_status_id
+         WHERE a.aircraft_id = NEW.aircraft_id) <> 'OPERATIONAL'
+    THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This aircraft is not operational, so no flights can be scheduled on it.';
     END IF;
 END$$
 
